@@ -164,13 +164,13 @@ void output(void)
     int target_priority=current_state-1;
     if(menu_Mode==edit_int)
     {
-        ips200_show_string(60,0,"edit_i");
-        ips200_show_int(120,0,stepper_int[stepper_p_int],3);
+        ips200_show_string(100,0,"edit_i");
+        ips200_show_int(160,0,stepper_int[stepper_p_int],3);
     }
     if(menu_Mode==edit_float)
     {
-        ips200_show_string(60,0,"edit_f");
-        ips200_show_float(120,0,stepper_float[stepper_p_float],3,3);
+        ips200_show_string(100,0,"edit_f");
+        ips200_show_float(160,0,stepper_float[stepper_p_float],3,3);
     }
     if (target_priority==0)
     {
