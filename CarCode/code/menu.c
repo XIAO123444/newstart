@@ -11,11 +11,12 @@
 int current_state=1;
 int p=0;//记录当前指针
 int p_nearby=0;//记录所属的指针
-int input;
+uint8 input;
 extern int status;
 extern bool save_flag;      //保存标志位
 extern bool start_flag;     //发车标志位
 extern bool stop_flag1;     //停车标志位
+
 
 
 bool showline;
@@ -28,188 +29,103 @@ int32 forwardsight2;//直到判断前瞻
 int32 forwardsight3;//弯道前瞻
 
 float beilv;//倍率
+//
+
+
+//菜单调参
+enum menu_mode
+{   normal,
+    edit_int,
+    edit_float
+}menu_Mode=normal; //菜单模式
+int stepper_int[5]={1,5,10,20,50};                  //整型步进值
+float stepper_float[5]={0.01,0.1,1.0,10.0,100.0};   //浮点型步进值
+uint8 stepper_p_int=0;        //整型步进值指针
+uint8 stepper_p_float=0;      //浮点型步进值指针
+
+//防止空指针
+int default_int=0;
+float default_float=0.0;
+
+//加减封装函数
+void add_intparam(int* a)
+{
+    *a+=stepper_int[stepper_p_int];
+}
+void sub_intparam(int* a)
+{
+    *a-=stepper_int[stepper_p_int];
+}
+void add_floatparam(float* a)
+{
+    *a+=stepper_float[stepper_p_float];
+}
+void sub_floatparam(float* a)
+{
+    *a-=stepper_float[stepper_p_float];
+}
+//加减封装函数
+
+
+typedef struct 
+{
+    float p;
+    float i;
+    float d;
+    float maxout;
+
+}pidtest;
+
+pidtest pid_vtest=          {1.0,0.0,0.0,0.0};
+pidtest pid_steer_straight= {0.0,0.0,0.0,0.0};
+pidtest pid_steer_curve=    {0.0,0.0,0.0,0.0};
 typedef struct 
 {
     unsigned char priority;             //页面优先级
     char str[20];                       //名字
     uint16 x;                           //显示横坐标
     uint16 y;                           //显示纵坐标
-    float value_f;                      //浮点数据
-    int value_i;                        //整型数据
-    char int_float;                     //浮点整型标志位
-    void (*Operate_DOWN)();             //减函数
-    void (*Operate_UP)();               //增函数
+    float *value_f;                      //浮点数据
+    int *value_i;                        //整型数据
+    enum function{param_int,param_float,catlog,function,param_int_readonly,param_float_readonly} type; //类型:整型参数，浮点参数，目录， 
     void (*Operate_default)();          //默认执行函数
 
 }MENU;
+ 
 
-void nfunc(void){
-    ips200_show_string(0,280,"nofunc");
+MENU menu[]=
+{
+    {1,"pidparam",0,20,&default_float,&default_int,catlog,NULL},
+        {2,"velocity_pid",0,20,&default_float,&default_int,catlog,NULL},
+            {3,"p",      ips200_x_max-10 * 7, 20,  &pid_vtest.p, &default_int, param_float, NULL},
+            {3,"i",      ips200_x_max-10 * 7, 40,  &pid_vtest.i, &default_int, param_float, NULL},
+            {3,"d",      ips200_x_max-10 * 7, 60,  &pid_vtest.d, &default_int, param_float, NULL},
+            {3,"maxout", ips200_x_max-10 * 7, 80,  &pid_vtest.maxout, &default_int, param_float, NULL},
+        {2,"steer_pid",0,40,&default_float,&default_int,catlog,NULL},
+            {3,"p_straight", ips200_x_max-10 * 7, 20,  &pid_steer_straight.p, &default_int, param_float, NULL},
+            {3,"i_straight", ips200_x_max-10 * 7, 40,  &pid_steer_straight.i, &default_int, param_float, NULL},
+            {3,"d_straight", ips200_x_max-10 * 7, 60,  &pid_steer_straight.d, &default_int, param_float, NULL},
+            {3,"maxout_straight", ips200_x_max-10 * 7, 80,  &pid_steer_straight.maxout, &default_int, param_float, NULL},
+            {3,"p_curve", ips200_x_max-10 * 7, 100,  &pid_steer_curve.p, &default_int, param_float, NULL},
+            {3,"i_curve", ips200_x_max-10 * 7, 120,  &pid_steer_curve.i, &default_int, param_float, NULL},
+            {3,"d_curve", ips200_x_max-10 * 7, 140,  &pid_steer_curve.d, &default_int, param_float, NULL},
+            {3,"maxout_curve", ips200_x_max-10 * 7, 160,  &pid_steer_curve.maxout, &default_int, param_float, NULL},
 
-}
-void sho1w_line(void)//展示边线方便放置摄像头
-{
-    showline=true;
-}
-void close_line(void)
-{
-    showline=false;
-}
-void start_car(void)
-{
-    pidv_init();
-    spid_init();
-    start_flag=true;
-    stop_flag1=false;
-    Encoder_Init();
-}
-void threshold_up_add(void)
-{
-    threshold_up+=5;
-    if(threshold_up>600)
-    {
-        threshold_up=600;
-    }
-}
-void threshold_up_sub(void)
-{
-    threshold_up-=1;
-    if(threshold_up<0)
-    {
-        threshold_up=0;
-    }
-}
-void threshold_down_add(void)
-{
-    threshold_down+=5;
-    if(threshold_down>600)
-    {
-        threshold_down=600;
-    }
-}
-void threshold_down_sub(void)
-{
-    threshold_down-=1;
-    if(threshold_down<0)
-    {
-        threshold_down=0;
-    }
-}
-void addspeed()
-{
-    speed+=5;
-}
-void subspeed()
-{
-    speed-=10;
-}
-void addforwardsight()
-{
-    forwardsight+=1;
-}
-void subforwardsight()
-{
-    forwardsight-=1;
-    if(forwardsight<0)
-    {
-        forwardsight=0;
-    }
-}
-void addforwardsight2()
-{
-    forwardsight2+=1;
-}
-void subforwardsight2()
-{
-    forwardsight2-=1;
-    if(forwardsight2<0)
-    {
-        forwardsight2=0;
-    }
-}
-void addforwardsight3()
-{
-    forwardsight3+=1;
-}
-void subforwardsight3()
-{
-    forwardsight3-=1;
-    if(forwardsight3<0)
-    {
-        forwardsight3=0;
-    }
-}
-void car_init(void)
-{
-    threshold_down=130;
-    threshold_up=200;   
-    speed=130;
-    forwardsight=26;
-    forwardsight2=2;
-    forwardsight3=26;
-    beilv=1.0;
-}
 
-void add_beilv()
-{
-    beilv+=0.1;
-}
-void sub_beilv()
-{
-    if(beilv-0.1<0)
-    {
-        beilv=0;
-    }
-    else
-    {
-        beilv-=0.1;
-    }
-}
-MENU menu[]={
-    {1,"pid_param",0,20,0,0,0,nfunc,nfunc,nfunc},
-        {2,"p",      ips200_x_max-10 * 7, 20,  0,0,1,   pid_sub_p,           pid_add_p,          nfunc},  
-        {2,"i",      ips200_x_max-10 * 7, 40,  0,0,1,   pid_sub_i,           pid_add_i,          nfunc},  
-        {2,"d",      ips200_x_max-10 * 7, 60,  0,0,1,   pid_sub_d,           pid_add_d,          nfunc},  
-        {2,"reset",  ips200_x_max-10 * 7, 80, 0,0,1,    pid_vparam_init,      nfunc ,             nfunc},
-        {2,"encoder_right"  ,ips200_x_max-10*7,160,0,0,0,                nfunc,nfunc,nfunc},
-        {2,"encoder_left"   ,ips200_x_max-10*7,180,0,0,0,                nfunc,nfunc,nfunc},
-    {1,"pid_s_param",0,40,0,0,0,nfunc,nfunc,nfunc},
-        {2,"p_S",         ips200_x_max-10 * 7, 20,  0,0,1,  S_PIDsub_p,           S_PIDadd_p,          nfunc},  
-        {2,"i_S",         ips200_x_max-10 * 7, 40,  0,0,1,  S_PIDsub_i,           S_PIDadd_i,          nfunc},  
-        {2,"d_S",         ips200_x_max-10 * 7, 60,  0,0,1,  S_PIDsub_d,           S_PIDadd_d,          nfunc},  
-        {2,"reset_S",     ips200_x_max-10 * 7, 120, 0,0,1,  PID_init, nfunc , nfunc},
-        {2,"P_S1",     ips200_x_max-10 * 7, 140, 0,0,1,    S_PID1sub_p             ,  S_PID1add_p             ,  nfunc},
-        {2,"I_S1",     ips200_x_max-10 * 7, 160, 0,0,1,    S_PID1sub_i             ,  S_PID1add_i             ,  nfunc},
-        {2,"D_S1",     ips200_x_max-10 * 7, 180, 0,0,1,    S_PID1sub_d             ,  S_PID1add_d             ,  nfunc},
-        {2,"reset_S1",     ips200_x_max-10 * 7, 220, 0,0,1,     PID2_init, nfunc , nfunc},
-    {1,"CARstatus",0,60,0,0,0,nfunc,nfunc,nfunc},
-
-        {2,"threshold_up"  ,ips200_x_max-10*7,20,0,0,0,                          threshold_up_sub,threshold_up_add,nfunc},
-        {2,"threshold_down"   ,ips200_x_max-10*7,40,0,0,0,                       threshold_down_sub,threshold_down_add,nfunc},
-        {2,"beilv",         ips200_x_max-10*7,  60, 0,  0,1,sub_beilv,add_beilv,nfunc},
-        {2,"speed",          ips200_x_max-10 * 7 ,100 ,0,0,0, subspeed,           addspeed,          nfunc },
-        {2,"forwardsight",   ips200_x_max-10 * 7 ,120 ,0,0,0, subforwardsight,           addforwardsight,          nfunc },
-        {2,"forwardsight2",   ips200_x_max-10 * 7 ,140 ,0,0,0, subforwardsight2,           addforwardsight2,          nfunc },
-        {2,"forwardsight3",   ips200_x_max-10 * 7 ,160 ,0,0,0, subforwardsight3,           addforwardsight3,          nfunc },
-        {2,"reset_C",      ips200_x_max-10 * 7, 180, 0,0,1,  car_init, nfunc , nfunc},
-    {1,"setthecar",0,80,0,0,0,nfunc,nfunc,nfunc},
-        {2,"camera_open"  ,ips200_x_max-10*7,20,0,0,0,                         close_line,sho1w_line,nfunc},
-        {2,"element",0,40,0,0,0,nfunc,nfunc,nfunc},
-
-    {1,"START_THE_CAR",0,100,0,0,0,start_car,nfunc,nfunc},
+    // {1,"START_THE_CAR",0,100,0,0,0,start_car,nfunc,nfunc},
 
 
 
 
-    {1,"end",0,0,0,0,0}//不可删去
+    // {1,"end",0,0,0,0,0}//不可删去
+    {1,"end",0,100,&default_float,&default_int,catlog,NULL}
+
 };
 
 enum condition{
     NOACTION,
-    R,
-    L,
-    UP,
     DOWN,
+    UP,
     CONFIRM,
     BACK
 
@@ -233,138 +149,6 @@ void Menu_Screen_Init(void)
     ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为白底黑字
     ips200_init(IPS200_TYPE_SPI);    //设置通信模式为SPI通信
 }
-/*
-------------------------------------------------------------------------------------------------------------------
-函数简介     导入数据，如pid，编码器，
-参数说明     无
-返回参数     无
-使用示例     直接调用
-备注信息     已加入左右编码器的数据，图象处理的数据
--------------------------------------------------------------------------------------------------------------------
-*/
-void update(void)
-{
-    for(int i=0;strcmp(menu[i].str, "end") != 0;i++)
-        {
-            if(strcmp(menu[i].str, "encoder_right")==0)
-            {
-                menu[i].value_i=Encoder_GetInfo_R();
-            }
-            if(strcmp(menu[i].str, "encoder_left")==0)
-            {
-                menu[i].value_i=Encoder_GetInfo_L();
-            }
-            struct pid_v *pid_ptr = PID_vget_param();
-            struct steer_pid *pid_ptr1 = SPID_vget_param();
-            struct steer_pid *pid_ptr2 = SPID1_vget_param();
-
-            
-            
-            //PID控制
-            if(strcmp(menu[i].str, "p")==0)
-            {
-                menu[i].value_f=pid_ptr->p;
-            }
-            if(strcmp(menu[i].str, "i")==0)
-            {
-                menu[i].value_f=pid_ptr->i;
-            }
-            if(strcmp(menu[i].str, "d")==0)
-            {
-                menu[i].value_f=pid_ptr->d;
-            }           
-            if(strcmp(menu[i].str, "i_max")==0)
-            {
-                menu[i].value_f=pid_ptr->i_max;
-            }
-            if(strcmp(menu[i].str, "d_max")==0)
-            {
-                menu[i].value_f=pid_ptr->d_max;
-            }
-            if(strcmp(menu[i].str, "output")==0)
-            {
-                menu[i].value_f=pid_ptr->output_max;
-            }
-            if(strcmp(menu[i].str, "p_S")==0)
-            {
-                menu[i].value_f=pid_ptr1->p;
-            }
-            if(strcmp(menu[i].str, "i_S")==0)
-            {
-                menu[i].value_f=pid_ptr1->i;
-            }
-            if(strcmp(menu[i].str, "d_S")==0)
-            {
-                menu[i].value_f=pid_ptr1->d;
-            }           
-            if(strcmp(menu[i].str, "outputmax")==0)
-            {
-                menu[i].value_i=pid_ptr1->outputmax;
-
-            }
-            if(strcmp(menu[i].str, "outputmin")==0)
-            {
-                menu[i].value_i=-pid_ptr1->outputmax;
-
-            }
-            
-            if(strcmp(menu[i].str, "speed")==0)
-            {
-                menu[i].value_i=speed;
-
-            }
-           if(strcmp(menu[i].str, "forwardsight")==0)
-            {
-                menu[i].value_i=forwardsight;
-            }
-            if(strcmp(menu[i].str, "forwardsight2")==0)
-            {
-                menu[i].value_i=forwardsight2;
-            }
-            if(strcmp(menu[i].str, "forwardsight3")==0)
-            {
-                menu[i].value_i=forwardsight3;
-            }
-            if (strcmp(menu[i].str, "P_S1")==0)
-            {
-                menu[i].value_f=    pid_ptr2->p;
-            }
-            if (strcmp(menu[i].str, "I_S1")==0) 
-            {
-                menu[i].value_f=    pid_ptr2->i;
-            }
-            if (strcmp(menu[i].str, "D_S1")==0)
-            {
-                menu[i].value_f=    pid_ptr2->d;
-            }
-            if (strcmp(menu[i].str, "outputmax_S1")==0)
-            {
-                menu[i].value_i=    pid_ptr2->outputmax;
-            }
-            if( strcmp(menu[i].str, "threshold_up")==0)
-            {
-                menu[i].value_i=threshold_up;
-            }
-            if (strcmp(menu[i].str, "threshold_down")==0)
-            {
-                menu[i].value_i=threshold_down;
-            }
-            if(strcmp(menu[i].str,"beilv")==0)
-            {
-                menu[i].value_f=beilv;
-            }
-
-            
-
-            
-
-            
-            //图象处理
-
-            //图象显示
-        }
-}
-
 
 /*
 ------------------------------------------------------------------------------------------------------------------
@@ -377,12 +161,20 @@ void update(void)
 */
 void output(void) 
 {
-    update();
     int target_priority=current_state-1;
+    if(menu_Mode==edit_int)
+    {
+        ips200_show_string(60,0,"edit_i");
+        ips200_show_int(120,0,stepper_int[stepper_p_int],3);
+    }
+    if(menu_Mode==edit_float)
+    {
+        ips200_show_string(60,0,"edit_f");
+        ips200_show_float(120,0,stepper_float[stepper_p_float],3,3);
+    }
     if (target_priority==0)
     {
     ips200_show_string(0,0,"menu");//输出标题字符
-        int count=1;
         for(int i=0;strcmp(menu[i].str, "end") != 0;i++)
         {
             if(menu[i].priority==1)
@@ -396,8 +188,7 @@ void output(void)
                 {
                     ips200_show_string(20,menu[i].y,menu[i].str);
                 }
-                count++;
-            }
+             }
         }
     }
     else if(target_priority!=0)
@@ -411,26 +202,28 @@ void output(void)
                 {
                     ips200_show_string(0,menu[i].y,"->");//输出指向字符
                     ips200_show_string(20,menu[i].y,menu[i].str);
-                    if(menu[i].int_float)
+                    if(menu[i].type==param_float||menu[i].type==param_float_readonly)
                     {
-                       ips200_show_float(menu[i].x,menu[i].y,menu[i].value_f,3,3);
+                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,3,3);
                     }
-                    else
+                    else if(menu[i].type==param_int||menu[i].type==param_int_readonly)
                     {
-                       ips200_show_int(menu[i].x,menu[i].y,menu[i].value_i,5);
+                       ips200_show_int(menu[i].x,menu[i].y,*menu[i].value_i,5);
                     }
+
                 }
                 else
                 {
                     ips200_show_string(20,menu[i].y,menu[i].str);
-                    if(menu[i].int_float)
+                    if(menu[i].type==param_float||menu[i].type==param_float_readonly)
                     {
-                       ips200_show_float(menu[i].x,menu[i].y,menu[i].value_f,3,3);
+                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,3,3);
                     }
-                    else
+                    else if(menu[i].type==param_int||menu[i].type==param_int_readonly)
                     {
-                        ips200_show_int(menu[i].x,menu[i].y,menu[i].value_i,5);
+                       ips200_show_int(menu[i].x,menu[i].y,*menu[i].value_i,5);
                     }
+
                 }
             } 
         }
@@ -458,10 +251,20 @@ void Menu_control(void)
         }
         switch (condition)
         {
-            case NOACTION:
+        case NOACTION:
                 break;
             
-        case R:
+        case DOWN:
+            if(menu_Mode==edit_int)  //整型编辑模式下
+            {
+                *menu[p].value_i-=stepper_int[stepper_p_int];
+                break;
+            }
+            if(menu_Mode==edit_float)
+            { 
+                *menu[p].value_f-=stepper_float[stepper_p_float];
+                break;
+            }
             if (strcmp(menu[p].str, "end") != 0&&menu[p+1].priority>=menu[p].priority)
             {
                 int temp=menu[p].priority;
@@ -470,10 +273,20 @@ void Menu_control(void)
             }
             else
             {
-                ips200_show_string(0,180,"error");
+                ips200_show_string(0,180,"endorstart");
             }
             break;
-        case L:
+        case UP:
+            if(menu_Mode==edit_int)
+            {
+                *menu[p].value_i+=stepper_int[stepper_p_int];
+                break;
+            }
+            if(menu_Mode==edit_float)
+            { 
+                *menu[p].value_f+=stepper_float[stepper_p_float];
+                break;
+            }
             if(p!=0&&menu[p-1].priority>=menu[p].priority)
             {
                 int temp=menu[p].priority;
@@ -482,32 +295,60 @@ void Menu_control(void)
             }
             else
             {
-                ips200_show_string(0,180,"error");
+                ips200_show_string(0,180,"endorstart");
             }
              
 
             break;
-        case UP:
-            menu[p].Operate_UP();
-            break;
-        case DOWN:
-            menu[p].Operate_DOWN();
-            break;
         case CONFIRM:
-            if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0)
+            if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0&&menu[p].type==catlog)//子目录情况
             {
                 current_state++;
                 p_nearby=p;
                 p++;
-            }
-            else
+                break;
+             }
+            if(menu_Mode==edit_int)
             {
-                ips200_show_string(0,180,"error");
+                stepper_p_int=(stepper_p_int+1)%5;
+                break;
+
+            }
+            if(menu_Mode==edit_float)
+            {
+                stepper_p_float=(stepper_p_float+1)%5;
+                break;
+            }
+            if(menu[p].type==param_float)             //参数情况                      
+            {
+                menu_Mode=edit_float;
+                break;
+                //进入浮点数编辑模式
+
+            }
+            if(menu[p].type==param_int)
+            {
+                menu_Mode=edit_int;
+                break;
+                //进入整型编辑模式
+            }
+            if(menu[p].type==function)
+            {
+                menu[p].Operate_default();
+            }
+            if(menu[p].type==param_float_readonly||menu[p].type==param_int_readonly)
+            {
+                ips200_show_string(0,180,"error_readonly");
             }
          
 
             break;
         case BACK:
+        if(menu_Mode!=normal) //编辑模式下按返回键退出编辑模式
+        {
+            menu_Mode=normal;
+            break;
+        }
         if(menu[p].priority!=1)
         {
             save_flag=true;

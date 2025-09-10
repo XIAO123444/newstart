@@ -38,7 +38,6 @@ void all_init(void)
     clock_init(SYSTEM_CLOCK_120M);
     debug_init();
     Menu_Screen_Init();             
-    system_delay_ms(300);
     flash_init();    
     Key_init();                     
     BUZZ_init();
@@ -120,48 +119,55 @@ void flash_save(void)
     }
 }
 
-int main(void)
+// int main(void)
+// {
+//     all_init();
+//     stop_flag1 = false;
+//     while(1)
+//     { 
+//         if(start_flag == false)
+//         {
+//             Key_Scan();             // °´¼üÉ¨Ãè
+//             Menu_control();         // ²Ëµ¥¿ØÖÆ
+//             flash_save();           // flash´æ´¢
+//         }
+//         BUZZ_cycle();           // ?    äÃ?Æ÷Ñ­»·
+//         if(mt9v03x_finish_flag)
+//         { 
+//             image_threshold = my_adapt_threshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // Í¼Ïñ»ñÈ¡
+//             set_b_imagine(image_threshold);        // ¶þÖµ»¯
+//             image_boundary_process2();              // Í¼Ïñ±ß½ç´¦Àí
+//             element_check();// ÔªËØ¼ì²é
+//             Velocity_Control();       // ËÙ¶È¿ØÖÆ    
+//             if(current_state == 1)
+//             {
+//                 if(start_flag==false)
+//                 {
+//                     ips200_show_gray_image(0,120,(const uint8 *)dis_image,MT9V03X_W, MT9V03X_H,MT9V03X_W, MT9V03X_H,0);       //
+//                     show_line(); 
+//                 }          
+//             }                                                                   
+//             if(encodercounter1 > 70000)
+//             {	
+//                 banmaxian_check(); // °ßÂíÏß±£»¤
+//                 black_protect_check();  // ºÚÉ«±£»¤
+//             }
+//             if(stop_flag1)
+//             {
+//                 pit_disable(TIM6_PIT);  // µç»úÍ£×ª  
+//                 motor_run(0, 0);
+//             }
+//             mt9v03x_finish_flag = 0;
+//         } 
+//     }
+// }
+
+int main()
 {
     all_init();
-    stop_flag1 = false;
     while(1)
-    { 
-        if(start_flag == false)
-        {
-            Key_Scan();             // °´¼üÉ¨Ãè
-            Menu_control();         // ²Ëµ¥¿ØÖÆ
-            flash_save();           // flash´æ´¢
-        }
-
-        BUZZ_cycle();           // ·    äÃùÆ÷Ñ­»·
-        if(mt9v03x_finish_flag)
-        { 
-            image_threshold = my_adapt_threshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // Í¼Ïñ»ñÈ¡
-            set_b_imagine(image_threshold);        // ¶þÖµ»¯
-            image_boundary_process2();              // Í¼Ïñ±ß½ç´¦Àí
-            element_check();// ÔªËØ¼ì²é
-            Velocity_Control();       // ËÙ¶È¿ØÖÆ    
-            if(current_state == 1)
-            {
-                if(start_flag==false)
-                {
-                    ips200_show_gray_image(0,120,(const uint8 *)dis_image,MT9V03X_W, MT9V03X_H,MT9V03X_W, MT9V03X_H,0);       //
-                    show_line(); 
-                } 
-                 
-            }                                                                   
-            if(encodercounter1 > 70000)
-            {	
-                banmaxian_check(); // °ßÂíÏß±£»¤
-                black_protect_check();  // ºÚÉ«±£»¤
-
-            }
-            if(stop_flag1)
-            {
-                pit_disable(TIM6_PIT);  // µç»úÍ£×ª  
-                motor_run(0, 0);
-            }
-            mt9v03x_finish_flag = 0;
-        } 
+    {
+        Key_Scan();             // °´¼üÉ¨Ãè
+        Menu_control();         // ²Ëµ¥¿ØÖÆ
     }
 }

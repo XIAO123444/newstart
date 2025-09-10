@@ -10,16 +10,13 @@ uint32 key1_count;
 uint32 key2_count;
 uint32 key3_count;
 uint32 key4_count;
-uint32 key5_count;
-uint32 key6_count;
+
 uint8  key1_flag;
 uint8  key2_flag;
 uint8  key3_flag;
 uint8  key4_flag;
-uint8  key5_flag;
-uint8  key6_flag;
+
 uint32 count_time=100;
-int status=0;
 int alltime_count=0;
 void Key_init(void)
 {
@@ -32,34 +29,24 @@ void Key_init(void)
 }
 void Key_Scan(void)
 {
-    if(!gpio_get_level(KEY1)&&gpio_get_level(KEY2))
+    if(!gpio_get_level(KEY1))
 	{
 		key1_flag=1;
 		key1_count=0;
 	}
-	if(!gpio_get_level(KEY2)&&gpio_get_level(KEY1))
+	if(!gpio_get_level(KEY2))
 	{
 		key2_flag=1;
 		key2_count=0;
 	}
-	if(!gpio_get_level(KEY3)&&gpio_get_level(KEY4))
+	if(!gpio_get_level(KEY3))
 	{
 		key3_flag=1;
 		key3_count=0;
 	}
-	if(!gpio_get_level(KEY4)&&gpio_get_level(KEY3))
+	if(!gpio_get_level(KEY4))
 	{
 		key4_flag=1;
 		key4_count=0;
-	}
-    if(!gpio_get_level(KEY1)&&!gpio_get_level(KEY2))
-	{
-		key5_flag=1;
-		key5_count=0;
-	}
-    if(!gpio_get_level(KEY4)&&!gpio_get_level(KEY3))
-	{
-		key6_flag=1;
-		key6_count=0;
 	}
 }
