@@ -24,9 +24,9 @@ int16 threshold_up;  //大津法阈值上限
 int16 threshold_down; //大津法阈值下限
 
 int32 speed;
-int32 forwardsight;
-int32 forwardsight2;//直到判断前瞻
-int32 forwardsight3;//弯道前瞻
+int16 forwardsight;
+int16 forwardsight2;//直到判断前瞻
+int16 forwardsight3;//弯道前瞻
 
 float beilv;//倍率
 //
@@ -40,7 +40,7 @@ void show_image(void)
 enum menu_mode
 {   normal,
     edit_int,
-    edit_float
+    edit_float,
 }menu_Mode=normal; //菜单模式
 int stepper_int[5]={1,5,10,20,50};                  //整型步进值
 float stepper_float[5]={0.01,0.1,1.0,10.0,100.0};   //浮点型步进值
@@ -48,15 +48,15 @@ uint8 stepper_p_int=0;        //整型步进值指针
 uint8 stepper_p_float=0;      //浮点型步进值指针
 
 //防止空指针
-int default_int=0;
+int16 default_int=0;
 float default_float=0.0;
 
 //加减封装函数
-void add_intparam(int* a)
+void add_intparam(int16* a)
 {
     *a+=stepper_int[stepper_p_int];
 }
-void sub_intparam(int* a)
+void sub_intparam(int16* a)
 {
     *a-=stepper_int[stepper_p_int];
 }
@@ -82,21 +82,21 @@ typedef struct
 //车驶过元素记录结构体
 typedef struct  
 {
-    uint8 straight;     //直道
-    uint8 crossm;    //正入十字路口
-    uint8 crossl;   //左斜入十字
-    uint8 crossr;   //右斜入十字
-    uint8 islandl;       //环岛左
-    uint8 islandr;      //环岛右
-    uint8 scurve;      //S弯
-    uint8 curve;        //弯道
-    uint8 speedup;     //加速带
-    uint8 ramp;         //坡道
-    uint8 obstacle;     //障碍物
-    uint8 blackprotect; //黑线保护
-    uint8 stall;        //堵转
-    uint8 zebra;    //斑马线
-}roadelement;
+    int16 straight;     //直道
+    int16 crossm;    //正入十字路口
+    int16 crossl;   //左斜入十字
+    int16 crossr;   //右斜入十字
+    int16 islandl;       //环岛左
+    int16 islandr;      //环岛右
+    int16 scurve;      //S弯
+    int16 curve;        //弯道
+    int16 speedup;     //加速带
+    int16 ramp;         //坡道
+    int16 obstacle;     //障碍物
+    int16 blackprotect; //黑线保护
+    int16 stall;        //堵转
+    int16 zebra;    //斑马线
+}roadelementypedef;
 //注意注意注意
 //斜入十字类型切换到正入十字不能算作两个元素。
 
@@ -121,16 +121,20 @@ enum roadelement_type
 //菜单变量
 
 //pid
-pidtest pid_vtest=          {1.0,0.0,0.0,0.0};
-pidtest pid_steer_straight= {0.0,0.0,0.0,0.0};
-pidtest pid_steer_curve=    {0.0,0.0,0.0,0.0};
-roadelement roadelement_record1={0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-roadelement roadelement_record2={0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-roadelement roadelement_record3={0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-roadelement roadelement_record4={0,0,0,0,0, 0,0,0,0,0,0,0,0,0};
+pidtest pid_vtest=          {1.0,0.0,0.0,0.0};          //速度环测试
+pidtest pid_steer_straight= {0.0,0.0,0.0,0.0};          //直道转向环测试
+pidtest pid_steer_curve=    {0.0,0.0,0.0,0.0};          //弯道转向环测试
+
+roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
+
+roadelementypedef roadelement_record1={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
+roadelementypedef roadelement_record2={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
+roadelementypedef roadelement_record3={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
+roadelementypedef roadelement_record4={0,0,0,0,0, 0,0,0,0,0,0,0,0,0};   //记录赛道元素
 //大津法
-int16 threshold_down=200;
-int16 threshold_up=100;
+int16 threshold_down=200;       //大津法阈值上限
+int16 threshold_up=100;         //大津法阈值下限
+int16 OTSU_calperxpage=5;       //每x张图片计算一次大津法
 //
 
 //菜单结构体
@@ -141,7 +145,7 @@ typedef struct
     uint16 x;                           //显示横坐标
     uint16 y;                           //显示纵坐标
     float *value_f;                      //浮点数据
-    int *value_i;                        //整型数据
+    int16 *value_i;                        //整型数据
     enum function
     {
         param_int,
@@ -188,12 +192,23 @@ MENU menu[]=
                 {4,"r_down_p",100,40,&default_float,&default_int,param_int_readonly,NULL},
                 {4,"l_up_p",100,60,&default_float,&default_int,param_int_readonly,NULL},
                 {4,"l_down_p",100,80,&default_float,&default_int,param_int_readonly,NULL},
-            {3,"round",0,40,&default_float,&default_int,catlog,NULL},
+            {3,"round",0,40,&default_float,&default_int,catlog,NULL},           //圆环大类
 
         {2,"forwardsight",0,80,&default_float,&forwardsight,catlog,NULL},
             {3,"forwardsight2",100,20,&default_float,&forwardsight2,param_int,NULL},
             {3,"forwardsight3",100,40,&default_float,&forwardsight3,param_int,NULL},
-    {1,"element_open",0,60,&default_float,&default_int,catlog,NULL},//赛道元素记录
+    {1,"element_onoff",0,60,&default_float,&default_int,catlog,NULL},//赛道元素功能开启关闭
+        {2,"crossl",100,20,&default_float,&roadelement_onoff.crossl,on_off,NULL},
+        {2,"crossr",100,40,&default_float,&roadelement_onoff.crossr,on_off,NULL},
+        {2,"crossm",100,60,&default_float,&roadelement_onoff.crossm,on_off,NULL},
+        {2,"islandl",100,80,&default_float,&roadelement_onoff.islandl,on_off,NULL},
+        {2,"islandr",100,100,&default_float,&roadelement_onoff.islandr,on_off,NULL},
+        {2,"scurve",100,120,&default_float,&roadelement_onoff.scurve,on_off,NULL},
+        {2,"speedup",100,140,&default_float,&roadelement_onoff.speedup,on_off,NULL},
+        {2,"ramp",100,160,&default_float,&roadelement_onoff.ramp,on_off,NULL},
+        {2,"obstacle",100,180,&default_float,&roadelement_onoff.obstacle,on_off,NULL},
+
+
 
     {1,"element_gothrough",0,80,&default_float,&default_int,catlog,NULL},//赛道元素记录
 
@@ -254,6 +269,7 @@ void output(void)
         ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为棕色底黑字
 
     }
+
     if (target_priority==0)//顶级菜单
     {
     ips200_set_color(RGB565_GREEN, RGB565_BLACK);    //设置为绿色黑底
@@ -277,6 +293,7 @@ void output(void)
                         ips200_show_string(20,menu[i].y,menu[i].str);
                         ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为棕色底黑字
                     }
+
 
                 }
                 else
@@ -308,8 +325,17 @@ void output(void)
                         ips200_set_color(RGB565_RED, RGB565_BLACK);    //设置为红色黑底
                         ips200_show_string(0,menu[i].y,"->");//输出指向字符
                         ips200_show_string(20,menu[i].y,menu[i].str);
-                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为棕色底黑字
+                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为黑底白字
                     }
+                    // else if( menu_Mode==on_off)
+                    // {
+                    //     ips200_set_color(RGB565_BLUE, RGB565_BLACK);    //设置为红色黑底
+                    //     ips200_show_string(0,menu[i].y,"->");//输出指向字符
+                    //     ips200_show_string(20,menu[i].y,menu[i].str);
+                    //     ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为黑底白字
+
+                    // } 
+                    
                     if(menu[i].type==param_float||menu[i].type==param_float_readonly)
                     {
                        ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,3,3);
@@ -317,6 +343,21 @@ void output(void)
                     else if(menu[i].type==param_int||menu[i].type==param_int_readonly)
                     {
                        ips200_show_int(menu[i].x,menu[i].y,*menu[i].value_i,5);
+                    }
+                    else if(menu[i].type==on_off)
+                    {
+                        ips200_set_color(RGB565_BROWN, RGB565_BLACK);    //设置为红色黑底
+                        if (*menu[i].value_i)
+                        {
+                            ips200_show_string(menu[i].x,menu[i].y,"ON");
+
+                        }
+                        else
+                        {
+                            ips200_show_string(menu[i].x,menu[i].y,"OFF");
+                        }
+                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为黑底白字
+
                     }
 
                 }
@@ -330,6 +371,19 @@ void output(void)
                     else if(menu[i].type==param_int||menu[i].type==param_int_readonly)
                     {
                        ips200_show_int(menu[i].x,menu[i].y,*menu[i].value_i,5);
+                    }
+                    else if(menu[i].type==on_off)
+                    {
+                        if (*menu[i].value_i)
+                        {
+                            ips200_show_string(menu[i].x,menu[i].y,"ON");
+
+                        }
+                        else
+                        {
+                            ips200_show_string(menu[i].x,menu[i].y,"OFF");
+                        }
+                        
                     }
 
                 }
@@ -457,6 +511,10 @@ void Menu_control(void)
                 menu_Mode=edit_int;
                 break;
                 //进入整型编辑模式
+            }
+            if(menu[p].type==on_off)
+            {
+                *menu[p].value_i=1-*menu[p].value_i;
             }
             if(menu[p].type==function)
             {

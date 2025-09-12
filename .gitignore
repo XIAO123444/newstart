@@ -23,7 +23,7 @@ hal*
 diskio.*
 ff*
 mm32f327*
-zf*
+
 system*
 arm*
 cmsis*
