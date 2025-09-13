@@ -56,6 +56,11 @@ typedef enum
     RGB565_ORANGE   = (0xFC60),
     RGB565_39C5BB   = (0x3616),
     RGB565_66CCFF   = (0x665F),
+    RGB565_SoftIvory = (0xFFDE),
+    RGB565_DustyBlue = (0x6356),
+    RGB565_CLAYRED =  (0xBC40) 
+
+
 }rgb565_color_enum;
 
 extern const uint8      ascii_font_8x16[][16];

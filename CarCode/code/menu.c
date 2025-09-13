@@ -17,31 +17,20 @@ extern bool save_flag;      //保存标志位
 extern bool start_flag;     //发车标志位
 extern bool stop_flag1;     //停车标志位
 
-bool show_flag=false;     //显示标志位
+bool show_flag=false;     //显示标志位,全局变量
 
-bool showline;
-int16 threshold_up;  //大津法阈值上限
-int16 threshold_down; //大津法阈值下限
 
-int32 speed;
-int16 forwardsight;
-int16 forwardsight2;//直到判断前瞻
-int16 forwardsight3;//弯道前瞻
 
 float beilv;//倍率
 //
-//菜单函数
-void show_image(void)
-{
-    show_flag=!show_flag; 
-}
+
 
 //菜单调参
-enum menu_mode
+enum menu_mode//菜单模式
 {   normal,
     edit_int,
     edit_float,
-}menu_Mode=normal; //菜单模式
+}menu_Mode=normal; 
 int stepper_int[5]={1,5,10,20,50};                  //整型步进值
 float stepper_float[5]={0.01,0.1,1.0,10.0,100.0};   //浮点型步进值
 uint8 stepper_p_int=0;        //整型步进值指针
@@ -52,6 +41,11 @@ int16 default_int=0;
 float default_float=0.0;
 
 //加减封装函数
+//菜单函数
+void show_image(void)
+{
+    show_flag=!show_flag; 
+}
 void add_intparam(int16* a)
 {
     *a+=stepper_int[stepper_p_int];
@@ -78,6 +72,14 @@ typedef struct
     float d;
     float maxout;
 }pidtest;
+//结构体变量置0初始化
+void pid_init(pidtest* pid)
+{
+    pid->p=0.0;
+    pid->i=0.0;
+    pid->d=0.0;
+    pid->maxout=0.0;
+}
 
 //车驶过元素记录结构体
 typedef struct  
@@ -118,8 +120,13 @@ enum roadelement_type
     zebra
 }roadelementType;//赛道元素类型
 
-//菜单变量
+//菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
 
+
+int32 speed;
+int16 forwardsight;
+int16 forwardsight2;//直到判断前瞻
+int16 forwardsight3;//弯道前瞻
 //pid
 pidtest pid_vtest=          {1.0,0.0,0.0,0.0};          //速度环测试
 pidtest pid_steer_straight= {0.0,0.0,0.0,0.0};          //直道转向环测试
@@ -131,11 +138,14 @@ roadelementypedef roadelement_record1={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛
 roadelementypedef roadelement_record2={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
 roadelementypedef roadelement_record3={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
 roadelementypedef roadelement_record4={0,0,0,0,0, 0,0,0,0,0,0,0,0,0};   //记录赛道元素
+
+
 //大津法
-int16 threshold_down=200;       //大津法阈值上限
-int16 threshold_up=100;         //大津法阈值下限
+int16 threshold_down=100;       //大津法阈值上限
+int16 threshold_up=200;         //大津法阈值下限  
 int16 OTSU_calperxpage=5;       //每x张图片计算一次大津法
 //
+//菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
 
 //菜单结构体
 typedef struct 
@@ -181,11 +191,16 @@ MENU menu[]=
             {3,"i_c", ips200_x_max-10 * 7, 120,  &pid_steer_curve.i, &default_int, param_float, NULL},
             {3,"d_c", ips200_x_max-10 * 7, 140,  &pid_steer_curve.d, &default_int, param_float, NULL},
             {3,"maxo", ips200_x_max-10 * 7, 160,  &pid_steer_curve.maxout, &default_int, param_float, NULL},
+        {2,"vpid_set0",0,60,&default_float,&default_int,catlog,NULL},
+        {2,"spid_set0",0,60,&default_float,&default_int,catlog,NULL},
+
+
     {1,"image",0,40,&default_float,&default_int,catlog,NULL},
         {2,"show_image",0,20,&default_float,&default_int,function,NULL},
         {2,"OTSU_threshold",0,40,&default_float,&default_int,catlog,NULL},
-            {3,"OTSU_up",100,20,&default_float,&default_int    ,param_int,NULL},
+            {3,"OTSU_up",100,20,&default_float,&default_int    ,param_int,NULL},  
             {3,"OTSU_DOWN",100,40,&default_float,&default_int,param_int,NULL},
+
         {2,"image_point",0,60,&default_float,&default_int,catlog,NULL},
             {3,"crossroadall",0,20,&default_float,&default_int,catlog,NULL},       //十字大类
                 {4,"r_up_p",100,20,&default_float,&default_int,param_int_readonly,NULL},
@@ -193,7 +208,6 @@ MENU menu[]=
                 {4,"l_up_p",100,60,&default_float,&default_int,param_int_readonly,NULL},
                 {4,"l_down_p",100,80,&default_float,&default_int,param_int_readonly,NULL},
             {3,"round",0,40,&default_float,&default_int,catlog,NULL},           //圆环大类
-
         {2,"forwardsight",0,80,&default_float,&forwardsight,catlog,NULL},
             {3,"forwardsight2",100,20,&default_float,&forwardsight2,param_int,NULL},
             {3,"forwardsight3",100,40,&default_float,&forwardsight3,param_int,NULL},
@@ -207,14 +221,11 @@ MENU menu[]=
         {2,"speedup",100,140,&default_float,&roadelement_onoff.speedup,on_off,NULL},
         {2,"ramp",100,160,&default_float,&roadelement_onoff.ramp,on_off,NULL},
         {2,"obstacle",100,180,&default_float,&roadelement_onoff.obstacle,on_off,NULL},
-
-
-
     {1,"element_gothrough",0,80,&default_float,&default_int,catlog,NULL},//赛道元素记录
 
     {1,"flash",0,100,&default_float,&default_int,catlog,NULL},
     {1,"setting",0,120,&default_float,&default_int,catlog,NULL},
-    {1,"end",0,140,&default_float,&default_int,catlog,NULL}//不可删去
+    {1,"end",0,0,&default_float,&default_int,catlog,NULL}//不可删去
 
 };
 
@@ -272,7 +283,7 @@ void output(void)
 
     if (target_priority==0)//顶级菜单
     {
-    ips200_set_color(RGB565_GREEN, RGB565_BLACK);    //设置为绿色黑底
+    ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //设置为蓝色黑底
     ips200_show_string(0,0,"menu");//输出标题字符
     ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为白色黑底
         for(int i=0;strcmp(menu[i].str, "end") != 0;i++)
@@ -288,7 +299,7 @@ void output(void)
                     }
                     else if(menu_Mode==edit_int||menu_Mode==edit_float)
                     {
-                        ips200_set_color(RGB565_RED, RGB565_BLACK);    //设置为红色黑底
+                        ips200_set_color(RGB565_MAGENTA, RGB565_BLACK);    //设置为红色黑底
                         ips200_show_string(0,menu[i].y,"->");//输出指向字符
                         ips200_show_string(20,menu[i].y,menu[i].str);
                         ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为棕色底黑字
@@ -305,7 +316,7 @@ void output(void)
     }
     else if(target_priority!=0)//非顶级菜单
     {
-    ips200_set_color(RGB565_GREEN, RGB565_BLACK);    //设置为绿色黑底
+    ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //设置为绿色黑底
     ips200_show_string(0,0,menu[p_nearby].str);//输出上级字符
     ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为绿色黑底
 
@@ -322,7 +333,7 @@ void output(void)
                     }
                     else if(menu_Mode==edit_int||menu_Mode==edit_float)
                     {
-                        ips200_set_color(RGB565_RED, RGB565_BLACK);    //设置为红色黑底
+                        ips200_set_color(RGB565_MAGENTA, RGB565_BLACK);    //设置为红色黑底
                         ips200_show_string(0,menu[i].y,"->");//输出指向字符
                         ips200_show_string(20,menu[i].y,menu[i].str);
                         ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为黑底白字
@@ -346,7 +357,7 @@ void output(void)
                     }
                     else if(menu[i].type==on_off)
                     {
-                        ips200_set_color(RGB565_BROWN, RGB565_BLACK);    //设置为红色黑底
+                        ips200_set_color(RGB565_ORANGE, RGB565_BLACK);    //设置为红色黑底
                         if (*menu[i].value_i)
                         {
                             ips200_show_string(menu[i].x,menu[i].y,"ON");
