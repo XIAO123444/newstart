@@ -114,7 +114,7 @@ int main()
     {
         Key_Scan();             // 按键扫描
         Menu_control();         // 菜单控制
-         if(mt9v03x_finish_flag)
+        if(mt9v03x_finish_flag)
         { 
             image_threshold = my_adapt_threshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // 图像获取
             set_b_imagine(image_threshold);        // 二值化
@@ -125,7 +125,7 @@ int main()
             {
                 if(stop&&show_flag)
                 {
-                    ips200_show_gray_image(0,120,(const uint8 *)dis_image,MT9V03X_W, MT9V03X_H,MT9V03X_W, MT9V03X_H,0);       //
+                    ips200_show_gray_image(0,140,(const uint8 *)dis_image,MT9V03X_W, MT9V03X_H,MT9V03X_W, MT9V03X_H,0);       //
                     show_line(); 
                 }          
             }                                                                   

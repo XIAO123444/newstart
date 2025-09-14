@@ -315,18 +315,18 @@ MENU menu[] =
 
         {2, "record_clear",   0,                  60, &default_float, &default_int, function,     NULL},        //ÇåÁãº¯Êý´ýÌí¼Ó
     
-    {1, "flash",              0,                 120, &default_float, &default_int, catlog,      NULL},
-        {2, "code_Setup",    100,                 20, &default_float, &default_int, catlog,      NULL},
+    {1, "flash",              0,                 120, &default_float, &default_int, catlog,       NULL},
+        {2, "code_Setup",    100,                 20, &default_float, &default_int, catlog,       NULL},
             {3, "setup1",    100,                 20, &default_float, &default_int, function,     NULL},
             {3, "setup2",    100,                 40, &default_float, &default_int, function,     NULL},
             {3, "setup3",    100,                 60, &default_float, &default_int, function,     NULL},
             {3, "setup4",    100,                 80, &default_float, &default_int, function,     NULL},
-        {2, "flash_Setup",   100,                 40, &default_float, &default_int, catlog,      NULL},
+        {2, "flash_Setup",   100,                 40, &default_float, &default_int, catlog,       NULL},
             {3, "setup1",    100,                 20, &default_float, &default_int, function,     NULL},
             {3, "setup2",    100,                 40, &default_float, &default_int, function,     NULL},
             {3, "setup3",    100,                 60, &default_float, &default_int, function,     NULL},
             {3, "setup4",    100,                 80, &default_float, &default_int, function,     NULL},
-        {2, "reset",        100,                 60, &default_float, &default_int, function,     NULL},
+        {2, "reset",        100,                 60, &default_float, &default_int, function,      NULL},
     
     {1, "setting",            0,                 140, &default_float, &default_int, catlog,      NULL},
     {1, "end",                0,                   0, &default_float, &default_int, catlog,      NULL}

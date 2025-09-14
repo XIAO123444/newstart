@@ -461,31 +461,31 @@ void element_check(void) {
 
     
    
-    ips200_show_int(200,260,search_stop1,3); // 显示搜索终止点1
-    ips200_show_int(50,280,search_stop,3);      // 显示截止行
-    ips200_show_string(80,220,"l_con");
-    ips200_show_int(120,220,continuity_pointLeft[0],3); // 显示左不连续点
-    ips200_show_string(150,220,"r_con");
-    ips200_show_int(200,220,continuity_pointRight[0],3); // 显示右不连续点
-    ips200_show_string(0,220,"r_bdd");         //右不单调点
-    ips200_show_int(50,220,right_budandiao,3); // 显示右不单调点
-    ips200_show_string(0,220,"r_bdd");         //右不单调点
-    ips200_show_string(80,240,"l_bdd");         //截止行
-    ips200_show_int(120,240,left_budandiao,3); // 显示v点
-    ips200_show_string(0,280,"s_stop");         //截止行
-    ips200_show_string(80,280,"l_up");          //左上拐点
-    ips200_show_int(120,280,Left_Up_Find,3);    
-    ips200_show_string(70,300,"r_up");          //右上拐点
-    ips200_show_int(120,300,Right_Up_Find,3);
-    ips200_show_string(160,260,"sto1");       //搜索终止点1
-    ips200_show_string(150,280,"L_down");       //左下拐点
-    ips200_show_int(200,280,Left_Down_Find,3);
-    ips200_show_string(150,300,"R_down");       //右下拐点
-    ips200_show_int(200,300,Right_Down_Find,3);
-    ips200_show_string(0,260,"L_lost");       //左丢线点
-    ips200_show_int(50,260,leftlostpoint[0],3); // 显示左丢线点
-    ips200_show_string(80,260,"R_lost");       //右丢
-    ips200_show_int(130,260,rightlostpoint[0],3); // 显示右丢线点
+    // ips200_show_int(200,260,search_stop1,3); // 显示搜索终止点1
+    // ips200_show_int(50,280,search_stop,3);      // 显示截止行
+    // ips200_show_string(80,220,"l_con");
+    // ips200_show_int(120,220,continuity_pointLeft[0],3); // 显示左不连续点
+    // ips200_show_string(150,220,"r_con");
+    // ips200_show_int(200,220,continuity_pointRight[0],3); // 显示右不连续点
+    // ips200_show_string(0,220,"r_bdd");         //右不单调点
+    // ips200_show_int(50,220,right_budandiao,3); // 显示右不单调点
+    // ips200_show_string(0,220,"r_bdd");         //右不单调点
+    // ips200_show_string(80,240,"l_bdd");         //截止行
+    // ips200_show_int(120,240,left_budandiao,3); // 显示v点
+    // ips200_show_string(0,280,"s_stop");         //截止行
+    // ips200_show_string(80,280,"l_up");          //左上拐点
+    // ips200_show_int(120,280,Left_Up_Find,3);    
+    // ips200_show_string(70,300,"r_up");          //右上拐点
+    // ips200_show_int(120,300,Right_Up_Find,3);
+    // ips200_show_string(160,260,"sto1");       //搜索终止点1
+    // ips200_show_string(150,280,"L_down");       //左下拐点
+    // ips200_show_int(200,280,Left_Down_Find,3);
+    // ips200_show_string(150,300,"R_down");       //右下拐点
+    // ips200_show_int(200,300,Right_Down_Find,3);
+    // ips200_show_string(0,260,"L_lost");       //左丢线点
+    // ips200_show_int(50,260,leftlostpoint[0],3); // 显示左丢线点
+    // ips200_show_string(80,260,"R_lost");       //右丢
+    // ips200_show_int(130,260,rightlostpoint[0],3); // 显示右丢线点
 
     
 }
