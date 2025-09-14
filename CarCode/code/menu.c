@@ -2,26 +2,28 @@
 #include "encoder.h"
 #include "key.h"
 #include "steer_pid.h"
+#include "balance.h"
+#include "PID.h"
 
 bool showline;
+
 
 #define ips200_x_max 240
 #define ips200_y_max 320
 int current_state=1;
 int p=0;//记录当前指针
 int p_nearby=0;//记录所属的指针
-uint8 input;
+uint8 input;    //菜单按键输入
 extern int status;
 extern bool save_flag;      //保存标志位
 extern bool start_flag;     //发车标志位
-extern bool stop_flag1;     //停车标志位
+
+
+extern bool stop;     //停车标志位
 
 bool show_flag=false;     //显示标志位,全局变量
 
 
-
-float beilv;//倍率
-//
 
 
 //菜单调参
@@ -63,18 +65,9 @@ void sub_floatparam(float* a)
     *a-=stepper_float[stepper_p_float];
 }
 //加减封装函数（这个不要删了）↑↑↑↑↑↑↑↑↑↑↑
-void show_image(void)
-{
-    show_flag=!show_flag; 
-}
+
 //pid结构体，可以
-typedef struct 
-{
-    float p;
-    float i;
-    float d;
-    float maxout;
-}pidtest;
+
 
 
 //结构体        元素个数or元素启用与否
@@ -97,24 +90,7 @@ typedef struct
 }struct_roadelementypedef;
 //注意注意注意      斜入十字类型切换到正入十字不能算作两个元素。
 
-//枚举          经过的元素
-typedef enum
-{ straight,         //直道
-    crossm,         //正入十字路口
-    crossl,         //左斜入十字
-    crossr,         //右斜入十字
-    islandl,            //环岛左
-    islandr,            //环岛右
-    scurve,             //S弯
-    curve,              //弯道
-    speedup,            //加速带            
-    ramp,               //坡道
-    obstacle,           //障碍物
-    blackprotect,       //黑线保护
-    stall,              //堵转              
-    zebra               //斑马线
-    }  
-enum_roadelementtypedef;
+
 //W 240
 
 //H 320
@@ -191,14 +167,16 @@ int16 forwardsight;
 int16 forwardsight2;//直到判断前瞻
 int16 forwardsight3;//弯道前瞻
 //pid
-pidtest pid_vtest=          {1.0,0.0,0.0,0.0};          //速度环测试
-pidtest pid_steer_straight= {0.0,0.0,0.0,0.0};          //直道转向环测试
-pidtest pid_steer_curve=    {0.0,0.0,0.0,0.0};          //弯道转向环测试
-
+extern PID_t PID_gyro;          //角速度环
+extern PID_t PID_angle;         //角度环
+extern PID_t PID_speed;         //速度环  
+extern PID_t PID_steer;         //舵机环
 struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
 
 struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
 
+
+bool startbool=false; //开始标志
 
 
 //大津法
@@ -210,9 +188,12 @@ int16 OTSU_calperxpage=5;       //每x张图片计算一次大津法
 
 
 //菜单函数菜单函数菜单函数菜单函数菜单函数菜单函数菜单函数
+void image_show()   {show_flag=true;}
+void start_the_car(){stop=false;}//开始
+
+
 void pid_vtestset0(){ips200_show_string(0,180,"set 0 already");} 
 void pid_stestset0(){ips200_show_string(0,180,"set 0 already");}     
-void image_show()   {show_flag=true;}
 
 //闪存存储
 void flashcodesetup1(){}
@@ -225,13 +206,7 @@ void codesetup2(){}
 void codesetup3(){}
 void codesetup4(){}
 //结构体变量置0初始化(有参数)
-void pid_init(pidtest* pid)
-{
-    pid->p=0.0;
-    pid->i=0.0;
-    pid->d=0.0;
-    pid->maxout=0.0;
-}
+
 //菜单结构体
 typedef struct 
 {
@@ -262,26 +237,38 @@ typedef struct
     //速度环
 MENU menu[] = 
 {
-    {1, "pidparam",           0,                  20, &default_float, &default_int, catlog,      NULL},
-        {2, "velocity_pid",   0,                  20, &default_float, &default_int, catlog,      NULL},
-            {3, "p",          ips200_x_max-10*7,  20, &pid_vtest.p,    &default_int, param_float, NULL},
-            {3, "i",          ips200_x_max-10*7,  40, &pid_vtest.i,    &default_int, param_float, NULL},
-            {3, "d",          ips200_x_max-10*7,  60, &pid_vtest.d,    &default_int, param_float, NULL},
-            {3, "maxout",     ips200_x_max-10*7,  80, &pid_vtest.maxout, &default_int, param_float, NULL},
-        
-        {2, "steer_pid",      0,                  40, &default_float,           &default_int, catlog,      NULL},
-            {3, "p_s",        ips200_x_max-10*7,  20, &pid_steer_straight.p,    &default_int, param_float, NULL},
-            {3, "i_s",        ips200_x_max-10*7,  40, &pid_steer_straight.i,    &default_int, param_float, NULL},
-            {3, "d_s",        ips200_x_max-10*7,  60, &pid_steer_straight.d,    &default_int, param_float, NULL},
-            {3, "max_s",      ips200_x_max-10*7,  80, &pid_steer_straight.maxout, &default_int, param_float,NULL},
-            {3, "p_c",        ips200_x_max-10*7, 100, &pid_steer_curve.p,       &default_int, param_float, NULL},
-            {3, "i_c",        ips200_x_max-10*7, 120, &pid_steer_curve.i,       &default_int, param_float, NULL},
-            {3, "d_c",        ips200_x_max-10*7, 140, &pid_steer_curve.d,       &default_int, param_float, NULL},
-            {3, "maxo",       ips200_x_max-10*7, 160, &pid_steer_curve.maxout,  &default_int, param_float, NULL},
-        {2, "vpid_set0",      0,                  60, &default_float,           &default_int, confirm,     pid_vtestset0},
-        {2, "spid_set0",      0,                  80, &default_float,           &default_int, confirm,     pid_stestset0},
+    {1,"start",                   0,               20, &default_float, &default_int, function,       start_the_car},
+    {1, "pidparam",               0,               40, &default_float, &default_int, catlog,         NULL},
+        {2, "PID_gyro",           0,               20, &default_float, &default_int, catlog,         NULL},
+            {3, "kp",          ips200_x_max-10*8,  20, &PID_gyro.kp,    &default_int, param_float,   NULL},
+            {3, "ki",          ips200_x_max-10*8,  40, &PID_gyro.ki,    &default_int, param_float,   NULL},
+            {3, "kd",          ips200_x_max-10*8,  60, &PID_gyro.kd,    &default_int, param_float,   NULL},
+            {3, "maxout",      ips200_x_max-10*8,  80, &PID_gyro.maxout, &default_int, param_float,  NULL},
+            {3, "minout",      ips200_x_max-10*8,  100, &PID_gyro.minout, &default_int, param_float, NULL},
+
+        {2, "PID_PID_angle",      0,                   40, &default_float,           &default_int, catlog,      NULL},
+            {3, "kp",        ips200_x_max-10*8,    20, &PID_angle.kp,    &default_int, param_float, NULL},
+            {3, "ki",        ips200_x_max-10*8,    40, &PID_angle.ki,    &default_int, param_float, NULL},
+            {3, "kd",        ips200_x_max-10*8,    60, &PID_angle.kd,    &default_int, param_float, NULL},
+            {3, "maxout",      ips200_x_max-10*8,  80, &PID_angle.maxout, &default_int, param_float,NULL},
+            {3, "minout",      ips200_x_max-10*8,  100, &PID_angle.minout, &default_int, param_float, NULL},
+        {2, "PID_V",      0,                        60, &default_float,           &default_int, catlog,      NULL},
+            {3, "kp",        ips200_x_max-10*8,    20, &PID_speed.kp,    &default_int, param_float, NULL},
+            {3, "ki",        ips200_x_max-10*8,    40, &PID_speed.ki,    &default_int, param_float, NULL},
+            {3, "kd",        ips200_x_max-10*8,    60, &PID_speed.kd,    &default_int, param_float, NULL},
+            {3, "maxout",      ips200_x_max-10*8,  80, &PID_speed.maxout, &default_int, param_float,NULL},
+            {3, "minout",      ips200_x_max-10*8,  100, &PID_speed.minout, &default_int, param_float, NULL},
+            {3,"target",    ips200_x_max-10*8,    120, &PID_speed.targ,  &default_int, param_float, NULL},
+        {2, "PID_steer",      0,                   80, &default_float,           &default_int, catlog,      NULL},
+            {3, "kp",        ips200_x_max-10*8,    20, &PID_steer.kp,    &default_int, param_float, NULL},
+            {3, "ki",        ips200_x_max-10*8,    40, &PID_steer.ki,    &default_int, param_float, NULL},
+            {3, "kd",        ips200_x_max-10*8,    60, &PID_steer.kd,    &default_int, param_float, NULL},
+            {3, "maxout",      ips200_x_max-10*8,  80, &PID_steer.maxout, &default_int, param_float,NULL},
+            {3, "minout",      ips200_x_max-10*8,  80, &PID_steer.minout, &default_int, param_float, NULL},
+        {2, "vpid_set0",      0,                  100, &default_float,           &default_int, confirm,     pid_vtestset0},
+        {2, "spid_set0",      0,                  120, &default_float,           &default_int, confirm,     pid_stestset0},
     
-    {1, "image",              0,                  40, &default_float, &default_int, catlog,      NULL},
+    {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
         {2, "show_image",      0,                  20, &default_float, &default_int, function,    image_show},
         {2, "OTSU_threshold",  0,                  40, &default_float, &default_int, catlog,      NULL},
             {3, "OTSU_up",    100,                 20, &default_float, &default_int, param_int,    NULL},
@@ -297,7 +284,7 @@ MENU menu[] =
             {3, "forwardsight2",100,               20, &default_float, &forwardsight2, param_int, NULL},
             {3, "forwardsight3",100,               40, &default_float, &forwardsight3, param_int, NULL},
     
-    {1, "element_onoff",      0,                  60, &default_float, &default_int, catlog,      NULL},
+    {1, "element_onoff",      0,                  80, &default_float, &default_int, catlog,      NULL},
         {2, "crossl",        100,                 20, &default_float, &roadelement_onoff.crossl,    on_off, NULL},
         {2, "crossr",        100,                 40, &default_float, &roadelement_onoff.crossr,    on_off, NULL},
         {2, "crossm",        100,                 60, &default_float, &roadelement_onoff.crossm,    on_off, NULL},
@@ -308,7 +295,7 @@ MENU menu[] =
         {2, "ramp",          100,                160, &default_float, &roadelement_onoff.ramp,      on_off, NULL},
         {2, "obstacle",      100,                180, &default_float, &roadelement_onoff.obstacle,  on_off, NULL},
     
-    {1, "element_gothrough",  0,                  80, &default_float, &default_int, catlog,      NULL},
+    {1, "element_gothrough",  0,                  100, &default_float, &default_int, catlog,      NULL},
         {2, "element_count",  0,                  20, &default_float, &default_int, catlog,      NULL},
             {3, "straight",   100,                 20, &default_float, &roadelement_record.straight,     param_int_readonly, NULL},
             {3, "crossm",     100,                 40, &default_float, &roadelement_record.crossm,       param_int_readonly, NULL},
@@ -328,7 +315,7 @@ MENU menu[] =
 
         {2, "record_clear",   0,                  60, &default_float, &default_int, function,     NULL},        //清零函数待添加
     
-    {1, "flash",              0,                 100, &default_float, &default_int, catlog,      NULL},
+    {1, "flash",              0,                 120, &default_float, &default_int, catlog,      NULL},
         {2, "code_Setup",    100,                 20, &default_float, &default_int, catlog,      NULL},
             {3, "setup1",    100,                 20, &default_float, &default_int, function,     NULL},
             {3, "setup2",    100,                 40, &default_float, &default_int, function,     NULL},
@@ -341,7 +328,7 @@ MENU menu[] =
             {3, "setup4",    100,                 80, &default_float, &default_int, function,     NULL},
         {2, "reset",        100,                 60, &default_float, &default_int, function,     NULL},
     
-    {1, "setting",            0,                 120, &default_float, &default_int, catlog,      NULL},
+    {1, "setting",            0,                 140, &default_float, &default_int, catlog,      NULL},
     {1, "end",                0,                   0, &default_float, &default_int, catlog,      NULL}
 };
 
@@ -469,7 +456,7 @@ void output(void)
                     
                     if(menu[i].type==param_float||menu[i].type==param_float_readonly)
                     {
-                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,3,3);
+                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,4,3);
                     }
                     else if(menu[i].type==param_int||menu[i].type==param_int_readonly)
                     {
@@ -497,7 +484,7 @@ void output(void)
                     ips200_show_string(20,menu[i].y,menu[i].str);
                     if(menu[i].type==param_float||menu[i].type==param_float_readonly)
                     {
-                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,3,3);
+                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,4,3);
                     }
                     else if(menu[i].type==param_int||menu[i].type==param_int_readonly)
                     {

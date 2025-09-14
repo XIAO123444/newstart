@@ -34,7 +34,8 @@
 ********************************************************************************************************************/
 #include "zf_common_headfile.h"
 #include "isr.h"
-#include "pid_v.h"
+#include "PID.h"
+#include "balance.h"
 #include "motor.h"
 #include "steer_pid.h"
 #include "track.h"
@@ -43,14 +44,11 @@ extern uint32 key1_count;
 extern uint32 key2_count;
 extern uint32 key3_count;
 extern uint32 key4_count;
-extern uint32 key5_count;
-extern uint32 key6_count;
+
 extern uint8  key1_flag;
 extern uint8  key2_flag;
 extern uint8  key3_flag;
 extern uint8  key4_flag;
-extern uint8  key5_flag;
-extern uint8  key6_flag;
 extern uint32 count_time;
 extern uint8 car_situation;
 extern uint8 input;
@@ -58,13 +56,27 @@ uint8 status=0;
 extern int32 encoder1;
 extern int32 encoder2;
 extern bool save_flag;          //布尔类型flash存储标志
-extern int speed;
-int32 speed_stragety;
+int32 PID_speed_stragety;
 int32 forwardsight_stragety;
 int turn1 =0;
 int turn2 =0;
 int encodercounter1=0;
 extern uint16 centerline2[MT9V03X_H];
+
+
+//神医
+float Med_Angle=-1350;
+
+bool stop=true; //停车标志
+
+extern float filtering_angle;
+extern PID_t PID_gyro;          //角速度环
+extern PID_t PID_angle;         //角度环
+extern PID_t PID_speed;         //速度环  
+extern PID_t PID_steer;         //舵机环
+
+uint8 count1=0;     //毫秒计数1
+uint8 count2=0;     //毫秒计数2
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简�?     TIM1 的定时器更新�?�?服务函数 �?�? .s 文件定义 不允许修改函数名�?
 //              默�?�优先级 �?改优先级使用 interrupt_set_priority(TIM1_UP_IRQn, 1);
@@ -72,8 +84,7 @@ extern uint16 centerline2[MT9V03X_H];
 void TIM1_UP_IRQHandler (void)
 {
     // 此�?�编写用户代�?
-        turn1 =S_PID_CAL();
-        turn2 =S_PID1_CAL();
+
     // 此�?�编写用户代�?
     TIM1->SR &= ~TIM1->SR;                                                      // 清空�?�?状�?
 }
@@ -182,33 +193,39 @@ void TIM5_IRQHandler (void)
 void TIM6_IRQHandler (void) 
 {
     // 此�?�编写用户代�?
-	encoder1=encoder_get_count(TIM3_ENCODER);
-	encoder_clear_count(TIM3_ENCODER);
-	encoder2=(-1)*encoder_get_count(TIM4_ENCODER);
-	encoder_clear_count(TIM4_ENCODER);
-	encodercounter1+=(encoder2+encoder1);
-    turn1=40 *S_PID_CAL();
-    turn2=40 *S_PID1_CAL();
-    int dutyl;  //��������ռ�ձ�
-    int dutyr;  //�����ҵ��ռ�ձ�
-    int outpute= 0;
-
-//        dutyl = outpute-turn1;
-//        dutyr =outpute+turn1;
-    if(car_situation==0)
-    {
-        //ֱ��
-        dutyl = outpute-turn1; 
-        dutyr =outpute+turn1;
+    S_PID_CAL();        //转向控制
+	count1++;
+    count2++;
+    imu660ra_get_gyro();
+    imu660ra_get_acc();	
+    if(count2>=20){
+        encoder1=encoder_get_count(TIM3_ENCODER);
+        encoder_clear_count(TIM3_ENCODER);
+        encoder2=encoder_get_count(TIM4_ENCODER);
+        encoder_clear_count(TIM4_ENCODER);
+        PID_speed.actual=(-encoder2+encoder1)/2;
+        increment_pid_update(&PID_speed);
+		  count2=0;
+	}
+	if(count1>=5){
+		  first_order_filtering();
+		  PID_angle.actual=filtering_angle;
+		  PID_angle.targ=Med_Angle-PID_speed.out;
+		  PID_gyro_update(&PID_angle,imu660ra_gyro_x);
+		  count1=0;
     }
-    if(car_situation==1)
+		  PID_gyro.targ=PID_angle.out;
+		  PID_gyro.actual=imu660ra_gyro_x;
+		  PID_update(&PID_gyro);
+    if(stop==false)
     {
-        //��ת
-        dutyl = outpute-turn2;
-        dutyr =outpute+turn2;
+        motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out);
+        
     }
-    
-    motor_run(dutyl,dutyr );//�?  电机，左电机
+    else
+    {
+        motor(0,0);
+    }
     // 此�?�编写用户代�?
     TIM6->SR &= ~TIM6->SR;                                                      // 清空�?�?状�?
 }

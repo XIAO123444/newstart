@@ -1,5 +1,7 @@
 #ifndef __PID_H
 #define __PID_H
+
+// 增量式PID控制器结构体
 typedef struct{
   float out;         //PID输出
   float kp,ki,kd,kd2;     //PID参数，kd2为陀螺仪补偿参数

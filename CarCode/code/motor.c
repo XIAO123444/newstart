@@ -38,3 +38,40 @@ void motor_run(int16 a,int16 b)
             pwm_set_duty(PWM_R, (uint16)(-b * (PWM_DUTY_MAX / 10000)));                   // 计算占空比
         } 
 }
+void Motor_SetLeftSpeed(int16 duty)
+{		
+	if (duty >= 0)							//如果设置正转的速度值
+	{
+		gpio_set_level(DIR_L, GPIO_HIGH);
+		pwm_set_duty(PWM_L, duty );                  
+                              
+		
+	}
+	else									//否则，即设置反转的速度值
+	{  
+		 gpio_set_level(DIR_L, GPIO_LOW);
+        pwm_set_duty(PWM_L, (-duty));
+	}
+}
+void Motor_SetRightSpeed(int16 duty)
+{
+	if (duty >= 0)							//如果设置正转的速度值
+	{
+		gpio_set_level(DIR_R, GPIO_HIGH);
+		pwm_set_duty(PWM_R, duty);                  // 计算占空比           
+	}
+	else									//否则，即设置反转的速度值
+	{ 
+		gpio_set_level(DIR_R, GPIO_LOW);
+    pwm_set_duty(PWM_R, (-duty));               // 计算占空
+}
+	}
+
+void motor(int16 left,int16 right){
+	if (left>=PWM_DUTY_MAX){left=PWM_DUTY_MAX;}
+	if ((-left)>=PWM_DUTY_MAX){left=-(PWM_DUTY_MAX);}
+	if (right>=PWM_DUTY_MAX){right=PWM_DUTY_MAX;}
+	if (-right>=PWM_DUTY_MAX){right=-(PWM_DUTY_MAX);}
+	Motor_SetRightSpeed(-right);
+	Motor_SetLeftSpeed(left);
+}

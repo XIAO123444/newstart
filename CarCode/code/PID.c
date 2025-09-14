@@ -6,6 +6,38 @@
  * @note 位置式PID计算公式: Output = Kp*e(k) + Ki*∑e(k) + Kd*(e(k)-e(k-1))
  *        适合需要精确控制位置的系统[2](@ref)
  */
+PID_t PID_gyro={
+	  .kp=2,   //0.3
+	  .ki=0.000,  //0.02//0.01
+	  .kd=0,
+	  .maxout=5000,
+	  .minout=-5000,
+    .targ=0
+};
+PID_t PID_angle={
+	  .kp=0.0,   //0.3
+	  .ki=0.00,  //0.02//0.01
+	  .kd=0,
+	  .maxout=5000,
+	  .minout=-5000,
+    .targ=0
+};
+PID_t PID_speed={
+	  .kp=0,   //0.3
+	  .ki=0.007, //0.02//0.01
+	  .kd=0,
+	  .maxout=5000,
+	  .minout=-5000,
+	  .targ=0
+};
+PID_t PID_steer={
+	  .kp=0,   //0.3
+	  .ki=0, //0.02//0.01
+	  .kd=0,
+	  .maxout=5000,
+	  .minout=-5000,
+	  .targ=0,
+};
 void PID_update(PID_t *p) //位置式
 {
     // 更新误差历史: 将上一次误差保存为e(k-1)，当前误差变为e(k)
