@@ -1,5 +1,4 @@
  #include "menu.h"
-#include "pid_v.h"
 #include "encoder.h"
 #include "key.h"
 #include "steer_pid.h"
@@ -100,26 +99,93 @@ typedef struct
 
 //枚举          经过的元素
 typedef enum
-{ straight,
-    crossm,
-    crossl,
-    crossr,
-    islandl,
-    islandr,
-    scurve,
-    curve,
-    speedup,
-    ramp,
-    obstacle,
-    blackprotect,
-    stall,
-    zebra}
+{ straight,         //直道
+    crossm,         //正入十字路口
+    crossl,         //左斜入十字
+    crossr,         //右斜入十字
+    islandl,            //环岛左
+    islandr,            //环岛右
+    scurve,             //S弯
+    curve,              //弯道
+    speedup,            //加速带            
+    ramp,               //坡道
+    obstacle,           //障碍物
+    blackprotect,       //黑线保护
+    stall,              //堵转              
+    zebra               //斑马线
+    }  
 enum_roadelementtypedef;
-enum_roadelementtypedef roadelementType[50];
+//W 240
 
+//H 320
 //菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
+enum_roadelementtypedef roadelementType[50]={zebra,straight,curve,straight,ramp,crossr,straight,speedup,obstacle,islandl,straight,zebra};//记录经过的元素
+int16 element_num=12;
 
+void show_element(void)
+{
+    for (int16 i = 0; i < element_num; i++)
+    {
+        switch (roadelementType[i])
+        {
+            
+        case straight:
+            ips200_show_string(72*(i%3),30*(i/3),"straight");
+            break;
+        case crossm:
+            ips200_show_string(72*(i%3),30*(i/3)," crossM "); // 正入十字
+            break;
+        case crossl:
+            ips200_show_string(72*(i%3),30*(i/3)," crossL "); // 左斜十字
+            break;
+        case crossr:
+            ips200_show_string(72*(i%3),30*(i/3)," crossR "); // 右斜十字
+            break;
+        case islandl:
+            ips200_show_string(72*(i%3),30*(i/3),"islandL"); // 环岛左
+            break;
+        case islandr:
+            ips200_show_string(72*(i%3),30*(i/3),"islandR"); // 环岛右
+            break;
+        case scurve:
+            ips200_show_string(72*(i%3),30*(i/3)," S-curve"); // S弯
+            break;
+        case curve:
+            ips200_show_string(72*(i%3),30*(i/3)," curve "); // 弯道
+            break;
+        case speedup:
+            ips200_show_string(72*(i%3),30*(i/3),"speedUp"); // 加速带
+            break;
+        case ramp:
+            ips200_show_string(72*(i%3),30*(i/3),"  ramp "); // 坡道
+            break;
+        case obstacle:
+            ips200_show_string(72*(i%3),30*(i/3),"obstacle"); // 障碍物
+            break;
+        case blackprotect:
+            ips200_show_string(72*(i%3),30*(i/3),"blkProt"); // 黑线保护
+            break;
+        case stall:
+            ips200_show_string(72*(i%3),30*(i/3)," stall "); // 堵转
+            break;
+        case zebra:
+            ips200_show_string(72*(i%3),30*(i/3),"  zebra "); // 斑马线
+            break;
+        default:
+            break;
+        }
+        if(i!=element_num-1)
+        {
+            ips200_set_color(RGB565_ORANGE, RGB565_BLACK);
+            ips200_show_string(72*(i%3)+64,30*(i/3),">");
+            ips200_set_color(RGB565_WHITE, RGB565_BLACK);
 
+        }
+
+    }
+    
+
+}
 int32 speed;
 int16 forwardsight;
 int16 forwardsight2;//直到判断前瞻
@@ -315,7 +381,7 @@ void Menu_Screen_Init(void)
 void output(void) 
 {
     int target_priority=current_state-1;
-    if(menu_Mode==edit_int)
+    if(menu_Mode==edit_int)     //整型编辑模式下
     {
         ips200_set_color(RGB565_BROWN, RGB565_BLACK);    //设置为棕色底黑字
         ips200_show_string(100,0,"len_i");
@@ -323,7 +389,7 @@ void output(void)
         ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为棕色底黑字
 
     }
-    if(menu_Mode==edit_float)
+    if(menu_Mode==edit_float)       //浮点编辑模式下
     {
         ips200_set_color(RGB565_BROWN, RGB565_BLACK);    //设置为棕色底黑字
         ips200_show_string(100,0,"len_f");
@@ -331,19 +397,24 @@ void output(void)
         ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为棕色底黑字
 
     }
-    if(menu_Mode==edit_confirm)
+    if(menu_Mode==edit_confirm)     //确认模式下
     {
         ips200_set_color(RGB565_ORANGE,RGB565_BLACK);
         ips200_show_string(20,0,"WARNING!WARNING!WARNING!");
         ips200_show_string(20,160,"PRESS BOTTON3 TO CONFIRM");
         ips200_show_string(20,260,"WARNING!WARNING!WARNING!");
+        return;                     //提前退出
+    }
+    if(menu_Mode==special_show_element1)
+    {
+        show_element();
         return;
     }
-    if (target_priority==0)//顶级菜单
+    if (target_priority==0)         //顶级菜单
     {
-    ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //设置为蓝色黑底
-    ips200_show_string(0,0,"menu");//输出标题字符
-    ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为白色黑底
+        ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //设置为蓝色黑底
+        ips200_show_string(0,0,"menu");//输出标题字符
+        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为白色黑底
         for(int i=0;strcmp(menu[i].str, "end") != 0;i++)
         {
             if(menu[i].priority==1)
@@ -362,8 +433,6 @@ void output(void)
                         ips200_show_string(20,menu[i].y,menu[i].str);
                         ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为棕色底黑字
                     }
-
-
                 }
                 else
                 {
@@ -391,10 +460,10 @@ void output(void)
                     }
                     else if(menu_Mode==edit_int||menu_Mode==edit_float)
                     {
-                        ips200_set_color(RGB565_MAGENTA, RGB565_BLACK);    //设置为红色黑底
+                        ips200_set_color(RGB565_MAGENTA, RGB565_BLACK);//设置为红色黑底
                         ips200_show_string(0,menu[i].y,"->");//输出指向字符
                         ips200_show_string(20,menu[i].y,menu[i].str);
-                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为黑底白字
+                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);//设置为黑底白字
                     }
                     
                     
@@ -447,7 +516,6 @@ void output(void)
                         }
                         
                     }
-
                 }
             } 
         }
@@ -519,17 +587,19 @@ void Menu_control(void)
             }
             break;
         case UP:
-            if(menu_Mode==edit_int)
+        //增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  
+            if(menu_Mode==edit_int)         //整型编辑模式下
             {
                 *menu[p].value_i+=stepper_int[stepper_p_int];
                 break;
             }
-            if(menu_Mode==edit_float)
+            if(menu_Mode==edit_float)       //浮点编辑模式下
             { 
                 *menu[p].value_f+=stepper_float[stepper_p_float];
                 break;
             }
-            if(p!=0&&menu[p-1].priority>=menu[p].priority)
+        //增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  
+            if(p!=0&&menu[p-1].priority>=menu[p].priority)      
             {
                 int temp=menu[p].priority;
                 p--;
@@ -543,62 +613,65 @@ void Menu_control(void)
 
             break;
         case CONFIRM:
-            if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0&&menu[p].type==catlog)//子目录情况
+        //换菜单等级
+            if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0&&menu[p].type==catlog)       //子目录情况
             {
                 current_state++;
                 p_nearby=p;
                 p++;
                 break;
-             }
-            if(menu_Mode==edit_int)
+            }
+        //菜单模式情况
+        
+            if(menu_Mode==edit_int)                         //整型编辑模式下
             {
                 stepper_p_int=(stepper_p_int+1)%5;
                 break;
-
             }
-            if(menu_Mode==edit_float)
+            if(menu_Mode==edit_float)                       //浮点编辑模式下
             {
                 stepper_p_float=(stepper_p_float+1)%5;
                 break;
             }
-            if(menu_Mode==edit_confirm)
+            if(menu_Mode==edit_confirm)                     //确认模式下
             {
-                ips200_clear();
+                ips200_clear();                             //清屏
                 menu[p].Operate_default();
                 menu_Mode=normal;
                 break;
             }
-            if(menu[p].type==param_float)             //参数情况                      
+        //菜单种类情况
+            if(menu[p].type==param_float)                   //菜单参数情况                      
             {
                 menu_Mode=edit_float;
                 break;
                 //进入浮点数编辑模式
-
             }
-            if(menu[p].type==roadgothrough)         //赛道元素通过情况
-            {
-                menu_Mode=special_show_element1;        //进入显示经过元素模式
-                break;
-            }
-            if (menu[p].type==confirm)
-            {
-                menu_Mode=edit_confirm;
-                break;
-            }
-            
-            if(menu[p].type==param_int)
+            if(menu[p].type==param_int)                 //菜单参数情况
             {
                 menu_Mode=edit_int;
                 break;
                 //进入整型编辑模式
             }
-            if(menu[p].type==on_off)
+            if (menu[p].type==confirm)                  //确认情况
+            {
+                menu_Mode=edit_confirm;
+                break;
+            }
+            if(menu[p].type==on_off)                    //开关情况
             {
                 *menu[p].value_i=1-*menu[p].value_i;
+                break;
             }
-            if(menu[p].type==function)
+            if(menu[p].type==function)                  //函数情况
             {
                 menu[p].Operate_default();
+                break;
+            }
+            if(menu[p].type==roadgothrough)             //赛道元素通过情况
+            {
+                menu_Mode=special_show_element1;        //进入显示经过元素模式
+                break;
             }
             if(menu[p].type==param_float_readonly||menu[p].type==param_int_readonly)
             {
@@ -608,7 +681,7 @@ void Menu_control(void)
 
             break;
         case BACK:
-        if(menu_Mode==edit_float||menu_Mode==edit_confirm||menu_Mode==edit_int) //编辑模式下按返回键退出编辑模式
+        if(menu_Mode==edit_float||menu_Mode==edit_confirm||menu_Mode==edit_int||menu_Mode==special_show_element1) //编辑模式下按返回键退出编辑模式
         {
             menu_Mode=normal;
             break;

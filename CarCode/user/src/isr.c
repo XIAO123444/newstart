@@ -191,7 +191,7 @@ void TIM6_IRQHandler (void)
     turn2=40 *S_PID1_CAL();
     int dutyl;  //��������ռ�ձ�
     int dutyr;  //�����ҵ��ռ�ձ�
-    int outpute =pid_V_comon( speed_stragety );
+    int outpute= 0;
 
 //        dutyl = outpute-turn1;
 //        dutyr =outpute+turn1;
