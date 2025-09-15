@@ -1,44 +1,121 @@
 #include "flash.h"
 #include "steer_pid.h"
 #include "menu.h"
+#include "pid.h"
 
-extern struct pid_v PID_V;
-extern struct steer_pid S_PID;
-extern struct steer_pid S_PID1;
+
+extern bool save_flag;
+
 extern int speed;
 extern int forwardsight;        //前瞻1，处理转向
 extern int forwardsight2;       //前瞻2，提前看弯道
 extern int forwardsight3;       //前瞻3，弯道前瞻
 extern int16 threshold_up;       //大津法阈值上限
 extern int16 threshold_down;     //大津法阈值下限
-void flash_init(void)
-{
-//     flash_buffer_clear();
-//     flash_read_page_to_buffer(100, 0);                            // 将数据从 flash 读取到缓冲区
 
-//     flash_buffer_clear();
-//     flash_read_page_to_buffer(100, 1);                            // 将数据从 flash 读取到缓冲区
-//     S_PID.p                =flash_union_buffer[0].float_type;
-//     S_PID.i                =flash_union_buffer[1].float_type;
-//     S_PID.d                =flash_union_buffer[2].float_type;
-//     S_PID.outputmax        =flash_union_buffer[3].float_type;
-//     S_PID.outputmin        =flash_union_buffer[4].float_type;
-//     flash_buffer_clear();
-//     flash_read_page_to_buffer(100, 2);                            // 将数据从 flash 读取到缓冲区
-//     speed                  =flash_union_buffer[0].int32_type;
-//     forwardsight            =flash_union_buffer[1].int32_type;
-//     forwardsight2            =flash_union_buffer[2].int32_type;
-//     forwardsight3            =flash_union_buffer[3].int32_type;
-//     threshold_up            =flash_union_buffer[4].int32_type;
-//     threshold_down          =flash_union_buffer[5].int32_type;
-//     flash_buffer_clear();
-//     flash_read_page_to_buffer(99, 0);                            // 将数据从 flash 读取到缓冲区
-//     S_PID1.p                =flash_union_buffer[0].float_type;  
-//     S_PID1.i                =flash_union_buffer[1].float_type;
-//     S_PID1.d                =flash_union_buffer[2].float_type;
-//     S_PID1.outputmax        =flash_union_buffer[3].float_type;
-//     S_PID1.outputmin        =flash_union_buffer[4].float_type;
-//     flash_buffer_clear();
-//     flash_read_page_to_buffer(99, 1);                            // 将数据从 flash 读取到缓冲区
+
+extern PID_t PID_gyro;          //角速度环
+extern PID_t PID_angle;         //角度环
+extern PID_t PID_speed;         //速度环  
+extern PID_t PID_steer;         //舵机环
+void flash_reset(void)
+{
+    flash_erase_page(100, 0);                                 // 擦除这一页
+    flash_erase_page(100, 1);                                 // 擦除这一页
+    flash_erase_page(100, 2);                                 // 擦除这一页
+    flash_erase_page(99, 0);                                  // 擦除这一页
     
 }
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     保存参数到 FLASH配置1
+// 参数说明     void
+// 返回参数     void
+// 使用示例     flash_save_config1();
+// 备注信息     0是default 1,2,3,4分别对应（100,1）（100,2）（100,3）（101,0）
+//-------------------------------------------------------------------------------------------------------------------
+void flash_save_config(int16 i)
+{
+    if(save_flag)
+    {
+        if(flash_check(100+i/4, i%4)){flash_erase_page(100+i/4, i%4);}
+        flash_buffer_clear();
+        //只有转向环d2
+    
+        // 100,0   
+        //角速度环
+        flash_union_buffer[0].float_type = PID_gyro.kp;
+        flash_union_buffer[1].float_type = PID_gyro.ki;    
+        flash_union_buffer[2].float_type = PID_gyro.kd;
+        flash_union_buffer[3].float_type = PID_gyro.maxout;    
+        flash_union_buffer[4].float_type = PID_gyro.minout;
+        //角度环
+        flash_union_buffer[5].float_type = PID_angle.kp;
+        flash_union_buffer[6].float_type = PID_angle.ki;
+        flash_union_buffer[7].float_type = PID_angle.kd;
+        flash_union_buffer[8].float_type = PID_angle.maxout;
+        flash_union_buffer[9].float_type = PID_angle.minout;
+        //速度环
+        flash_union_buffer[10].float_type = PID_speed.kp;
+        flash_union_buffer[11].float_type = PID_speed.ki;
+        flash_union_buffer[12].float_type = PID_speed.kd;
+        flash_union_buffer[13].float_type = PID_speed.maxout;
+        flash_union_buffer[14].float_type = PID_speed.minout;
+        //转向环
+        flash_union_buffer[15].float_type = PID_steer.kp;
+        flash_union_buffer[16].float_type = PID_steer.ki;
+        flash_union_buffer[17].float_type = PID_steer.kd;
+        flash_union_buffer[18].float_type = PID_steer.kd2;
+        flash_union_buffer[19].float_type = PID_steer.maxout;
+        flash_union_buffer[20].float_type = PID_steer.minout;
+
+        //PID21个参数
+
+
+        flash_write_page_from_buffer(100+i/4, i%4);        //flash写
+
+    }
+}
+void flash_save_config_default(void) { flash_save_config(0); }
+void flash_save_config_1(void) { flash_save_config(1); }
+void flash_save_config_2(void) { flash_save_config(2); }
+void flash_save_config_3(void) { flash_save_config(3); }
+void flash_save_config_4(void) { flash_save_config(4); }
+void flash_load_config(int16 i)
+{
+    flash_buffer_clear();                                               //缓冲区清理
+    flash_read_page_to_buffer(100+i/4, i%4);                            // 将数据从 flash 读取到缓冲区
+    PID_gyro.kp = flash_union_buffer[0].float_type;
+    PID_gyro.ki = flash_union_buffer[1].float_type;
+    PID_gyro.kd = flash_union_buffer[2].float_type;
+    PID_gyro.maxout = flash_union_buffer[3].float_type;
+    PID_gyro.minout = flash_union_buffer[4].float_type;
+    
+    // 角度环参数读取
+    PID_angle.kp = flash_union_buffer[5].float_type;
+    PID_angle.ki = flash_union_buffer[6].float_type;
+    PID_angle.kd = flash_union_buffer[7].float_type;
+    PID_angle.maxout = flash_union_buffer[8].float_type;
+    PID_angle.minout = flash_union_buffer[9].float_type;
+    
+    // 速度环参数读取
+    PID_speed.kp = flash_union_buffer[10].float_type;
+    PID_speed.ki = flash_union_buffer[11].float_type;
+    PID_speed.kd = flash_union_buffer[12].float_type;
+    PID_speed.maxout = flash_union_buffer[13].float_type;
+    PID_speed.minout = flash_union_buffer[14].float_type;
+    
+    // 转向环参数读取
+    PID_steer.kp = flash_union_buffer[15].float_type;
+    PID_steer.ki = flash_union_buffer[16].float_type;
+    PID_steer.kd = flash_union_buffer[17].float_type;
+    PID_steer.kd2 = flash_union_buffer[18].float_type; // 注意：保存时有kd2，读取也应有
+    PID_steer.maxout = flash_union_buffer[19].float_type;
+    PID_steer.minout = flash_union_buffer[20].float_type;
+    
+    //PID21个参数读取
+}
+void flash_load_config_default(void) { flash_load_config(0); }
+void flash_load_config_1(void) { flash_load_config(1); }
+void flash_load_config_2(void) { flash_load_config(2); }
+void flash_load_config_3(void) { flash_load_config(3); }
+void flash_load_config_4(void) { flash_load_config(4); }

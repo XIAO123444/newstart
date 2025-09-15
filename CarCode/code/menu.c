@@ -4,6 +4,7 @@
 #include "steer_pid.h"
 #include "balance.h"
 #include "PID.h"
+#include "flash.h"
 
 bool showline;
 
@@ -15,10 +16,8 @@ int p=0;//记录当前指针
 int p_nearby=0;//记录所属的指针
 uint8 input;    //菜单按键输入
 extern int status;
-extern bool save_flag;      //保存标志位
+bool save_flag;      //保存标志位
 extern bool start_flag;     //发车标志位
-
-
 extern bool stop;     //停车标志位
 
 bool show_flag=false;     //显示标志位,全局变量
@@ -29,13 +28,10 @@ bool show_flag=false;     //显示标志位,全局变量
 //菜单调参
 
 enum_menu_mode menu_Mode=normal;         //菜单模式
-
-
 int16 default_int=0;            //默认整型，防止空指针
 float default_float=0.0;        //默认浮点型，防止空指针
 
-uint8 confirm_flag=false;
-
+uint8 confirm_flag=false;      //确认标志
 //加减封装函数（这个不要删了）↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 int stepper_int[5]={1,5,10,20,50};                  //整型步进值
 float stepper_float[5]={0.01,0.1,1.0,10.0,100.0};   //浮点型步进值
@@ -58,13 +54,7 @@ void sub_floatparam(float* a)
 {
     *a-=stepper_float[stepper_p_float];
 }
-//加减封装函数（这个不要删了）↑↑↑↑↑↑↑↑↑↑↑
-
-
-
-//W 240
-
-//H 320
+//加减封装函数（这个不要删了）↑↑↑↑↑↑
 //菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
 enum_roadelementtypedef roadelementType[50]={zebra,straight,curve,straight,ramp,crossr,straight,speedup,obstacle,islandl,straight,zebra};//记录经过的元素
 int16 element_num=12;
@@ -79,14 +69,11 @@ int16 forwardsight3;//弯道前瞻
 extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
-extern PID_t PID_steer;         //舵机环
+extern PID_t PID_steer;         //转向环
 struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
-
 struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
 
-
 bool startbool=false; //开始标志
-
 
 //大津法
 int16 threshold_down=100;       //大津法阈值上限
@@ -173,23 +160,23 @@ void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;i
 void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0; ips200_show_string(0,180,"set 0 already");} 
 
 //闪存存储
-void flashcodesetup1(){}
-void flashcodesetup2(){}
-void flashcodesetup3(){}
-void flashcodesetup4(){}
+
+
+void flashcodeloaddefault(){}
+void flashcodeload1(){}
+void flashcodeload2(){}
+void flashcodeload3(){}
+void flashcodeload4(){}
 //代码存储
-void codesetup1(){}
-void codesetup2(){}
-void codesetup3(){}
-void codesetup4(){}
+void codeload1(){}
+void codeload2(){}
+void codeload3(){}
+void codeload4(){}
 //结构体变量置0初始化(有参数)
 
-//菜单结构体
 
  
-    //角速度环
-    //角度环
-    //速度环
+//菜单结构体
 MENU menu[] = 
 {
     {1,"start",                   0,               20, &default_float, &default_int, function,       start_the_car},
@@ -200,7 +187,6 @@ MENU menu[] =
             {3, "kd",          ips200_x_max-10*8,  60, &PID_gyro.kd,    &default_int, param_float,   NULL},
             {3, "maxout",      ips200_x_max-10*8,  80, &PID_gyro.maxout, &default_int, param_float,  NULL},
             {3, "minout",      ips200_x_max-10*8,  100, &PID_gyro.minout, &default_int, param_float, NULL},
-
         {2, "PID_angle",      0,                   40, &default_float,           &default_int, catlog,      NULL},
             {3, "kp",        ips200_x_max-10*8,    20, &PID_angle.kp,    &default_int, param_float, NULL},
             {3, "ki",        ips200_x_max-10*8,    40, &PID_angle.ki,    &default_int, param_float, NULL},
@@ -224,8 +210,6 @@ MENU menu[] =
         {2, "angle_set0",      0,                  120, &default_float,           &default_int, confirm,     NULL},
         {2, "V_set0",          0,                  120, &default_float,           &default_int, confirm,     NULL},
         {2, "steer_set0",      0,                  120, &default_float,           &default_int, confirm,     NULL},
-
-    
     {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
         {2, "show_image",      0,                  20, &default_float, &default_int, function,    image_show},
         {2, "OTSU_threshold",  0,                  40, &default_float, &default_int, catlog,      NULL},
@@ -242,7 +226,6 @@ MENU menu[] =
         {2, "forwardsight",    0,                  80, &default_float, &forwardsight, catlog,    NULL},
             {3, "forwardsight2",100,               20, &default_float, &forwardsight2, param_int, NULL},
             {3, "forwardsight3",100,               40, &default_float, &forwardsight3, param_int, NULL},
-    
     {1, "element_onoff",      0,                  80, &default_float, &default_int, catlog,      NULL},
         {2, "crossl",        100,                 20, &default_float, &roadelement_onoff.crossl,    on_off, NULL},
         {2, "crossr",        100,                 40, &default_float, &roadelement_onoff.crossr,    on_off, NULL},
@@ -253,7 +236,6 @@ MENU menu[] =
         {2, "speedup",       100,                140, &default_float, &roadelement_onoff.speedup,   on_off, NULL},
         {2, "ramp",          100,                160, &default_float, &roadelement_onoff.ramp,      on_off, NULL},
         {2, "obstacle",      100,                180, &default_float, &roadelement_onoff.obstacle,  on_off, NULL},
-    
     {1, "element_gothrough",  0,                  100, &default_float, &default_int, catlog,      NULL},
         {2, "element_count",  0,                  20, &default_float, &default_int, catlog,      NULL},
             {3, "straight",   100,                 20, &default_float, &roadelement_record.straight,     param_int_readonly, NULL},
@@ -271,22 +253,29 @@ MENU menu[] =
             {3, "stall",      100,                260, &default_float, &roadelement_record.stall,        param_int_readonly, NULL},
             {3, "zebra",      100,                280, &default_float, &roadelement_record.zebra,        param_int_readonly, NULL},
         {2, "element_gothrough",   0,              40, &default_float, &default_int,                     roadgothrough,      NULL},
-
         {2, "record_clear",   0,                  60, &default_float, &default_int, function,     NULL},        //清零函数待添加
-    
     {1, "flash",              0,                 120, &default_float, &default_int, catlog,       NULL},
-        {2, "code_Setup",    100,                 20, &default_float, &default_int, catlog,       NULL},
-            {3, "setup1",    100,                 20, &default_float, &default_int, function,     NULL},
-            {3, "setup2",    100,                 40, &default_float, &default_int, function,     NULL},
-            {3, "setup3",    100,                 60, &default_float, &default_int, function,     NULL},
-            {3, "setup4",    100,                 80, &default_float, &default_int, function,     NULL},
-        {2, "flash_Setup",   100,                 40, &default_float, &default_int, catlog,       NULL},
-            {3, "setup1",    100,                 20, &default_float, &default_int, function,     NULL},
-            {3, "setup2",    100,                 40, &default_float, &default_int, function,     NULL},
-            {3, "setup3",    100,                 60, &default_float, &default_int, function,     NULL},
-            {3, "setup4",    100,                 80, &default_float, &default_int, function,     NULL},
-        {2, "reset",        100,                 60, &default_float, &default_int, function,      NULL},
-    
+
+        {2, "code_load",    100,                 20, &default_float, &default_int, catlog,       NULL},
+            {3, "load1",    100,                 20, &default_float, &default_int, confirm,     NULL},
+            {3, "load2",    100,                 40, &default_float, &default_int, confirm,     NULL},
+            {3, "load3",    100,                 60, &default_float, &default_int, confirm,     NULL},
+            {3, "load4",    100,                 80, &default_float, &default_int, confirm,     NULL},
+        {2, "flash_load",   100,                 40, &default_float, &default_int, catlog,       NULL},
+            {3, "load1",    100,                 20, &default_float, &default_int, confirm,     flash_load_config_1},
+            {3, "load2",    100,                 40, &default_float, &default_int, confirm,     flash_load_config_2},
+            {3, "load3",    100,                 60, &default_float, &default_int, confirm,     flash_load_config_3},
+            {3, "load4",    100,                 80, &default_float, &default_int, confirm,     flash_load_config_4},
+            {3, "loaddefault", 100,             100, &default_float, &default_int, confirm,     flash_load_config_default},
+
+        {2, "flash_save",   100,                 60, &default_float, &default_int, catlog,       NULL},
+            {3, "save1",    100,                 20, &default_float, &default_int, confirm,     flash_save_config_1},
+            {3, "save2",    100,                 20, &default_float, &default_int, confirm,     flash_save_config_2},
+            {3, "save3",    100,                 20, &default_float, &default_int, confirm,     flash_save_config_3},
+            {3, "save4",    100,                 20, &default_float, &default_int, confirm,     flash_save_config_4},
+
+
+        {2, "resetflash",        100,            80, &default_float, &default_int, confirm,      flash_reset},
     {1, "setting",            0,                 140, &default_float, &default_int, catlog,      NULL},
     {1, "end",                0,                   0, &default_float, &default_int, catlog,      NULL}
 };
@@ -541,7 +530,6 @@ void Menu_control(void)
             }
         //增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  
             if(p!=0&&menu[p-1].priority>=menu[p].priority)      //换菜单等级(读者不要动)
-    
             {
                 int temp=menu[p].priority;
                 p--;
@@ -564,7 +552,6 @@ void Menu_control(void)
                 break;
             }
         //菜单模式情况
-        
             if(menu_Mode==edit_int)                         //整型编辑模式下
             {
                 stepper_p_int=(stepper_p_int+1)%5;
