@@ -15,6 +15,7 @@ int p=0;//记录当前指针
 int p_nearby=0;//记录所属的指针
 uint8 input;    //菜单按键输入
 extern int status;
+
 extern bool save_flag;      //保存标志位
 extern bool start_flag;     //发车标志位
 
@@ -36,9 +37,8 @@ enum menu_mode//菜单模式
 }menu_Mode=normal; 
 
 
-//防止空指针
-int16 default_int=0;
-float default_float=0.0;
+int16 default_int=0;            //默认整型，防止空指针
+float default_float=0.0;        //默认浮点型，防止空指针
 
 uint8 confirm_flag=false;
 
@@ -66,29 +66,6 @@ void sub_floatparam(float* a)
 }
 //加减封装函数（这个不要删了）↑↑↑↑↑↑↑↑↑↑↑
 
-//pid结构体，可以
-
-
-
-//结构体        元素个数or元素启用与否
-typedef struct  
-{
-    int16 straight;     //直道
-    int16 crossm;    //正入十字路口
-    int16 crossl;   //左斜入十字
-    int16 crossr;   //右斜入十字
-    int16 islandl;       //环岛左
-    int16 islandr;      //环岛右
-    int16 scurve;      //S弯
-    int16 curve;        //弯道
-    int16 speedup;     //加速带
-    int16 ramp;         //坡道
-    int16 obstacle;     //障碍物
-    int16 blackprotect; //黑线保护
-    int16 stall;        //堵转
-    int16 zebra;    //斑马线
-}struct_roadelementypedef;
-//注意注意注意      斜入十字类型切换到正入十字不能算作两个元素。
 
 
 //W 240
@@ -98,6 +75,34 @@ typedef struct
 enum_roadelementtypedef roadelementType[50]={zebra,straight,curve,straight,ramp,crossr,straight,speedup,obstacle,islandl,straight,zebra};//记录经过的元素
 int16 element_num=12;
 
+
+
+int32 speed;
+int16 forwardsight;
+int16 forwardsight2;//直到判断前瞻
+int16 forwardsight3;//弯道前瞻
+//pid
+extern PID_t PID_gyro;          //角速度环
+extern PID_t PID_angle;         //角度环
+extern PID_t PID_speed;         //速度环  
+extern PID_t PID_steer;         //舵机环
+struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
+
+struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
+
+
+bool startbool=false; //开始标志
+
+
+//大津法
+int16 threshold_down=100;       //大津法阈值上限
+int16 threshold_up=200;         //大津法阈值下限  
+int16 OTSU_calperxpage=5;       //每x张图片计算一次大津法
+//
+//菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
+
+
+//菜单函数菜单函数菜单函数菜单函数菜单函数菜单函数菜单函数
 void show_element(void)
 {
     for (int16 i = 0; i < element_num; i++)
@@ -162,38 +167,16 @@ void show_element(void)
     
 
 }
-int32 speed;
-int16 forwardsight;
-int16 forwardsight2;//直到判断前瞻
-int16 forwardsight3;//弯道前瞻
-//pid
-extern PID_t PID_gyro;          //角速度环
-extern PID_t PID_angle;         //角度环
-extern PID_t PID_speed;         //速度环  
-extern PID_t PID_steer;         //舵机环
-struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
+//用于显示经过元素
 
-struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
-
-
-bool startbool=false; //开始标志
-
-
-//大津法
-int16 threshold_down=100;       //大津法阈值上限
-int16 threshold_up=200;         //大津法阈值下限  
-int16 OTSU_calperxpage=5;       //每x张图片计算一次大津法
-//
-//菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
-
-
-//菜单函数菜单函数菜单函数菜单函数菜单函数菜单函数菜单函数
 void image_show()   {show_flag=true;}
 void start_the_car(){stop=false;}//开始
 
 
-void pid_vtestset0(){ips200_show_string(0,180,"set 0 already");} 
-void pid_stestset0(){ips200_show_string(0,180,"set 0 already");}     
+void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;  ips200_show_string(0,180,"set 0 already");} 
+void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2=0;ips200_show_string(0,180,"set 0 already");}     
+void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;ips200_show_string(0,180,"set 0 already");} 
+void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0; ips200_show_string(0,180,"set 0 already");} 
 
 //闪存存储
 void flashcodesetup1(){}
@@ -208,29 +191,7 @@ void codesetup4(){}
 //结构体变量置0初始化(有参数)
 
 //菜单结构体
-typedef struct 
-{
-    unsigned char priority;             //页面优先级
-    char str[20];                       //名字
-    uint16 x;                           //显示横坐标
-    uint16 y;                           //显示纵坐标
-    float *value_f;                      //浮点数据
-    int16 *value_i;                        //整型数据
-    enum function
-    {
-        param_int,              //整型可编辑
-        param_float,            //浮点可编辑
-        confirm,                //确认
-        catlog,                 //目录
-        function,               //函数
-        param_int_readonly,     //整型只读
-        param_float_readonly,   //浮点只读
-        on_off,                 //开关
-        roadgothrough           //赛道元素通过情况
-    } type; //类型:整型参数，浮点参数，目录， 
-    void (*Operate_default)();          //默认执行函数
 
-}MENU;
  
     //角速度环
     //角度环
@@ -246,7 +207,7 @@ MENU menu[] =
             {3, "maxout",      ips200_x_max-10*8,  80, &PID_gyro.maxout, &default_int, param_float,  NULL},
             {3, "minout",      ips200_x_max-10*8,  100, &PID_gyro.minout, &default_int, param_float, NULL},
 
-        {2, "PID_PID_angle",      0,                   40, &default_float,           &default_int, catlog,      NULL},
+        {2, "PID_angle",      0,                   40, &default_float,           &default_int, catlog,      NULL},
             {3, "kp",        ips200_x_max-10*8,    20, &PID_angle.kp,    &default_int, param_float, NULL},
             {3, "ki",        ips200_x_max-10*8,    40, &PID_angle.ki,    &default_int, param_float, NULL},
             {3, "kd",        ips200_x_max-10*8,    60, &PID_angle.kd,    &default_int, param_float, NULL},
@@ -265,14 +226,18 @@ MENU menu[] =
             {3, "kd",        ips200_x_max-10*8,    60, &PID_steer.kd,    &default_int, param_float, NULL},
             {3, "maxout",      ips200_x_max-10*8,  80, &PID_steer.maxout, &default_int, param_float,NULL},
             {3, "minout",      ips200_x_max-10*8,  80, &PID_steer.minout, &default_int, param_float, NULL},
-        {2, "vpid_set0",      0,                  100, &default_float,           &default_int, confirm,     pid_vtestset0},
-        {2, "spid_set0",      0,                  120, &default_float,           &default_int, confirm,     pid_stestset0},
+        {2, "gyro_set0",       0,                  100, &default_float,           &default_int, confirm,     NULL},
+        {2, "angle_set0",      0,                  120, &default_float,           &default_int, confirm,     NULL},
+        {2, "V_set0",          0,                  120, &default_float,           &default_int, confirm,     NULL},
+        {2, "steer_set0",      0,                  120, &default_float,           &default_int, confirm,     NULL},
+
     
     {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
         {2, "show_image",      0,                  20, &default_float, &default_int, function,    image_show},
         {2, "OTSU_threshold",  0,                  40, &default_float, &default_int, catlog,      NULL},
             {3, "OTSU_up",    100,                 20, &default_float, &default_int, param_int,    NULL},
             {3, "OTSU_DOWN",  100,                 40, &default_float, &default_int, param_int,    NULL},
+            {3,"OTSU_perx",   100,                 60, &default_float, &OTSU_calperxpage, param_int, NULL},
         {2, "image_point",     0,                  60, &default_float, &default_int, catlog,      NULL},
             {3, "crossroadall",0,                  20, &default_float, &default_int, catlog,      NULL},
                 {4, "r_up_p",   100,               20, &default_float, &default_int, param_int_readonly, NULL},
@@ -389,7 +354,7 @@ void output(void)
         ips200_set_color(RGB565_ORANGE,RGB565_BLACK);
         ips200_show_string(20,0,"WARNING!WARNING!WARNING!");
         ips200_show_string(20,160,"PRESS BOTTON3 TO CONFIRM");
-        ips200_show_string(20,260,"WARNING!WARNING!WARNING!");
+        ips200_show_string(20,310,"WARNING!WARNING!WARNING!");
         return;                     //提前退出
     }
     if(menu_Mode==special_show_element1)
@@ -544,7 +509,8 @@ void Menu_control(void)
                 *menu[p].value_f-=stepper_float[stepper_p_float];
                 break;
             }
-            if (strcmp(menu[p].str, "end") != 0&&menu[p+1].priority>=menu[p].priority)
+            if (strcmp(menu[p].str, "end") != 0&&menu[p+1].priority>=menu[p].priority)        //换菜单等级(读者不要动)
+
             {
                 int temp=menu[p].priority;
                 uint8 old_p=p;
@@ -586,7 +552,8 @@ void Menu_control(void)
                 break;
             }
         //增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  
-            if(p!=0&&menu[p-1].priority>=menu[p].priority)      
+            if(p!=0&&menu[p-1].priority>=menu[p].priority)      //换菜单等级(读者不要动)
+    
             {
                 int temp=menu[p].priority;
                 p--;
@@ -600,7 +567,7 @@ void Menu_control(void)
 
             break;
         case CONFIRM:
-        //换菜单等级
+        //换菜单等级(读者不要动)
             if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0&&menu[p].type==catlog)       //子目录情况
             {
                 current_state++;
@@ -673,7 +640,7 @@ void Menu_control(void)
             menu_Mode=normal;
             break;
         }
-        if(menu[p].priority!=1)
+        if(menu[p].priority!=1)                 //换菜单等级(读者不要动)
         {
             save_flag=true;
             current_state--;
