@@ -11,8 +11,8 @@ extern int forwardsight2;       //前瞻2，提前看弯道
 extern int forwardsight3;       //前瞻3，弯道前瞻
 extern int16 threshold_up;       //大津法阈值上限
 extern int16 threshold_down;     //大津法阈值下限
-// void flash_init(void)
-// {
+void flash_init(void)
+{
 //     flash_buffer_clear();
 //     flash_read_page_to_buffer(100, 0);                            // 将数据从 flash 读取到缓冲区
 
@@ -41,4 +41,4 @@ extern int16 threshold_down;     //大津法阈值下限
 //     flash_buffer_clear();
 //     flash_read_page_to_buffer(99, 1);                            // 将数据从 flash 读取到缓冲区
     
-// }
+}

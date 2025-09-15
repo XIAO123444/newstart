@@ -21,7 +21,14 @@ typedef enum
     zebra               //斑马线
     }  
 enum_roadelementtypedef;
-
+//菜单模式枚举
+typedef enum
+{   normal,
+    edit_int,
+    edit_float,
+    edit_confirm,
+    special_show_element1,          //流程图显示经过元素        
+}enum_menu_mode;
 //道路元素结构体（用于计数和开关功能）
 typedef struct  
 {
@@ -40,6 +47,7 @@ typedef struct
     int16 stall;        //堵转
     int16 zebra;    //斑马线
 }struct_roadelementypedef;
+//菜单结构体{优先级，名字，坐标，浮点数据，整型数据，类型（枚举），默认执行函数}
 typedef struct 
 {
     unsigned char priority;             //页面优先级
@@ -63,8 +71,18 @@ typedef struct
     void (*Operate_default)();          //默认执行函数
 
 }MENU;
+
+//菜单行为枚举
+typedef enum {
+    NOACTION,
+    DOWN,
+    UP,
+    CONFIRM,
+    BACK
+
+}enum_Condition;  
+
 void output(void);
-void car_init(void);
 void Menu_control(void);
 void Menu_Screen_Init(void);
 

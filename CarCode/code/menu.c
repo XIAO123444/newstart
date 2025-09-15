@@ -15,7 +15,6 @@ int p=0;//记录当前指针
 int p_nearby=0;//记录所属的指针
 uint8 input;    //菜单按键输入
 extern int status;
-
 extern bool save_flag;      //保存标志位
 extern bool start_flag;     //发车标志位
 
@@ -28,13 +27,8 @@ bool show_flag=false;     //显示标志位,全局变量
 
 
 //菜单调参
-enum menu_mode//菜单模式
-{   normal,
-    edit_int,
-    edit_float,
-    edit_confirm,
-    special_show_element1,          //流程图显示经过元素        
-}menu_Mode=normal; 
+
+enum_menu_mode menu_Mode=normal;         //菜单模式
 
 
 int16 default_int=0;            //默认整型，防止空指针
@@ -298,14 +292,8 @@ MENU menu[] =
 };
 
 
-enum condition{
-    NOACTION,
-    DOWN,
-    UP,
-    CONFIRM,
-    BACK
 
-}condition;  
+enum_Condition condition = NOACTION;
 /*
 ------------------------------------------------------------------------------------------------------------------
 函数简介    初始化屏幕 
@@ -488,7 +476,7 @@ void Menu_control(void)
 {
         output();
         status=0;
-        condition = (enum condition)input; 
+        condition = (enum_Condition)input; 
         if(input)
         {
             ips200_clear();
