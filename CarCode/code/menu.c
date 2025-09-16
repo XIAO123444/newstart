@@ -153,11 +153,12 @@ void image_show()   {show_flag=true;}
 void start_the_car(){stop=false;}//¿ªÊ¼
 
 
-void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;  ips200_show_string(0,180,"set 0 already");} 
-void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2=0;ips200_show_string(0,180,"set 0 already");}     
-void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;ips200_show_string(0,180,"set 0 already");} 
-void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0; ips200_show_string(0,180,"set 0 already");} 
+void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;PID_gyro.maxout=5000;PID_gyro.minout=-5000;  ips200_show_string(0,180,"set 0 already");} 
+void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2=0;PID_angle.maxout=5000;PID_angle.minout=-5000;ips200_show_string(0,180,"set 0 already");}     
+void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;PID_speed.maxout=5000;PID_speed.minout=-5000;ips200_show_string(0,180,"set 0 already");} 
+void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0;PID_angle.maxout=5000;PID_angle.minout=-5000; ips200_show_string(0,180,"set 0 already");} 
 
+void pid_all_set0(){pid_gyro_set0();pid_angle_set0();pid_V_set0();pid_steer_set0();}
 //ÉÁ´æ´æ´¢ 
 
 
@@ -201,10 +202,11 @@ MENU menu[] =
             {3, "kd",        ips200_x_max-10*8,    60, &PID_steer.kd,    &default_int, param_float, NULL},
             {3, "maxout",      ips200_x_max-10*8,  80, &PID_steer.maxout, &default_int, param_float,NULL},
             {3, "minout",      ips200_x_max-10*8,  80, &PID_steer.minout, &default_int, param_float, NULL},
-        {2, "gyro_set0",       0,                  100, &default_float,           &default_int, confirm,     pid_gyro_set0},
-        {2, "angle_set0",      0,                  120, &default_float,           &default_int, confirm,     pid_angle_set0},
-        {2, "V_set0",          0,                  140, &default_float,           &default_int, confirm,     pid_V_set0},
-        {2, "steer_set0",      0,                  160, &default_float,           &default_int, confirm,     pid_steer_set0},
+        {2, "gyro_set0",       0,                  100, &default_float,           &default_int, confirm,     pid_all_set0},
+        {2, "gyro_set0",       0,                  120, &default_float,           &default_int, confirm,     pid_gyro_set0},
+        {2, "angle_set0",      0,                  140, &default_float,           &default_int, confirm,     pid_angle_set0},
+        {2, "V_set0",          0,                  160, &default_float,           &default_int, confirm,     pid_V_set0},
+        {2, "steer_set0",      0,                  180, &default_float,           &default_int, confirm,     pid_steer_set0},
     {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
         {2, "show_image",      0,                  20, &default_float, &default_int, function,    image_show},
         {2, "OTSU_threshold",  0,                  40, &default_float, &default_int, catlog,      NULL},
