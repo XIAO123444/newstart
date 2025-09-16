@@ -62,8 +62,8 @@ int16 element_num=12;
 
 
 int32 speed;
-int16 forwardsight;
-int16 forwardsight2;//直到判断前瞻
+int16 forwardsight; //默认前瞻
+int16 forwardsight2;//  直到判断前瞻！！！！注意这个和前瞻不同，用于三轮或者四轮车加速的！！！
 int16 forwardsight3;//弯道前瞻
 //pid
 extern PID_t PID_gyro;          //角速度环
@@ -223,9 +223,10 @@ MENU menu[] =
                 {4, "l_up_p",   100,               60, &default_float, &default_int, param_int_readonly, NULL},
                 {4, "l_down_p", 100,               80, &default_float, &default_int, param_int_readonly, NULL},
             {3, "round",       0,                  40, &default_float, &default_int, catlog,      NULL},
-        {2, "forwardsight",    0,                  80, &default_float, &forwardsight, catlog,    NULL},
-            {3, "forwardsight2",100,               20, &default_float, &forwardsight2, param_int, NULL},
-            {3, "forwardsight3",100,               40, &default_float, &forwardsight3, param_int, NULL},
+        {2, "forwardsight",    0,                  80, &default_float, &default_int, catlog,    NULL},
+            {3, "forwardsight1",100,               20, &default_float, &forwardsight, param_int, NULL},
+            {3, "forwardsight2",100,               40, &default_float, &forwardsight2, param_int, NULL},
+            {3, "forwardsight3",100,               60, &default_float, &forwardsight3, param_int, NULL},
     {1, "element_onoff",      0,                  80, &default_float, &default_int, catlog,      NULL},
         {2, "crossl",        100,                 20, &default_float, &roadelement_onoff.crossl,    on_off, NULL},
         {2, "crossr",        100,                 40, &default_float, &roadelement_onoff.crossr,    on_off, NULL},

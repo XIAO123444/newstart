@@ -13,6 +13,9 @@ extern int forwardsight3;       //前瞻3，弯道前瞻
 extern int16 threshold_up;       //大津法阈值上限
 extern int16 threshold_down;     //大津法阈值下限
 
+extern int16 forwardsight; //默认前瞻
+extern int16 forwardsight2;//  直到判断前瞻！！！！注意这个和前瞻不同，用于三轮或者四轮车加速的！！！
+extern int16 forwardsight3;//弯道前瞻
 
 extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
@@ -68,7 +71,11 @@ void flash_save_config(int16 i)
         flash_union_buffer[19].float_type = PID_steer.maxout;
         flash_union_buffer[20].float_type = PID_steer.minout;
 
+        
         //PID21个参数
+        flash_union_buffer[21].int16_type = forwardsight;
+        flash_union_buffer[22].int16_type = forwardsight2;
+        flash_union_buffer[23].int16_type = forwardsight3;
 
 
         flash_write_page_from_buffer(100+i/4, i%4);        //flash写
@@ -113,7 +120,13 @@ void flash_load_config(int16 i)
     PID_steer.minout = flash_union_buffer[20].float_type;
     
     //PID21个参数读取
-}
+
+    forwardsight=flash_union_buffer[21].int16_type;
+    forwardsight2=flash_union_buffer[22].int16_type;
+    forwardsight3=flash_union_buffer[23].int16_type;
+
+
+} 
 void flash_load_config_default(void) { flash_load_config(0); }
 void flash_load_config_1(void) { flash_load_config(1); }
 void flash_load_config_2(void) { flash_load_config(2); }
