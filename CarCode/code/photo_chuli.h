@@ -49,5 +49,6 @@ int16   find_vpoint(int16 start,int16 end);
 
 void trace_right_bu(int16 start,int16 end);
 void trace_left_bu(int16 start,int16 end);
-
+void image_process(void);
+void protect();
 #endif

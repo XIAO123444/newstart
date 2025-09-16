@@ -7,6 +7,7 @@
 #include "photo_chuli.h"
 #include "math.h"
 #include "track.h"
+#include "Balance.h"
 int16 centerline[MT9V03X_H];
 int16 leftline[MT9V03X_H];
 int16 rightline[MT9V03X_H];
@@ -1490,4 +1491,17 @@ void trace_left_bu(int16 start,int16 end)
         }
         leftfollowline[i]=temp; //左边界轨迹
     }
+}
+void image_process(void)
+{
+    image_threshold = my_adapt_threshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // 图像获取
+    set_b_imagine(image_threshold);        // 二值化
+    image_boundary_process2();              // 图像边界处理
+    element_check();// 元素检查
+}
+void protect()
+{
+        banmaxian_check(); // 斑马线保护
+        black_protect_check();  // 黑色保护
+		lift_protection(); // 抬升保护
 }
