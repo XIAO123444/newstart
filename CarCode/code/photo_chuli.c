@@ -482,8 +482,8 @@ void image_boundary_process2(void)
     find_y_point(); 
     if(leftorright==0)
     {
-        ips200_show_string(0,240,"middle");
-        ips200_show_int(60,240,0,3);
+        // ips200_show_string(0,240,"middle");
+        // ips200_show_int(60,240,0,3);
         for(int16 i=left_start_point;i<right_start_point;i+=1)       //寻找最长左白列
         {
 
@@ -505,8 +505,8 @@ void image_boundary_process2(void)
     }
     else if(leftorright==1) //如果是右侧找y点
     {
-        ips200_show_string(0,240,"right ");
-        ips200_show_int(60,240,white_y_point,3);
+        // ips200_show_string(0,240,"right ");
+        // ips200_show_int(60,240,white_y_point,3);
         for(int16 i=white_y_point;i<MT9V03X_W-1;i+=1)       //寻找最长左白列
         {
 
@@ -528,8 +528,8 @@ void image_boundary_process2(void)
     }
     else if(leftorright==-1) //如果是左侧找y点
     {
-                ips200_show_string(0,240,"left ");
-        ips200_show_int(60,240,white_y_point,3);
+        //         ips200_show_string(0,240,"left ");
+        // ips200_show_int(60,240,white_y_point,3);
         for(int16 i=white_y_point;i>=0;i-=1)       //寻找最长左白列
         {
 
