@@ -36,7 +36,7 @@ PID_t PID_steer={
 	  .kd=0,
 	  .maxout=5000,
 	  .minout=-5000,
-	  .targ=0,
+	  .targ=91,
 };
 void PID_update(PID_t *p) //Œª÷√ Ω
 {

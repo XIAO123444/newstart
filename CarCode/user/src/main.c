@@ -3,7 +3,7 @@
 #include "menu.h"
 #include "encoder.h"
 #include "key.h"
-// #include "flash.h"  // 闪存
+ #include "flash.h"  // 闪存
 #include "motor.h"
 #include "photo_chuli.h"
 #include "screen.h"
@@ -34,11 +34,10 @@ void all_init(void)
     imu660ra_init();            //陀螺仪初始化
     Encoder_Init();
     Menu_Screen_Init();         //屏幕基础显示初始化        
-    // flash_init();               //闪存初始化
     Key_init();                 //按键初始化
     BUZZ_init();                // 蜂鸣器初始化
     motor_init();               //电机初始化
-
+    flash_load_config_default();
     while(1) // 摄像头初始化
     {
         if(mt9v03x_init())
