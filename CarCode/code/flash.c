@@ -4,12 +4,9 @@
 #include "pid.h"
 
 
-extern bool save_flag;
 
 extern int speed;
-extern int forwardsight;        //前瞻1，处理转向
-extern int forwardsight2;       //前瞻2，提前看弯道
-extern int forwardsight3;       //前瞻3，弯道前瞻
+
 extern int16 threshold_up;       //大津法阈值上限
 extern int16 threshold_down;     //大津法阈值下限
 
@@ -38,8 +35,7 @@ void flash_reset(void)
 //-------------------------------------------------------------------------------------------------------------------
 void flash_save_config(int16 i)
 {
-    if(save_flag)
-    {
+
         if(flash_check(100+i/4, i%4)){flash_erase_page(100+i/4, i%4);}
         flash_buffer_clear();
         //只有转向环d2
@@ -80,9 +76,8 @@ void flash_save_config(int16 i)
 
         flash_write_page_from_buffer(100+i/4, i%4);        //flash写
 
-    }
 }
-void flash_save_config_default(void) { flash_save_config(0); }
+void flash_save_config_default(void) { flash_save_config(0); }          //默认分区保存
 void flash_save_config_1(void) { flash_save_config(1); }
 void flash_save_config_2(void) { flash_save_config(2); }
 void flash_save_config_3(void) { flash_save_config(3); }
@@ -127,7 +122,7 @@ void flash_load_config(int16 i)
 
 
 } 
-void flash_load_config_default(void) { flash_load_config(0); }
+void flash_load_config_default(void) { flash_load_config(0); }      //默认分区加载
 void flash_load_config_1(void) { flash_load_config(1); }
 void flash_load_config_2(void) { flash_load_config(2); }
 void flash_load_config_3(void) { flash_load_config(3); }

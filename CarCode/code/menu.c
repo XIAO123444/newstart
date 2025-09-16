@@ -16,7 +16,6 @@ int p=0;//记录当前指针
 int p_nearby=0;//记录所属的指针
 uint8 input;    //菜单按键输入
 extern int status;
-bool save_flag;      //保存标志位
 extern bool start_flag;     //发车标志位
 extern bool stop;     //停车标志位
 
@@ -159,14 +158,10 @@ void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2
 void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;ips200_show_string(0,180,"set 0 already");} 
 void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0; ips200_show_string(0,180,"set 0 already");} 
 
-//闪存存储
+//闪存存储 
 
 
-void flashcodeloaddefault(){}
-void flashcodeload1(){}
-void flashcodeload2(){}
-void flashcodeload3(){}
-void flashcodeload4(){}
+
 //代码存储
 void codeload1(){}
 void codeload2(){}
@@ -206,10 +201,10 @@ MENU menu[] =
             {3, "kd",        ips200_x_max-10*8,    60, &PID_steer.kd,    &default_int, param_float, NULL},
             {3, "maxout",      ips200_x_max-10*8,  80, &PID_steer.maxout, &default_int, param_float,NULL},
             {3, "minout",      ips200_x_max-10*8,  80, &PID_steer.minout, &default_int, param_float, NULL},
-        {2, "gyro_set0",       0,                  100, &default_float,           &default_int, confirm,     NULL},
-        {2, "angle_set0",      0,                  120, &default_float,           &default_int, confirm,     NULL},
-        {2, "V_set0",          0,                  120, &default_float,           &default_int, confirm,     NULL},
-        {2, "steer_set0",      0,                  120, &default_float,           &default_int, confirm,     NULL},
+        {2, "gyro_set0",       0,                  100, &default_float,           &default_int, confirm,     pid_gyro_set0},
+        {2, "angle_set0",      0,                  120, &default_float,           &default_int, confirm,     pid_angle_set0},
+        {2, "V_set0",          0,                  140, &default_float,           &default_int, confirm,     pid_V_set0},
+        {2, "steer_set0",      0,                  160, &default_float,           &default_int, confirm,     pid_steer_set0},
     {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
         {2, "show_image",      0,                  20, &default_float, &default_int, function,    image_show},
         {2, "OTSU_threshold",  0,                  40, &default_float, &default_int, catlog,      NULL},
@@ -219,7 +214,7 @@ MENU menu[] =
         {2, "image_point",     0,                  60, &default_float, &default_int, catlog,      NULL},
             {3, "crossroadall",0,                  20, &default_float, &default_int, catlog,      NULL},
                 {4, "r_up_p",   100,               20, &default_float, &default_int, param_int_readonly, NULL},
-                {4, "r_down_p", 100,               40, &default_float, &default_int, param_int_readonly, NULL},
+                {4, "r_down_p", 100,               40, &default_float, &default_int, param_int_readonly, NULL}, 
                 {4, "l_up_p",   100,               60, &default_float, &default_int, param_int_readonly, NULL},
                 {4, "l_down_p", 100,               80, &default_float, &default_int, param_int_readonly, NULL},
             {3, "round",       0,                  40, &default_float, &default_int, catlog,      NULL},
@@ -271,9 +266,9 @@ MENU menu[] =
 
         {2, "flash_save",   100,                 60, &default_float, &default_int, catlog,       NULL},
             {3, "save1",    100,                 20, &default_float, &default_int, confirm,     flash_save_config_1},
-            {3, "save2",    100,                 20, &default_float, &default_int, confirm,     flash_save_config_2},
-            {3, "save3",    100,                 20, &default_float, &default_int, confirm,     flash_save_config_3},
-            {3, "save4",    100,                 20, &default_float, &default_int, confirm,     flash_save_config_4},
+            {3, "save2",    100,                 40, &default_float, &default_int, confirm,     flash_save_config_2},
+            {3, "save3",    100,                 60, &default_float, &default_int, confirm,     flash_save_config_3},
+            {3, "save4",    100,                 80, &default_float, &default_int, confirm,     flash_save_config_4},
 
 
         {2, "resetflash",        100,            80, &default_float, &default_int, confirm,      flash_reset},
@@ -332,7 +327,7 @@ void output(void)
         ips200_set_color(RGB565_ORANGE,RGB565_BLACK);
         ips200_show_string(20,0,"WARNING!WARNING!WARNING!");
         ips200_show_string(20,160,"PRESS BOTTON3 TO CONFIRM");
-        ips200_show_string(20,310,"WARNING!WARNING!WARNING!");
+        ips200_show_string(20,300,"WARNING!WARNING!WARNING!");
         return;                     //提前退出
     }
     if(menu_Mode==special_show_element1)
@@ -618,8 +613,8 @@ void Menu_control(void)
         }
         if(menu[p].priority!=1)                 //换菜单等级(读者不要动)
         {
-            save_flag=true;
             current_state--;
+            flash_save_config_default();
             p=p_nearby;
             while (menu[p_nearby].priority!=current_state-1)
             {

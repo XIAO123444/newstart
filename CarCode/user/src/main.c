@@ -11,7 +11,6 @@
 #include "steer_pid.h"
 #include "buzzer.h"
 #include "speed.h"
-bool save_flag = false;
 bool stop_flag1;                    // 停止标志
 bool start_flag = false;            // 启动标志
 
@@ -19,9 +18,7 @@ extern uint8 leftline_num;          // 左线点数
 extern uint8 rightline_num;         // 右线点数
 extern int current_state;
 extern int speed; 
-extern int forwardsight;
-extern int forwardsight2; // 前瞻2  
-extern int forwardsight3; // 前瞻3
+
 extern int encodercounter1;
 extern int image_threshold; 
 extern int16 threshold_up;  //大津法阈值上限
