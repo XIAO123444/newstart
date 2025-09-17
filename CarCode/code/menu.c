@@ -613,10 +613,18 @@ void Menu_control(void)
             menu_Mode=normal;
             break;
         }
+        if(menu[p].priority==1)
+        {
+            flash_save_config_default();
+            ips200_set_color(RGB565_PURPLE,RGB565_BLACK);
+            ips200_show_string(0,300,"save default already");
+            ips200_set_color(RGB565_WHITE,RGB565_BLACK);
+
+            break;
+        }
         if(menu[p].priority!=1)                 //换菜单等级(读者不要动)
         {
             current_state--;
-            flash_save_config_default();
             p=p_nearby;
             while (menu[p_nearby].priority!=current_state-1)
             {
