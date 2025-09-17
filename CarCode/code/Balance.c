@@ -9,6 +9,7 @@ float cycle_T=0.005;         //采样周期
 imu_err_typdef imu_err={-6,3,0}; //imu误差结构体
 uint16 az_last=0; //上次加速度计Z轴数据
 
+extern bool stop;
 void first_order_filtering(void)
 {
     int16 gx,gy,gz,ax,ay,az;
@@ -57,7 +58,7 @@ void lift_protection(void)
     uint8 acc_abnormal=abs(az-az_last)>8000; //加速度异常标志
     if(acc_abnormal) //如果加速度异常或角度异常
     {//停车
-
+        stop=true;
     }
 
     az_last=az; //保存上次加速度计Z轴数据

@@ -92,8 +92,7 @@ uint8 pix_per_meter = 20;//每米的像素数
 extern int16 threshold_up;  //大津法阈值上限
 extern int16 threshold_down; //大津法阈值下限
 
-extern bool stop_flag1;
-
+extern bool stop;
 float dx1[5]={0};
 float dx2[5]={0};
 
@@ -623,7 +622,7 @@ void black_protect_check(void)
             if (sum>100*0.8)
         {
             start_flag=false;
-            stop_flag1=true;
+            stop=true;
         }
 }
 void banmaxian_check(void)
@@ -643,7 +642,7 @@ void banmaxian_check(void)
                 if(count>=10)//如果黑色计数大于等于40，认为是斑马线
                 {
                     
-                    stop_flag1=true;
+                    stop=true;
                     start_flag=false;
                 }
             }
