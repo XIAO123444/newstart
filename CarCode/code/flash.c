@@ -59,6 +59,7 @@ void flash_save_config(int16 i)
         flash_union_buffer[12].float_type = PID_speed.kd;
         flash_union_buffer[13].float_type = PID_speed.maxout;
         flash_union_buffer[14].float_type = PID_speed.minout;
+        flash_union_buffer[24].float_type=  PID_speed.targ;
         //转向环
         flash_union_buffer[15].float_type = PID_steer.kp;
         flash_union_buffer[16].float_type = PID_steer.ki;
@@ -105,6 +106,7 @@ void flash_load_config(int16 i)
     PID_speed.kd = flash_union_buffer[12].float_type;
     PID_speed.maxout = flash_union_buffer[13].float_type;
     PID_speed.minout = flash_union_buffer[14].float_type;
+    PID_speed.targ=flash_union_buffer[24].float_type;//24
     
     // 转向环参数读取
     PID_steer.kp = flash_union_buffer[15].float_type;
