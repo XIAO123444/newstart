@@ -39,7 +39,7 @@ void first_order_filtering(void)
 		gz=0;
 	} 
     //Ò»½×»¥²¹ÂË²¨Ëã½Ç¶È
-  float gyro_temp;
+    float gyro_temp;
 	float acc_temp;
 	gyro_temp=gx*gyro_ration;
 	acc_temp=(ay-angle_temp)*acc_ration;

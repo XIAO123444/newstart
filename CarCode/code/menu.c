@@ -19,6 +19,8 @@ extern int status;
 extern bool start_flag;     //发车标志位
 extern bool stop;     //停车标志位
 
+extern float filtering_angle; //解算出的角度
+
 bool show_flag=false;     //显示标志位,全局变量
 
 
@@ -210,6 +212,10 @@ MENU menu[] =
         {2, "V_set0",          0,                  160, &default_float,           &default_int, confirm,     pid_V_set0},
         {2, "steer_set0",      0,                  180, &default_float,           &default_int, confirm,     pid_steer_set0},
     {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
+        {2, "show_image",      0,                  20, &default_float, &default_int, catlog,    NULL},
+            {3, "ROLL_angle",    100,                 20, &filtering_angle, &default_int, param_float_readonly,    NULL},
+
+
         {2, "show_image",      0,                  20, &default_float, &default_int, function,    image_show},
         {2, "OTSU_threshold",  0,                  40, &default_float, &default_int, catlog,      NULL},
             {3, "OTSU_up",    100,                 20, &default_float, &default_int, param_int,    NULL},
