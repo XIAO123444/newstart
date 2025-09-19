@@ -62,10 +62,10 @@ int turn1 =0;
 int turn2 =0;
 int encodercounter1=0;
 extern uint16 centerline2[MT9V03X_H];
-
+int flag=0;
 
 //神医
-float Med_Angle=-1350;
+float Med_Angle=-1450;
 
 bool stop=true; //停车标志
 
@@ -77,6 +77,7 @@ extern PID_t PID_steer;         //舵机环
 
 uint8 count1=0;     //毫秒计数1
 uint8 count2=0;     //毫秒计数2
+uint8 count3 = 0;     //毫秒计数3
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简�?     TIM1 的定时器更新�?�?服务函数 �?�? .s 文件定义 不允许修改函数名�?
 //              默�?�优先级 �?改优先级使用 interrupt_set_priority(TIM1_UP_IRQn, 1);
@@ -190,37 +191,51 @@ void TIM5_IRQHandler (void)
 // 函数简�?     TIM6 的定时器�?�?服务函数 �?�? .s 文件定义 不允许修改函数名�?
 //              默�?�优先级 �?改优先级使用 interrupt_set_priority(TIM6_IRQn,  1);
 //-------------------------------------------------------------------------------------------------------------------
-void TIM6_IRQHandler (void) 
+void TIM6_IRQHandler(void)
 {
     // 此�?�编写用户代�?
     S_PID_CAL();        //转向控制
-	count1++;
+    count1++;
     count2++;
+	  count3++;
     imu660ra_get_gyro();
-    imu660ra_get_acc();	
-    if(count2>=20){
-        encoder1=encoder_get_count(TIM3_ENCODER);
+    imu660ra_get_acc();
+    imu_filter();
+    if (count2 >= 20) {
+        encoder1 = encoder_get_count(TIM3_ENCODER);
         encoder_clear_count(TIM3_ENCODER);
-        encoder2=encoder_get_count(TIM4_ENCODER);
+        encoder2 = encoder_get_count(TIM4_ENCODER);
         encoder_clear_count(TIM4_ENCODER);
-        PID_speed.actual=(-encoder2+encoder1)/2;
+        PID_speed.actual = (-encoder2 + encoder1) / 2;
         increment_pid_update(&PID_speed);
-		  count2=0;
-	}
-	if(count1>=5){
-		  first_order_filtering();
-		  PID_angle.actual=filtering_angle;
-		  PID_angle.targ=Med_Angle-PID_speed.out;
-		  PID_gyro_update(&PID_angle,imu660ra_gyro_x);
-		  count1=0;
+        if (PID_speed.actual < PID_speed.targ * 0.6&&flag==0) {
+            PID_speed.out = 800;
+        }
+				if(PID_speed.actual > PID_speed.targ * 0.8){
+					flag=1;
+				}
+        count2 = 0;
     }
-		  PID_gyro.targ=PID_angle.out;
-		  PID_gyro.actual=imu660ra_gyro_x;
-		  PID_update(&PID_gyro);
+    if (count1 >= 5) {
+        first_order_filtering();
+        PID_angle.actual = filtering_angle;
+        PID_angle.targ = Med_Angle - PID_speed.out;
+        if(PID_angle.error0<50&&PID_angle.error0>-50)
+        {
+            PID_angle.error0 = 0;
+        }
+        PID_gyro_update(&PID_angle, imu660ra_gyro_x);
+        count1 = 0;
+    }
+    if (count3 >= 3) {
+    PID_gyro.targ = PID_angle.out;
+    PID_gyro.actual = imu660ra_gyro_x;
+    PID_update(&PID_gyro);
+		count3=0;
+}
     if(stop==false)
     {
-        motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out);
-        
+        motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out); 
     }
     else
     {

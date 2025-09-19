@@ -59,6 +59,7 @@ void flash_save_config(int16 i)
         flash_union_buffer[12].float_type = PID_speed.kd;
         flash_union_buffer[13].float_type = PID_speed.maxout;
         flash_union_buffer[14].float_type = PID_speed.minout;
+        flash_union_buffer[24].float_type=  PID_speed.targ;
         //转向环
         flash_union_buffer[15].float_type = PID_steer.kp;
         flash_union_buffer[16].float_type = PID_steer.ki;
@@ -66,7 +67,7 @@ void flash_save_config(int16 i)
         flash_union_buffer[18].float_type = PID_steer.kd2;
         flash_union_buffer[19].float_type = PID_steer.maxout;
         flash_union_buffer[20].float_type = PID_steer.minout;
-
+        flash_union_buffer[25].float_type = PID_steer.kd2;
         
         //PID21个参数
         flash_union_buffer[21].int16_type = forwardsight;
@@ -105,6 +106,7 @@ void flash_load_config(int16 i)
     PID_speed.kd = flash_union_buffer[12].float_type;
     PID_speed.maxout = flash_union_buffer[13].float_type;
     PID_speed.minout = flash_union_buffer[14].float_type;
+    PID_speed.targ=flash_union_buffer[24].float_type;//24
     
     // 转向环参数读取
     PID_steer.kp = flash_union_buffer[15].float_type;
@@ -113,6 +115,7 @@ void flash_load_config(int16 i)
     PID_steer.kd2 = flash_union_buffer[18].float_type; // 注意：保存时有kd2，读取也应有
     PID_steer.maxout = flash_union_buffer[19].float_type;
     PID_steer.minout = flash_union_buffer[20].float_type;
+    PID_steer.kd2=flash_union_buffer[25].float_type;
     
     //PID21个参数读取
 

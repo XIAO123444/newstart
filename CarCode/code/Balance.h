@@ -6,5 +6,6 @@ typedef struct {
     uint8 gz_err;
 }imu_err_typdef;
 void first_order_filtering(void);
+void imu_filter();
 void lift_protection(void);
 #endif

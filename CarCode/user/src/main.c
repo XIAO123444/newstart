@@ -24,7 +24,7 @@ extern int image_threshold;
 extern int16 threshold_up;  //大津法阈值上限
 extern int16 threshold_down; //大津法阈值下限
 extern uint8 dis_image[MT9V03X_H][MT9V03X_W];
-
+extern float filtering_angle; 
 extern bool stop;
 extern bool show_flag;
 void all_init(void)
@@ -105,8 +105,8 @@ int main()
         Menu_control();         // 菜单控制
         if(mt9v03x_finish_flag)
         { 
-			image_process();// 图像处理
-			protect(); // 保护    
+			  image_process();// 图像处理
+			  protect(); // 保护    
             // Velocity_Control();       // 速度控制    
             if(current_state == 1)
             {

@@ -7,15 +7,15 @@
  *        适合需要精确控制位置的系统[2](@ref)
  */
 PID_t PID_gyro={
-	  .kp=2,   //0.3
-	  .ki=0.000,  //0.02//0.01
+	  .kp=2.5,   //0.3
+	  .ki=0.300,  //0.02//0.01
 	  .kd=0,
 	  .maxout=5000,
 	  .minout=-5000,
     .targ=0
 };
 PID_t PID_angle={
-	  .kp=0.0,   //0.3
+	  .kp=1,   //0.3
 	  .ki=0.00,  //0.02//0.01
 	  .kd=0,
 	  .maxout=5000,
@@ -23,17 +23,18 @@ PID_t PID_angle={
     .targ=0
 };
 PID_t PID_speed={
-	  .kp=0,   //0.3
-	  .ki=0.007, //0.02//0.01
+	  .kp=2,   //0.3
+	  .ki=0.009, //0.02//0.01
 	  .kd=0,
-	  .maxout=5000,
-	  .minout=-5000,
+	  .maxout=1500,
+	  .minout=-1500,
 	  .targ=0
 };
 PID_t PID_steer={
 	  .kp=0,   //0.3
 	  .ki=0, //0.02//0.01
 	  .kd=0,
+	  .kd2=0.1,
 	  .maxout=5000,
 	  .minout=-5000,
 	  .targ=91,

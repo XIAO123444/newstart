@@ -18,7 +18,7 @@ uint8 input;    //菜单按键输入
 extern int status;
 extern bool start_flag;     //发车标志位
 extern bool stop;     //停车标志位
-
+extern uint8 flag;
 bool show_flag=false;     //显示标志位,全局变量
 
 
@@ -150,13 +150,13 @@ void show_element(void)
 //用于显示经过元素
 
 void image_show()   {show_flag=true;}
-void start_the_car(){stop=false;}//开始
+void start_the_car() { stop = false; flag = 0; }//开始
 
 
 void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;PID_gyro.maxout=5000;PID_gyro.minout=-5000;  ips200_show_string(0,180,"set 0 already");} 
 void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2=0;PID_angle.maxout=5000;PID_angle.minout=-5000;ips200_show_string(0,180,"set 0 already");}     
-void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;PID_speed.maxout=5000;PID_speed.minout=-5000;ips200_show_string(0,180,"set 0 already");} 
-void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0;PID_angle.maxout=5000;PID_angle.minout=-5000; ips200_show_string(0,180,"set 0 already");} 
+void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;PID_speed.maxout=5000;PID_speed.minout=-5000;PID_speed.targ=400;ips200_show_string(0,180,"set 0 already");} 
+void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0;PID_steer.maxout=5000;PID_steer.minout=-5000; ips200_show_string(0,180,"set 0 already");} 
 
 void pid_all_set0(){pid_gyro_set0();pid_angle_set0();pid_V_set0();pid_steer_set0();}
 //闪存存储 
@@ -200,9 +200,11 @@ MENU menu[] =
             {3, "kp",        ips200_x_max-10*8,    20, &PID_steer.kp,    &default_int, param_float, NULL},
             {3, "ki",        ips200_x_max-10*8,    40, &PID_steer.ki,    &default_int, param_float, NULL},
             {3, "kd",        ips200_x_max-10*8,    60, &PID_steer.kd,    &default_int, param_float, NULL},
+            {3, "kd2",        ips200_x_max-10*8,    80, &PID_steer.kd2,    &default_int, param_float, NULL},
+
             {3, "maxout",      ips200_x_max-10*8,  80, &PID_steer.maxout, &default_int, param_float,NULL},
-            {3, "minout",      ips200_x_max-10*8,  80, &PID_steer.minout, &default_int, param_float, NULL},
-        {2, "gyro_set0",       0,                  100, &default_float,           &default_int, confirm,     pid_all_set0},
+            {3, "minout",      ips200_x_max-10*8,  100, &PID_steer.minout, &default_int, param_float, NULL},
+        {2, "allset0",       0,                  100, &default_float,           &default_int, confirm,     pid_all_set0},
         {2, "gyro_set0",       0,                  120, &default_float,           &default_int, confirm,     pid_gyro_set0},
         {2, "angle_set0",      0,                  140, &default_float,           &default_int, confirm,     pid_angle_set0},
         {2, "V_set0",          0,                  160, &default_float,           &default_int, confirm,     pid_V_set0},

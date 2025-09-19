@@ -66,7 +66,7 @@ extern enum  mark carstatus_now;
 extern int16 bailie_lock_crossroad;
 extern int16 bailieright_lock_round;
 extern bool start_flag; //发车标志位
-
+extern bool stop;
 //线点与丢线↓↓↓↓
 uint8 leftline_num;         //左线点数量
 uint8 rightline_num;        //右线点数量
@@ -622,8 +622,10 @@ void black_protect_check(void)
     }
             if (sum>100*0.8)
         {
+					  
             start_flag=false;
             stop_flag1=true;
+					  stop=true;
         }
 }
 void banmaxian_check(void)
