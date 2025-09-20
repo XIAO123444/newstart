@@ -1,6 +1,7 @@
 #include "zf_common_headfile.h"
 #include "Balance.h"
 #include "PID.h"
+#include "math.h"
 uint8_t acc_ration=4;    //加速度计置信度
 uint8_t gyro_ration=4;   //陀螺仪置信度
 float filtering_angle=0; //解算出的角度
