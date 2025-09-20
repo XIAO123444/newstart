@@ -204,8 +204,8 @@ MENU menu[] =
             {3, "kd",        ips200_x_max-10*8,    60, &PID_steer.kd,    &default_int, param_float, NULL},
             {3, "kd2",        ips200_x_max-10*8,    80, &PID_steer.kd2,    &default_int, param_float, NULL},
 
-            {3, "maxout",      ips200_x_max-10*8,  80, &PID_steer.maxout, &default_int, param_float,NULL},
-            {3, "minout",      ips200_x_max-10*8,  100, &PID_steer.minout, &default_int, param_float, NULL},
+            {3, "maxout",      ips200_x_max-10*8,  100, &PID_steer.maxout, &default_int, param_float,NULL},
+            {3, "minout",      ips200_x_max-10*8,  120, &PID_steer.minout, &default_int, param_float, NULL},
         {2, "allset0",       0,                  100, &default_float,           &default_int, confirm,     pid_all_set0},
         {2, "gyro_set0",       0,                  120, &default_float,           &default_int, confirm,     pid_gyro_set0},
         {2, "angle_set0",      0,                  140, &default_float,           &default_int, confirm,     pid_angle_set0},
