@@ -208,10 +208,10 @@ void TIM6_IRQHandler(void)
         encoder_clear_count(TIM4_ENCODER);
         PID_speed.actual = (-encoder2 + encoder1) / 2;
         increment_pid_update(&PID_speed);
-        if (PID_speed.actual < PID_speed.targ * 0.6&&flag==0) {
+        if (PID_speed.actual < PID_speed.targ * 0.6&&flag==0) {  //发车控制
             PID_speed.out = 800;
         }
-				if(PID_speed.actual > PID_speed.targ * 0.8){
+		if (PID_speed.actual > PID_speed.targ * 0.8) {   //达到一定速度
 					flag=1;
 				}
         count2 = 0;
@@ -220,7 +220,7 @@ void TIM6_IRQHandler(void)
         first_order_filtering();
         PID_angle.actual = filtering_angle;
         PID_angle.targ = Med_Angle - PID_speed.out;
-        if(PID_angle.error0<50&&PID_angle.error0>-50)
+        if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
         {
             PID_angle.error0 = 0;
         }

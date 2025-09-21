@@ -8,7 +8,7 @@
 uint8 cross_flag=0;
 
 
-extern int32 forwardsight;
+extern int32 forwardsight3;
 extern int16 centerline[MT9V03X_H];      // 中心线数组（图像高度维度）
 extern int16 leftline[MT9V03X_H];       // 左边界线数组 
 extern int16 rightline[MT9V03X_H];      // 右边界线数组
@@ -119,9 +119,9 @@ int16 output_middle4(void)
         return MT9V03X_W/2;         //防止数组越界
     }
     
-    if(search_stop1<forwardsight_stragety)            //如果终止点远于 前视距离
+    if(search_stop1<forwardsight3)            //如果终止点远于 前视距离
     {
-        result=(centerline2[forwardsight_stragety]+centerline2[forwardsight_stragety+1]+centerline2[forwardsight_stragety+2])/3;        // 取前视距离的平均值 
+        result=(centerline2[forwardsight3]+centerline2[forwardsight3+1]+centerline2[forwardsight3+2])/3;        // 取前视距离的平均值 
         return result;                      
         
     }

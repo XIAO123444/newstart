@@ -69,6 +69,14 @@ extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
 extern PID_t PID_steer;         //转向环
+void PID_clear() {
+	PID_gyro.error0 = 0;
+  PID_gyro.errorint = 0;
+	PID_angle.error0 = 0;
+	PID_speed.errorint = 0;
+	PID_steer.error0 = 0;
+	PID_steer.errorint = 0; 
+}
 struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
 struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
 
@@ -150,7 +158,7 @@ void show_element(void)
 //用于显示经过元素
 
 void image_show()   {show_flag=true;}
-void start_the_car() { stop = false; flag = 0; }//开始
+void start_the_car() { stop = false; flag = 0; PID_clear();}//开始
 
 
 void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;PID_gyro.maxout=5000;PID_gyro.minout=-5000;  ips200_show_string(0,180,"set 0 already");} 
@@ -202,8 +210,8 @@ MENU menu[] =
             {3, "kd",        ips200_x_max-10*8,    60, &PID_steer.kd,    &default_int, param_float, NULL},
             {3, "kd2",        ips200_x_max-10*8,    80, &PID_steer.kd2,    &default_int, param_float, NULL},
 
-            {3, "maxout",      ips200_x_max-10*8,  80, &PID_steer.maxout, &default_int, param_float,NULL},
-            {3, "minout",      ips200_x_max-10*8,  100, &PID_steer.minout, &default_int, param_float, NULL},
+            {3, "maxout",      ips200_x_max-10*8,  100, &PID_steer.maxout, &default_int, param_float,NULL},
+            {3, "minout",      ips200_x_max-10*8,  120, &PID_steer.minout, &default_int, param_float, NULL},
         {2, "allset0",       0,                  100, &default_float,           &default_int, confirm,     pid_all_set0},
         {2, "gyro_set0",       0,                  120, &default_float,           &default_int, confirm,     pid_gyro_set0},
         {2, "angle_set0",      0,                  140, &default_float,           &default_int, confirm,     pid_angle_set0},

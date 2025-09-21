@@ -49,8 +49,8 @@ void PID_update(PID_t *p) //位置式
     // 积分项累加：∑e(k) = ∑e(k-1) + e(k)
     p->errorint += p->error0;
     // 积分限幅：防止积分饱和，提高系统稳定性[2](@ref)
-    if(p->errorint > 1000){p->errorint = 1000;}
-    if(p->errorint < -1000){p->errorint = -1000;}
+    if(p->errorint > 50000){p->errorint = 50000;}
+    if(p->errorint < -50000){p->errorint = -50000;}
     
     // PID计算: P + I + D
     // P项: Kp*e(k), I项: Ki*∑e(k), D项: Kd*(e(k)-e(k-1))[9](@ref)
@@ -74,8 +74,8 @@ void increment_pid_update(PID_t *p) {
     p->error0 = p->targ - p->actual;
     
     // 积分项限幅（虽然增量式PID通常不直接使用积分项，但这里保留了积分限制）
-    if(p->errorint > 2000){p->errorint = 2000;}
-    if(p->errorint < -2000){p->errorint = -2000;}
+    if(p->errorint > 10000){p->errorint = 10000;}
+    if(p->errorint < -10000){p->errorint = -10000;}
     
     // 增量式PID计算: Δu(k) = Kp*[e(k)-e(k-1)] + Ki*e(k) + Kd*[e(k)-2e(k-1)+e(k-2)]
     p->out += p->kp * (p->error0 - p->error1) + p->ki * p->error0 + p->kd * (p->error0 - 2 * p->error1 + p->error2);
