@@ -66,7 +66,7 @@ extern enum  mark carstatus_now;
 extern int16 bailie_lock_crossroad;
 extern int16 bailieright_lock_round;
 extern bool start_flag; //·¢³µ±êÖ¾Î»
-
+extern bool stop;
 //ÏßµãÓë¶ªÏß¡ı¡ı¡ı¡ı
 uint8 leftline_num;         //×óÏßµãÊıÁ¿
 uint8 rightline_num;        //ÓÒÏßµãÊıÁ¿
@@ -264,6 +264,140 @@ int my_adapt_threshold(uint8 *image, uint16 col, uint16 row)   //×¢Òâ¼ÆËããĞÖµµÄÒ
 		return threshold_up;
 	}
     return threshold;
+}
+float prefix_area_A[GrayScale], prefix_suma[GrayScale];
+prefix_area_A[0] = pixelCount[0] * mu_A(0, L1, L2);
+prefix_suma[0] = 0 * pixelCount[0] * mu_A(0, L1, L2);
+for (int k = 1; k < GrayScale; k++) {
+    prefix_area_A[k] = prefix_area_A[k - 1] + pixelCount[k] * mu_A(k, L1, L2);
+    prefix_suma[k] = prefix_suma[k - 1] + k * pixelCount[k] * mu_A(k, L1, L2);
+}
+/// ¼ÆËãÁ¥Êô¶Èº¯Êı
+float mu_A(int k, int L1, int L2) {
+    if (k <= L1) return 1.0f;
+    if (k >= L2) return 0.0f;
+    return (float)(L2 - k) / (L2 - L1);
+}
+
+float mu_B(int k, int L1, int L2, int L3, int L4) {
+    if (k <= L1 || k >= L4) return 0.0f;
+    if (k >= L2 && k <= L3) return 1.0f;
+    if (k > L1 && k < L2) return (float)(k - L1) / (L2 - L1);
+    if (k > L3 && k < L4) return (float)(L4 - k) / (L4 - L3);
+    return 0.0f;
+}
+
+float mu_C(int k, int L3, int L4) {
+    if (k <= L3) return 0.0f;
+    if (k >= L4) return 1.0f;
+    return (float)(k - L3) / (L4 - L3);
+}
+//Ä£ºı´ó½ò·¨
+int fuzzy_otsu(uint8* image, uint16 col, uint16 row)
+{
+#define GrayScale 256
+    uint16 width = col;
+    uint16 height = row;
+    int pixelCount[GrayScale];
+    int i, j;
+    int pixelSum = width * height / 4;
+    int threshold = 0;
+    uint8* data = image;  //Ö¸ÏòÏñËØÊı¾İµÄÖ¸Õë
+    int valley_sum = 0;
+    int valley_count = 0;
+    for (i = 0; i < height; i += 2)
+    {
+        for (j = 0; j < width; j += 2)
+        {
+            pixelCount[(int)data[i * width + j]]++;  //½«µ±Ç°µÄµãµÄÏñËØÖµ×÷Îª¼ÆÊıÊı×éµÄÏÂ±ê
+        }
+    }
+    // 1. Í³¼ÆÊµ¼Ê»Ò¶ÈÇø¼ä
+    int min_gray = 255, max_gray = 0;
+    for (int i = 0; i < GrayScale; i++) {
+        if (pixelCount[i] > 0) {
+            if (i < min_gray) min_gray = i;
+            if (i > max_gray) max_gray = i;
+        }
+    }
+    for (int i = 1; i < max_gray - 1; i++) {
+        if (pixelCount[i] < pixelCount[i - 1] && pixelCount[i] < pixelCount[i + 1]) {
+            valley_sum += i;
+            valley_count++;
+        }
+    }
+    float valley_mean = 0;
+    if (valley_count > 0) {
+        valley_mean = (float)valley_sum / valley_count;
+    }
+    // valley_mean ¼´ÎªËùÓĞ¹ÈµãµÄ¾ùÖµ
+    int left_max_gray = 0, right_max_gray = 0;
+    int left_max_count = 0, right_max_count = 0;
+    int split = (int)(valley_mean + 0.5); // ËÄÉáÎåÈë
+
+    for (int i = 0; i < split; i++) {
+        if (pixelCount[i] > left_max_count) {
+            left_max_count = pixelCount[i];
+            left_max_gray = i;
+        }
+    }
+    for (int i = split; i < max_gray; i++) {
+        if (pixelCount[i] > right_max_count) {
+            right_max_count = pixelCount[i];
+            right_max_gray = i;
+        }
+    }
+    // left_max_gray Îª×óÇøÓò³öÏÖÆµÂÊ×î¸ßµÄ»Ò¶ÈÖµ
+    // right_max_gray ÎªÓÒÇøÓò³öÏÖÆµÂÊ×î¸ßµÄ»Ò¶ÈÖµ
+    int L1 = left_max_gray;
+    int L2 = left_max_gray + 20;
+    int L3;
+    int L4 = right_max_gray;
+    float S_max = 0;
+    int best_L3 = 0;
+    float area_A = 0, suma = 0;
+    for (int k = 0; k <= L2; k++) {
+        area_A += pixelCount[k] * mu_A(k, L1, L2);
+        suma += k * pixelCount[k] * mu_A(k, L1, L2);
+    }
+    float Pa = area_A / pixelSum;
+    float ma = suma / area_A;
+    // ±éÀúËùÓĞ¿ÉÄÜµÄL3Öµ£¬¼ÆËãÀà¼ä·½²î
+    for (L3 = L2; L3 < max_gray; L3++) {
+        float area_B = 0, area_C = 0;
+        float sumb = 0, sumc = 0;
+        for (int k = L1; k <= L4; k++) {
+            area_B += pixelCount[k] * mu_B(k, L1, L2, L3, L4);
+            sumb += k * pixelCount[k] * mu_B(k, L1, L2, L3, L4);
+        }
+        for (int k = L3; k < ; k++) {
+            area_C += pixelCount[k] * mu_C(k, L3, L4);
+            sumc += k * pixelCount[k] * mu_C(k, L3, L4);
+        }
+        float Pb = area_B / pixelSum;
+        float Pc = area_C / pixelSum;
+        float mb = sumb / area_B;
+        float mc = sumc / area_C;
+        // ×î´óÀà¼ä·½²î
+        float S = Pa * Pb * Pc * (mc - mb) * (mc - ma) * (mb - ma);
+        if (S > S_max) {
+            S_max = S;
+            best_L3 = L3;
+        }
+        // S_max ¼´Îª×î´óÀà¼ä·½²î£¬best_L3 Îª×î¼Ñ·Ö¸îµã
+    }
+    threshold = (L2 + best_L3) / 2;
+    return threshold;
+}
+void set_b_imagine(int threshold)
+{
+    for (int16 i = 0; i < MT9V03X_H; i++)
+    {
+        for (int16 j = 0; j < MT9V03X_W; j++)
+        {
+            dis_image[i][j] = (mt9v03x_image[i][j] > threshold) ? 255 : 0;
+        }
+    }
 }
 void set_b_imagine(int threshold)
 {
@@ -621,8 +755,10 @@ void black_protect_check(void)
     }
             if (sum>100*0.8)
         {
+					  
             start_flag=false;
             stop=true;
+					  stop=true;
         }
 }
 void banmaxian_check(void)
@@ -1491,8 +1627,42 @@ void trace_left_bu(int16 start,int16 end)
         leftfollowline[i]=temp; //×ó±ß½ç¹ì¼£
     }
 }
-void image_process(void)
+//¶¨ÒåÅòÕÍºÍ¸¯Ê´µÄãĞÖµÇø¼ä
+#define threshold_max	255*5//´Ë²ÎÊı¿É¸ù¾İ×Ô¼ºµÄĞèÇóµ÷½Ú
+#define threshold_min	255*2//´Ë²ÎÊı¿É¸ù¾İ×Ô¼ºµÄĞèÇóµ÷½Ú
+void image_filter(uint8(*bin_image)[MT9V03X_W])//ĞÎÌ¬Ñ§ÂË²¨£¬¼òµ¥À´Ëµ¾ÍÊÇÅòÕÍºÍ¸¯Ê´µÄË¼Ïë
 {
+    uint16 i, j;
+    uint32 num = 0;
+
+
+    for (i = 1; i < MT9V03X_H - 1; i++)
+    {
+        for (j = 1; j < (MT9V03X_W - 1); j++)
+        {
+            //Í³¼Æ°Ë¸ö·½ÏòµÄÏñËØÖµ
+            num =
+                bin_image[i - 1][j - 1] + bin_image[i - 1][j] + bin_image[i - 1][j + 1]
+                + bin_image[i][j - 1] + bin_image[i][j + 1]
+                + bin_image[i + 1][j - 1] + bin_image[i + 1][j] + bin_image[i + 1][j + 1];
+
+
+            if (num >= threshold_max && bin_image[i][j] == 0)
+            {
+                bin_image[i][j] = 255;//°×  ¿ÉÒÔ¸ã³Éºê¶¨Òå£¬·½±ã¸ü¸Ä
+
+            }
+            if (num <= threshold_min && bin_image[i][j] == 255)
+            {
+                bin_image[i][j] = 0;//ºÚ
+            }
+        }
+    }
+
+}
+void image_process(void)
+{   
+	  image_filter(dis_image);
     image_threshold = my_adapt_threshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // Í¼Ïñ»ñÈ¡
     set_b_imagine(image_threshold);        // ¶şÖµ»¯
     image_boundary_process2();              // Í¼Ïñ±ß½ç´¦Àí

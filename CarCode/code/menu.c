@@ -21,6 +21,7 @@ extern bool stop;     //停车标志位
 
 extern float filtering_angle; //解算出的角度
 
+extern uint8 flag;
 bool show_flag=false;     //显示标志位,全局变量
 
 
@@ -71,6 +72,14 @@ extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
 extern PID_t PID_steer;         //转向环
+void PID_clear() {
+	PID_gyro.error0 = 0;
+  PID_gyro.errorint = 0;
+	PID_angle.error0 = 0;
+	PID_speed.errorint = 0;
+	PID_steer.error0 = 0;
+	PID_steer.errorint = 0; 
+}
 struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
 struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
 
@@ -152,7 +161,7 @@ void show_element(void)
 //用于显示经过元素
 
 void image_show()   {show_flag=true;}
-void start_the_car(){stop=false;}//开始
+void start_the_car() { stop = false; flag = 0; PID_clear();}//开始
 
 
 void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;PID_gyro.maxout=5000;PID_gyro.minout=-5000;  ips200_show_string(0,180,"set 0 already");} 
