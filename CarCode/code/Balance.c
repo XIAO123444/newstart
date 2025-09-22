@@ -2,7 +2,6 @@
 #include "Balance.h"
 #include "PID.h"
 #include "math.h"
-#include "math.h"
 uint8_t acc_ration=4;    //加速度计置信度
 uint8_t gyro_ration=4;   //陀螺仪置信度
 float filtering_angle=0; //解算出的角度
@@ -12,7 +11,6 @@ float pitch_angle;          //横滚角
 float roll_angle;           //俯仰角
 imu_err_typdef imu_err={-6,3,-2}; //imu误差结构体
 uint16 az_last=0; //上次加速度计Z轴数据
-#include <math.h>
 
 extern bool stop;
 // 改进的低通滤波函数

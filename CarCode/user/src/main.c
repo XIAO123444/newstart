@@ -53,6 +53,34 @@ void all_init(void)
 }
 
 
+
+int main()
+{
+    all_init();
+    while(1)
+    {
+        Key_Scan();             // 按键扫描
+        Menu_control();         // 菜单控制
+        if(mt9v03x_finish_flag)
+        { 
+            photo_image_process_all();
+            // protect(); // 保护    
+            // Velocity_Control();       // 速度控制    
+            if(current_state == 1)
+            {
+                if(stop&&show_flag)
+                {
+                    photo_displayimage();
+                    show_line(); 
+                }          
+            }                                                                   
+
+            mt9v03x_finish_flag = 0;
+        } 
+    }
+}
+
+
 // int main(void)
 // {
 //     all_init();
@@ -95,29 +123,3 @@ void all_init(void)
 //         } 
 //     }
 // }
-
-int main()
-{
-    all_init();
-    while(1)
-    {
-        Key_Scan();             // 按键扫描
-        Menu_control();         // 菜单控制
-        if(mt9v03x_finish_flag)
-        { 
-            photo_image_process_all();
-            protect(); // 保护    
-            // Velocity_Control();       // 速度控制    
-            if(current_state == 1)
-            {
-                if(stop&&show_flag)
-                {
-                    photo_displayimage();
-                    show_line(); 
-                }          
-            }                                                                   
-
-            mt9v03x_finish_flag = 0;
-        } 
-    }
-}
