@@ -1,4 +1,4 @@
- /*
+/*
  * camera.c
  *
  *  Created on: 2023Äê10ÔÂ24ÈÕ
@@ -8,6 +8,7 @@
 #include "math.h"
 #include "track.h"
 #include "Balance.h"
+#include "menu.h"
 int16 centerline[MT9V03X_H];
 int16 leftline[MT9V03X_H];
 int16 rightline[MT9V03X_H];
@@ -193,6 +194,11 @@ int16 right_down_line =0;
 //´ó½ò·¨¡ı¡ı¡ı¡ı¡ı¡ı¡ı¡ı¡ı¡ı
 uint8 dis_image[MT9V03X_H][MT9V03X_W];
 int16 image_threshold = 46;
+// ·Ö¿é´ó½ò·¨ËÄ¸ö·ÖÇøãĞÖµ£¨°´ĞĞÁĞ¶ş·Ö£º×óÉÏ¡¢ÓÒÉÏ¡¢×óÏÂ¡¢ÓÒÏÂ£©
+int16 threshold1 = 0;  // ×óÉÏ
+int16 threshold2 = 0;  // ÓÒÉÏ
+int16 threshold3 = 0;  // ×óÏÂ
+int16 threshold4 = 0;  // ÓÒÏÂ
 /*-------------------------------------------------------------------------------------------------------------------
   @brief     ¿ìËÙ´ó½òÇóãĞÖµ£¬À´×ÔÉ½Íş
   @param     image       Í¼ÏñÊı×é
@@ -265,14 +271,116 @@ int my_adapt_threshold(uint8 *image, uint16 col, uint16 row)   //×¢Òâ¼ÆËããĞÖµµÄÒ
 	}
     return threshold;
 }
-float prefix_area_A[GrayScale], prefix_suma[GrayScale];
-prefix_area_A[0] = pixelCount[0] * mu_A(0, L1, L2);
-prefix_suma[0] = 0 * pixelCount[0] * mu_A(0, L1, L2);
-for (int k = 1; k < GrayScale; k++) {
-    prefix_area_A[k] = prefix_area_A[k - 1] + pixelCount[k] * mu_A(k, L1, L2);
-    prefix_suma[k] = prefix_suma[k - 1] + k * pixelCount[k] * mu_A(k, L1, L2);
+
+
+/*-------------------------------------------------------------------
+  @brief    »ùÓÚ ROI µÄ´ó½òãĞÖµ¼ÆËã£¨Óë my_adapt_threshold Í¬²ßÂÔ£º¸ôĞĞ¸ôÁĞ³éÑù£©
+    @param    image       Í¼ÏñÊı×é
+                img_w       Í¼Ïñ¿í¶È
+                img_h       Í¼Ïñ¸ß¶È
+                x0          ROI ×óÉÏ½Ç X ×ø±ê
+                y0          ROI ×óÉÏ½Ç Y ×ø±ê
+                w           ROI ¿í¶È
+                h           ROI ¸ß¶È
+    @return   ¼ÆËãµÃµ½µÄãĞÖµ
+    Sample    int th = compute_otsu_roi(image, img_w, img_h, x0, y0, w, h);
+    @note     ¼Ğ½ôµ½È«¾ÖÉÏÏÂÏŞ£¨À´×ÔÍâ²¿¿Éµ÷·¶Î§£©
+-------------------------------------------------------------------*/
+
+// »ùÓÚ ROI µÄ´ó½òãĞÖµ¼ÆËã£¨Óë my_adapt_threshold Í¬²ßÂÔ£º¸ôĞĞ¸ôÁĞ³éÑù£©
+static int compute_otsu_roi(const uint8 *image, uint16 img_w, uint16 img_h,
+                            uint16 x0, uint16 y0, uint16 w, uint16 h)
+{
+    (void)img_h; // Î´Ö±½ÓÊ¹ÓÃ£¬µ«±£ÁôÒÔ±í´ïÍ¼Ïñ¸ß¶ÈÓïÒå
+    if (w == 0 || h == 0) return 0;
+    int pixelCount[256];
+    float pixelPro[256];
+    for (int i = 0; i < 256; ++i) { pixelCount[i] = 0; pixelPro[i] = 0.0f; }
+
+    // ²ÉÑùµãÊıÁ¿£¨ÓëÔ­º¯ÊıÒ»ÖÂ£¬¸ô 2 ²½³éÑù£©
+    int pixelSum = (w * h) / 4;
+    if (pixelSum <= 0) pixelSum = 1;
+
+    uint32 gray_sum = 0;
+    // Í³¼ÆÖ±·½Í¼£¨ROI ÄÚ¸ôĞĞ¸ôÁĞ³éÑù£©
+    for (uint16 yy = y0; yy < (uint16)(y0 + h); yy += 2)
+    {
+        const uint32 base = (uint32)yy * img_w;
+        for (uint16 xx = x0; xx < (uint16)(x0 + w); xx += 2)
+        {
+            uint8 gv = image[base + xx];
+            pixelCount[(int)gv]++;
+            gray_sum += gv;
+        }
+    }
+    // ¸ÅÂÊ·Ö²¼
+    for (int k = 0; k < 256; ++k)
+    {
+        pixelPro[k] = (float)pixelCount[k] / (float)pixelSum;
+    }
+
+    // OTSU ¼ÆËã£¨ÓëÔ­º¯ÊıÒ»ÖÂ£©
+    float w0 = 0, w1 = 0, u0tmp = 0, u1tmp = 0, u0 = 0, u1 = 0, u = 0;
+    float deltaTmp = 0, deltaMax = 0;
+    int threshold = 0;
+    const float mean_all = (float)gray_sum / (float)pixelSum;
+
+    for (int j = 0; j < 256; ++j)
+    {
+        w0    += pixelPro[j];
+        u0tmp += j * pixelPro[j];
+        w1     = 1.0f - w0;
+        u1tmp  = mean_all - u0tmp;
+        if (w0 > 1e-6f) u0 = u0tmp / w0; else u0 = 0.0f;
+        if (w1 > 1e-6f) u1 = u1tmp / w1; else u1 = 0.0f;
+        u = u0tmp + u1tmp;
+        deltaTmp = w0 * (u0 - u) * (u0 - u) + w1 * (u1 - u) * (u1 - u);
+        if (deltaTmp > deltaMax)
+        {
+            deltaMax = deltaTmp;
+            threshold = j;
+        }
+        if (deltaTmp < deltaMax)
+        {
+            break;
+        }
+    }
+    // ¼Ğ½ôµ½È«¾ÖÉÏÏÂÏŞ£¨À´×ÔÍâ²¿¿Éµ÷·¶Î§£©
+    // extern int16 threshold_down; // ÒÑÔÚ±¾ÎÄ¼ş¶¥²¿ÉùÃ÷Îª extern
+    // extern int16 threshold_up;
+    // if (threshold < threshold_down) return threshold_down;
+    // if (threshold > threshold_up)   return threshold_up;
+    return threshold;
 }
-/// ¼ÆËãÁ¥Êô¶Èº¯Êı
+
+// ½«Õû·ùÍ¼Ïñ°´£¨ĞĞ/ÁĞ£©¶ş·ÖÎª 4 ¿é£¬·Ö±ğ¼ÆËããĞÖµµ½ threshold1..4
+void my_adapt_threshold_block4(uint8 *image, uint16 col, uint16 row)
+{
+    uint16 midx = col / 2;
+    uint16 midy = row / 2;
+    threshold1 = (int16)compute_otsu_roi(image, col, row, 0,     0,     midx,        midy);
+    threshold2 = (int16)compute_otsu_roi(image, col, row, midx,  0,     (col-midx),  midy);
+    threshold3 = (int16)compute_otsu_roi(image, col, row, 0,     midy,  midx,        (row-midy));
+    threshold4 = (int16)compute_otsu_roi(image, col, row, midx,  midy,  (col-midx),  (row-midy));
+}
+
+// Ê¹ÓÃËÄ¸öãĞÖµ¶ÔËÄ¸ö·Ö¿é·Ö±ğ¶şÖµ»¯µ½ dis_image
+void set_b_imagine_block4(void)
+{
+    uint16 midx = MT9V03X_W / 2;
+    uint16 midy = MT9V03X_H / 2;
+    for (uint16 i = 0; i < MT9V03X_H; ++i)
+    {
+        for (uint16 j = 0; j < MT9V03X_W; ++j)
+        {
+            int th = (i < midy)
+                        ? (j < midx ? threshold1 : threshold2)
+                        : (j < midx ? threshold3 : threshold4);
+            dis_image[i][j] = (mt9v03x_image[i][j] > th) ? 255 : 0;
+        }
+    }
+}
+
 float mu_A(int k, int L1, int L2) {
     if (k <= L1) return 1.0f;
     if (k >= L2) return 0.0f;
@@ -370,7 +478,7 @@ int fuzzy_otsu(uint8* image, uint16 col, uint16 row)
             area_B += pixelCount[k] * mu_B(k, L1, L2, L3, L4);
             sumb += k * pixelCount[k] * mu_B(k, L1, L2, L3, L4);
         }
-        for (int k = L3; k < ; k++) {
+        for (int k = L3; k < max_gray; k++) {
             area_C += pixelCount[k] * mu_C(k, L3, L4);
             sumc += k * pixelCount[k] * mu_C(k, L3, L4);
         }
@@ -388,16 +496,6 @@ int fuzzy_otsu(uint8* image, uint16 col, uint16 row)
     }
     threshold = (L2 + best_L3) / 2;
     return threshold;
-}
-void set_b_imagine(int threshold)
-{
-    for (int16 i = 0; i < MT9V03X_H; i++)
-    {
-        for (int16 j = 0; j < MT9V03X_W; j++)
-        {
-            dis_image[i][j] = (mt9v03x_image[i][j] > threshold) ? 255 : 0;
-        }
-    }
 }
 void set_b_imagine(int threshold)
 {
@@ -1668,9 +1766,47 @@ void image_process(void)
     image_boundary_process2();              // Í¼Ïñ±ß½ç´¦Àí
     element_check();// ÔªËØ¼ì²é
 }
+
+void image_process2(void)
+{   
+    // image_filter(dis_image);
+    my_adapt_threshold_block4(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // ·ÖÇø´ó½ò·¨»ñÈ¡
+    set_b_imagine_block4();
+    // image_boundary_process2();              // Í¼Ïñ±ß½ç´¦Àí
+    element_check();// ÔªËØ¼ì²é
+}
 void protect()
-{
+{  
         banmaxian_check(); // °ßÂíÏß±£»¤
         black_protect_check();  // ºÚÉ«±£»¤
 		lift_protection(); // Ì§Éı±£»¤
+}
+extern struct_imageshowcase image;
+
+void photo_image_process_all(void)
+{
+    if (image.OSTU_fast_image)
+    {
+        image_process();
+    }
+    if(image.OTSU_dev_image)
+    {
+        image_process2();
+    }
+}
+
+void photo_displayimage(void)
+{
+    if (image.gray_image)
+    {
+        ips200_show_gray_image(0,180,(const uint8 *)mt9v03x_image,MT9V03X_W, MT9V03X_H,MT9V03X_W, MT9V03X_H,0);    
+        return;
+    }
+    if (image.OSTU_fast_image)
+    {
+        ips200_show_gray_image(0,180,(const uint8 *)dis_image,MT9V03X_W, MT9V03X_H,MT9V03X_W, MT9V03X_H,0);    
+      
+    }
+    
+    
 }

@@ -105,14 +105,14 @@ int main()
         Menu_control();         // 菜单控制
         if(mt9v03x_finish_flag)
         { 
-			  image_process();// 图像处理
-			  protect(); // 保护    
+            photo_image_process_all();
+            protect(); // 保护    
             // Velocity_Control();       // 速度控制    
             if(current_state == 1)
             {
                 if(stop&&show_flag)
                 {
-                    ips200_show_gray_image(0,180,(const uint8 *)dis_image,MT9V03X_W, MT9V03X_H,MT9V03X_W, MT9V03X_H,0);       //
+                    photo_displayimage();
                     show_line(); 
                 }          
             }                                                                   

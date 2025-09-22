@@ -5,6 +5,7 @@
 #include "balance.h"
 #include "PID.h"
 #include "flash.h"
+#include "photo_chuli.h"
 
 bool showline;
 
@@ -25,6 +26,10 @@ extern uint8 flag;
 bool show_flag=false;     //显示标志位,全局变量
 
 
+extern int16 threshold1;  // 左上
+extern int16 threshold2;  // 右上
+extern int16 threshold3;  // 左下
+extern int16 threshold4;  // 右下
 
 
 //菜单调参
@@ -58,7 +63,7 @@ void sub_floatparam(float* a)
 }
 //加减封装函数（这个不要删了）↑↑↑↑↑↑
 //菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
-enum_roadelementtypedef roadelementType[50]={zebra,straight,curve,straight,ramp,crossr,straight,speedup,obstacle,islandl,straight,zebra};//记录经过的元素
+enum_roadelementtypedef roadelementType[50]={zebra,straigh,curve,straigh,ramp,crossr,straigh,speedup,obstacle,islandl,straigh,zebra};//记录经过的元素
 int16 element_num=12;
 
 
@@ -82,7 +87,7 @@ void PID_clear() {
 }
 struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
 struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
-
+struct_imageshowcase image ={0,1,0};            //记录图像显示
 bool startbool=false; //开始标志
 
 //大津法
@@ -101,8 +106,8 @@ void show_element(void)
         switch (roadelementType[i])
         {
             
-        case straight:
-            ips200_show_string(72*(i%3),30*(i/3),"straight");
+        case straigh:
+            ips200_show_string(72*(i%3),30*(i/3),"straigh");
             break;
         case crossm:
             ips200_show_string(72*(i%3),30*(i/3)," crossM "); // 正入十字
@@ -155,11 +160,13 @@ void show_element(void)
         }
 
     }
-    
-
 }
 //用于显示经过元素
 
+void choseone_ostuimage(void) //选择一个大津法图像显示
+{
+
+}
 void image_show()   {show_flag=true;}
 void start_the_car() { stop = false; flag = 0; PID_clear();}//开始
 
@@ -168,7 +175,6 @@ void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;P
 void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2=0;PID_angle.maxout=5000;PID_angle.minout=-5000;ips200_show_string(0,180,"set 0 already");}     
 void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;PID_speed.maxout=5000;PID_speed.minout=-5000;PID_speed.targ=400;ips200_show_string(0,180,"set 0 already");} 
 void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0;PID_steer.maxout=5000;PID_steer.minout=-5000; ips200_show_string(0,180,"set 0 already");} 
-
 void pid_all_set0(){pid_gyro_set0();pid_angle_set0();pid_V_set0();pid_steer_set0();}
 //闪存存储 
 
@@ -223,21 +229,31 @@ MENU menu[] =
     {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
         {2, "angle",      0,                  20, &default_float, &default_int, catlog,    NULL},
             {3, "ROLL_angle",    100,                 20, &filtering_angle, &default_int, param_float_readonly,    NULL},
+        {2, "display",      0,                  40, &default_float, &default_int, function,    image_show},
 
 
-        {2, "show_image",      0,                  40, &default_float, &default_int, function,    image_show},
-        {2, "OTSU_threshold",  0,                  60, &default_float, &default_int, catlog,      NULL},
-            {3, "OTSU_up",    100,                 20, &default_float, &default_int, param_int,    NULL},
-            {3, "OTSU_DOWN",  100,                 40, &default_float, &default_int, param_int,    NULL},
+        {2, "show_image",      0,                  60, &default_float, &default_int, catlog,    NULL},
+            {3, "show_grayimage",      180,                  20, &default_float, &image.gray_image, chose1,    NULL},
+            {3, "show_ostuimage",      180,                  40, &default_float, &image.OSTU_fast_image, chose1,    NULL},
+            {3, "show_dev_image",      180,                  60, &default_float, &image.OTSU_dev_image, chose1,    NULL},
+
+        {2, "OTSU_threshold",  0,                  80, &default_float, &default_int, catlog,         NULL},
+            {3, "OTSU_up",    100,                 20, &default_float, &threshold_up, param_int,     NULL},
+            {3, "OTSU_DOWN",  100,                 40, &default_float, &threshold_down, param_int,   NULL},
             {3,"OTSU_perx",   100,                 60, &default_float, &OTSU_calperxpage, param_int, NULL},
-        {2, "image_point",     0,                  80, &default_float, &default_int, catlog,      NULL},
+            {3,"threshold1",   100,                  80, &default_float, &threshold1, param_int, NULL},
+            {3,"threshold2",   100,                 100, &default_float, &threshold2, param_int, NULL},
+            {3,"threshold3",   100,                 120, &default_float, &threshold3, param_int, NULL},
+            {3,"threshold4",   100,                 140, &default_float, &threshold4, param_int, NULL},
+
+        {2, "image_point",     0,                  100, &default_float, &default_int, catlog,      NULL},
             {3, "crossroadall",0,                  20, &default_float, &default_int, catlog,      NULL},
                 {4, "r_up_p",   100,               20, &default_float, &default_int, param_int_readonly, NULL},
                 {4, "r_down_p", 100,               40, &default_float, &default_int, param_int_readonly, NULL}, 
                 {4, "l_up_p",   100,               60, &default_float, &default_int, param_int_readonly, NULL},
                 {4, "l_down_p", 100,               80, &default_float, &default_int, param_int_readonly, NULL},
             {3, "round",       0,                  40, &default_float, &default_int, catlog,      NULL},
-        {2, "forwardsight",    0,                  100, &default_float, &default_int, catlog,    NULL},
+        {2, "forwardsight",    0,                  120, &default_float, &default_int, catlog,    NULL},
             {3, "forwardsight1",100,               20, &default_float, &forwardsight, param_int, NULL},
             {3, "forwardsight2",100,               40, &default_float, &forwardsight2, param_int, NULL},
             {3, "forwardsight3",100,                60, &default_float, &forwardsight3, param_int, NULL},
@@ -253,7 +269,7 @@ MENU menu[] =
         {2, "obstacle",      100,                180, &default_float, &roadelement_onoff.obstacle,  on_off, NULL},
     {1, "element_gothrough",  0,                  100, &default_float, &default_int, catlog,      NULL},
         {2, "element_count",  0,                  20, &default_float, &default_int, catlog,      NULL},
-            {3, "straight",   100,                 20, &default_float, &roadelement_record.straight,     param_int_readonly, NULL},
+            {3, "straigh",   100,                 20, &default_float, &roadelement_record.straigh,     param_int_readonly, NULL},
             {3, "crossm",     100,                 40, &default_float, &roadelement_record.crossm,       param_int_readonly, NULL},
             {3, "crossl",     100,                 60, &default_float, &roadelement_record.crossl,       param_int_readonly, NULL},
             {3, "crossr",     100,                 80, &default_float, &roadelement_record.crossr,       param_int_readonly, NULL},
@@ -324,7 +340,7 @@ void Menu_Screen_Init(void)
 */
 void output(void) 
 {
-    int target_priority=current_state-1;
+    int16 target_priority=current_state-1;
     if(menu_Mode==edit_int)     //整型编辑模式下
     {
         ips200_set_color(RGB565_BROWN, RGB565_BLACK);    //设置为棕色底黑字
@@ -419,7 +435,7 @@ void output(void)
                     {
                        ips200_show_int(menu[i].x,menu[i].y,*menu[i].value_i,5);
                     }
-                    else if(menu[i].type==on_off)
+                    else if(menu[i].type==on_off||menu[i].type==chose1)
                     {
                         ips200_set_color(RGB565_ORANGE, RGB565_BLACK);    //设置为红色黑底
                         if (*menu[i].value_i)
@@ -447,7 +463,7 @@ void output(void)
                     {
                        ips200_show_int(menu[i].x,menu[i].y,*menu[i].value_i,5);
                     }
-                    else if(menu[i].type==on_off)
+                    else if(menu[i].type==on_off||menu[i].type==chose1)
                     {
                         if (*menu[i].value_i)
                         {
@@ -617,12 +633,25 @@ void Menu_control(void)
                 menu_Mode=special_show_element1;        //进入显示经过元素模式
                 break;
             }
-            if(menu[p].type==param_float_readonly||menu[p].type==param_int_readonly)
+            if(menu[p].type==param_float_readonly||menu[p].type==param_int_readonly)        //只读参数情况
             {
                 ips200_show_string(0,180,"error_readonly");
             }
-         
-
+            if(menu[p].type==chose1)
+            {
+                for(int i=p_nearby+1;menu[i].priority!=current_state-1;i++)
+                {
+                    if(menu[i].priority==current_state&&menu[i].type==chose1&&i!=p)
+                    {
+                        *menu[i].value_i=0;
+                    }
+                    if(i==p)
+                    {
+                        *menu[p].value_i=1;
+                    }
+                }
+                break;
+            }
             break;
         case BACK:
         if(menu_Mode==edit_float||menu_Mode==edit_confirm||menu_Mode==edit_int||menu_Mode==special_show_element1) //编辑模式下按返回键退出编辑模式

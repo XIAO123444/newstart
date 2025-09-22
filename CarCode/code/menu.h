@@ -5,7 +5,7 @@
 #include "zf_common_headfile.h"
 //道路元素枚举
 typedef enum
-{ straight,         //直道
+{ straigh,         //直道
     crossm,         //正入十字路口
     crossl,         //左斜入十字
     crossr,         //右斜入十字
@@ -32,7 +32,7 @@ typedef enum
 //道路元素结构体（用于计数和开关功能）
 typedef struct  
 {
-    int16 straight;     //直道
+    int16 straigh;     //直道
     int16 crossm;    //正入十字路口
     int16 crossl;   //左斜入十字
     int16 crossr;   //右斜入十字
@@ -66,11 +66,19 @@ typedef struct
         param_int_readonly,     //整型只读
         param_float_readonly,   //浮点只读
         on_off,                 //开关
+        chose1,                 //只选一个 
         roadgothrough           //赛道元素通过情况
     } type; //类型:整型参数，浮点参数，目录， 
     void (*Operate_default)();          //默认执行函数
 
 }MENU;
+typedef struct 
+{
+    int16 gray_image;     //灰度图像
+    int16 OSTU_fast_image;//快速大津法图像
+    int16 OTSU_dev_image;     //分块大津法
+}struct_imageshowcase;
+
 
 //菜单行为枚举
 typedef enum {
