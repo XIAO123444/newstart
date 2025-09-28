@@ -1783,7 +1783,7 @@ void protect()
 }
 extern struct_imageshowcase image;
 
-void photo_image_process_all(void)
+void photo_image_process_all(void) 
 {
     if (image.OSTU_fast_image)
     {

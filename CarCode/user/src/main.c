@@ -19,25 +19,31 @@ extern uint8 rightline_num;         // 右线点数
 extern int current_state;
 extern int speed; 
 
-extern int encodercounter1;
+extern int encodercounter1; //  里程计数4
+extern float filtering_angle; //解算出的角度
+extern int16 extern_gy;      //外部陀螺仪数据
+
 extern int image_threshold; 
 extern int16 threshold_up;  //大津法阈值上限
 extern int16 threshold_down; //大津法阈值下限
 extern uint8 dis_image[MT9V03X_H][MT9V03X_W];
 extern float filtering_angle; 
+extern  int32 gyrocounter;                  //陀螺仪积分
+
 extern bool stop;
 extern bool show_flag;
 void all_init(void)
 {
     clock_init(SYSTEM_CLOCK_120M);
     debug_init();
-    imu660ra_init();            //陀螺仪初始化
+    imu660ra_init();          // IMU660RA 初始化
     Encoder_Init();
     Menu_Screen_Init();         //屏幕基础显示初始化        
     Key_init();                 //按键初始化
     BUZZ_init();                // 蜂鸣器初始化
     motor_init();               //电机初始化
     flash_load_config_default();
+
     while(1) // 摄像头初始化
     {
         if(mt9v03x_init())
@@ -64,7 +70,7 @@ int main()
         if(mt9v03x_finish_flag)
         { 
             photo_image_process_all();
-            // protect(); // 保护    
+            protect(); // 保护    
             // Velocity_Control();       // 速度控制    
             if(current_state == 1)
             {
