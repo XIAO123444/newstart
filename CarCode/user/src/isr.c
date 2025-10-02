@@ -102,51 +102,7 @@ void TIM2_IRQHandler (void)
 {
 
 
-    if(key1_flag)
-	{
-        status=1;
-		key1_count++;
-		if(key1_count>count_time)
-		{
-			key1_count=0;
-			key1_flag=0;
-		}
-	}
-	if(key2_flag)
-	{
-        status=2;
-		key2_count++;
-		if(key2_count>count_time)
-		{
-			key2_count=0;
-			key2_flag=0;
-		}
-	}
-	if(key3_flag)
-	{
-        status=3;
-		key3_count++;
-		if(key3_count>count_time)
-		{
-			key3_count=0;
-			key3_flag=0;
-		}
-	}
-	if(key4_flag)
-	{
-        status=4;
-		key4_count++;
-		if(key4_count>count_time)
-		{
-			key4_count=0;
-			key4_flag=0;
-		}
-	}
-
-    if(key1_flag==0 &&key2_flag==0 &&key3_flag==0 &&key4_flag==0 )
-    {   
-        input=status;
-    }
+    
 
 
     // 此�?�编写用户代�?
@@ -193,65 +149,66 @@ void TIM5_IRQHandler (void)
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简�?     TIM6 的定时器�?�?服务函数 �?�? .s 文件定义 不允许修改函数名�?
+//              需要调试的时候请注释掉定时器
 //              默�?�优先级 �?改优先级使用 interrupt_set_priority(TIM6_IRQn,  1);
 //-------------------------------------------------------------------------------------------------------------------
 void TIM6_IRQHandler(void)
 {
 
-    S_PID_CAL();        //转向控制
-    count1++;
-    count2++;
-	count3++;
-    imu660ra_get_gyro();
-    imu660ra_get_acc();
-    imu_filter();
-    // if (count2 >= 20) {
-    //     encoder1 = encoder_get_count(TIM3_ENCODER);
-    //     encoder_clear_count(TIM3_ENCODER);
-    //     encoder2 = encoder_get_count(TIM4_ENCODER);
-    //     encoder_clear_count(TIM4_ENCODER);
-    //     PID_speed.actual = -(encoder2 - encoder1+extern_gy/60) / 2;
-    //     increment_pid_update(&PID_speed);
-    //     if (PID_speed.actual < PID_speed.targ * 0.6&&flag==0) {  //发车控制
-    //         PID_speed.out = 800;
-    //     }
-	// 	if (PID_speed.actual > PID_speed.targ * 0.8) {   //达到一定速度
-	// 				flag=1;
-    //                 ins_flag=true;
-    //     }
-    //     encodercounter1=encodercounter1-encoder1+encoder2;//里程计数
-    //     gyrocounter=gyrocounter+extern_gy/60; //陀螺仪积分
-    //     count2 = 0;
-    // }
-    if (count1 >= 5) {
-        first_order_filtering();
-        PID_angle.actual = filtering_angle;
-        // PID_angle.targ = Med_Angle + PID_speed.out;
-        PID_angle.targ = Med_Angle + 200;
+    // S_PID_CAL();        //转向控制
+    // count1++;
+    // count2++;
+	// count3++;
+    // imu660ra_get_gyro();
+    // imu660ra_get_acc();
+    // imu_filter();
+    // // if (count2 >= 20) {
+    // //     encoder1 = encoder_get_count(TIM3_ENCODER);
+    // //     encoder_clear_count(TIM3_ENCODER);
+    // //     encoder2 = encoder_get_count(TIM4_ENCODER);
+    // //     encoder_clear_count(TIM4_ENCODER);
+    // //     PID_speed.actual = -(encoder2 - encoder1+extern_gy/60) / 2;
+    // //     increment_pid_update(&PID_speed);
+    // //     if (PID_speed.actual < PID_speed.targ * 0.6&&flag==0) {  //发车控制
+    // //         PID_speed.out = 800;
+    // //     }
+	// // 	if (PID_speed.actual > PID_speed.targ * 0.8) {   //达到一定速度
+	// // 				flag=1;
+    // //                 ins_flag=true;
+    // //     }
+    // //     encodercounter1=encodercounter1-encoder1+encoder2;//里程计数
+    // //     gyrocounter=gyrocounter+extern_gy/60; //陀螺仪积分
+    // //     count2 = 0;
+    // // }
+    // if (count1 >= 5) {
+    //     first_order_filtering();
+    //     PID_angle.actual = filtering_angle;
+    //     PID_angle.targ = Med_Angle + PID_speed.out;
+    //     // PID_angle.targ = Med_Angle + 200;
 
-        if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
-        {
-            PID_angle.error0 = 0;
-        }
-        PID_gyro_update(&PID_angle, imu660ra_gyro_x);
-        count1 = 0;
-    }
-    if (count3 >= 3) {
-    PID_gyro.targ = -PID_angle.out;
-    PID_gyro.actual = imu660ra_gyro_y;
-    PID_update(&PID_gyro);
-		count3=0;
-    }
-    if(stop==false)
-    {
-        motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out); 
-    }
-    else
-    {
+    //     if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
+    //     {
+    //         PID_angle.error0 = 0;
+    //     }
+    //     PID_gyro_update(&PID_angle, imu660ra_gyro_x);
+    //     count1 = 0;
+    // }
+    // if (count3 >= 3) {
+    // PID_gyro.targ = -PID_angle.out;
+    // PID_gyro.actual = imu660ra_gyro_y;
+    // PID_update(&PID_gyro);
+	// 	count3=0;
+    // }
+    // if(stop==false)
+    // {
+    //     motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out); 
+    // }
+    // else
+    // {
         
-        motor(0,0);
-        ins_flag=false;
-    }
+    //     motor(0,0);
+    //     ins_flag=false;
+    // }
     // 此�?�编写用户代�?
     TIM6->SR &= ~TIM6->SR;                                                      // 清空�?�?状�?
 }
@@ -263,7 +220,51 @@ void TIM6_IRQHandler(void)
 void TIM7_IRQHandler (void)
 {
     // 此�?�编写用户代�?
+if(key1_flag)
+	{
+        status=1;
+		key1_count++;
+		if(key1_count>count_time)
+		{
+			key1_count=0;
+			key1_flag=0;
+		}
+	}
+	if(key2_flag)
+	{
+        status=2;
+		key2_count++;
+		if(key2_count>count_time)
+		{
+			key2_count=0;
+			key2_flag=0;
+		}
+	}
+	if(key3_flag)
+	{
+        status=3;
+		key3_count++;
+		if(key3_count>count_time)
+		{
+			key3_count=0;
+			key3_flag=0;
+		}
+	}
+	if(key4_flag)
+	{
+        status=4;
+		key4_count++;
+		if(key4_count>count_time)
+		{
+			key4_count=0;
+			key4_flag=0;
+		}
+	}
 
+    if(key1_flag==0 &&key2_flag==0 &&key3_flag==0 &&key4_flag==0 )
+    {   
+        input=status;
+    }
     // 此�?�编写用户代�?
     TIM7->SR &= ~TIM7->SR;                                                      // 清空�?�?状�?
 }

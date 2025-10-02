@@ -24,8 +24,8 @@ void Key_init(void)
     gpio_init(KEY2, GPI, GPIO_HIGH, GPI_PULL_UP);                               // 初始化 KEY2 输入 默认高电平 上拉输入
     gpio_init(KEY3, GPI, GPIO_HIGH, GPI_PULL_UP);                               // 初始化 KEY3 输入 默认高电平 上拉输入
     gpio_init(KEY4, GPI, GPIO_HIGH, GPI_PULL_UP);                               // 初始化 KEY4 输入 默认高电平 上拉输入
-	pit_ms_init(TIM2_PIT, 1 );                                                   //硬件定时，周期100ms
-    interrupt_set_priority(TIM2_IRQn, 1);
+	pit_ms_init(TIM7_PIT, 1 );                                                   //硬件定时，周期100ms
+    interrupt_set_priority(TIM7_IRQn, 1);
 }
 void Key_Scan(void)
 {

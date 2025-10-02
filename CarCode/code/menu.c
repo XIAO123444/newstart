@@ -7,6 +7,7 @@
 #include "flash.h"
 #include "photo_chuli.h"
 
+
 bool showline;
 
 
@@ -41,7 +42,7 @@ float default_float=0.0;        //默认浮点型，防止空指针
 uint8 confirm_flag=false;      //确认标志
 //加减封装函数（这个不要删了）↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 int stepper_int[5]={1,5,10,20,50};                  //整型步进值
-float stepper_float[5]={0.01,0.1,1.0,10.0,100.0};   //浮点型步进值
+float stepper_float[6]={0.01,0.1,1.0,10.0,100.0,500.0};   //浮点型步进值
 uint8 stepper_p_int=0;        //整型步进值指针
 uint8 stepper_p_float=0;      //浮点型步进值指针
 
@@ -63,10 +64,10 @@ void sub_floatparam(float* a)
 }
 //加减封装函数（这个不要删了）↑↑↑↑↑↑
 //菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
-enum_roadelementtypedef roadelementType[50]={zebra,straigh,curve,straigh,ramp,crossr,straigh,speedup,obstacle,islandl,straigh,zebra};//记录经过的元素
-int16 element_num=12;
-
-
+enum_roadelementtypedef roadelementType[50]={zebra,straigh,curve
+    ,straigh,ramp,crossr,straigh,speedup
+    ,obstacle,islandl,straigh,zebra};//全局变量记录经过的元素
+int16 element_num=12;       //全局变量，记录经过元素数量
 
 int32 speed;
 int16 forwardsight; //默认前瞻
@@ -77,6 +78,7 @@ extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
 extern PID_t PID_steer;         //转向环
+extern PID_t PID_BLDC;          //负压风扇环 
 void PID_clear() {
 	PID_gyro.error0 = 0;
   PID_gyro.errorint = 0;
@@ -175,7 +177,12 @@ void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;P
 void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2=0;PID_angle.maxout=5000;PID_angle.minout=-5000;ips200_show_string(0,180,"set 0 already");}     
 void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;PID_speed.maxout=5000;PID_speed.minout=-5000;PID_speed.targ=400;ips200_show_string(0,180,"set 0 already");} 
 void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0;PID_steer.maxout=5000;PID_steer.minout=-5000; ips200_show_string(0,180,"set 0 already");} 
-void pid_all_set0(){pid_gyro_set0();pid_angle_set0();pid_V_set0();pid_steer_set0();}
+void pid_BLDC_set0(){PID_BLDC.kp=0;PID_BLDC.ki=0;PID_BLDC.kd=0;PID_BLDC.kd2=0;PID_BLDC.maxout=0;PID_BLDC.minout=0; ips200_show_string(0,180,"set 0 already");}
+void pid_all_set0(){pid_gyro_set0();pid_angle_set0();pid_V_set0();pid_steer_set0();pid_BLDC_set0();}
+void pid_BLDC_mode_set(){pid_gyro_set0();PID_gyro.maxout=100;PID_gyro.minout=0;pid_angle_set0();PID_angle.maxout=40;
+    PID_angle.minout=0;pid_V_set0();PID_speed.maxout=100;PID_speed.minout=0;
+    pid_steer_set0();PID_steer.maxout=100;PID_steer.minout=0;pid_BLDC_set0();
+    PID_BLDC.maxout=0;PID_BLDC.minout=0;}
 //闪存存储 
 
 
@@ -218,17 +225,23 @@ MENU menu[] =
             {3, "ki",        ips200_x_max-10*8,    40, &PID_steer.ki,    &default_int, param_float, NULL},
             {3, "kd",        ips200_x_max-10*8,    60, &PID_steer.kd,    &default_int, param_float, NULL},
             {3, "kd2",        ips200_x_max-10*8,    80, &PID_steer.kd2,    &default_int, param_float, NULL},
-
             {3, "maxout",      ips200_x_max-10*8,  100, &PID_steer.maxout, &default_int, param_float,NULL},
             {3, "minout",      ips200_x_max-10*8,  120, &PID_steer.minout, &default_int, param_float, NULL},
+        {2, "PID_BLDC",      0,                   100, &default_float,           &default_int, catlog,      NULL},
+            {3,"kp",        ips200_x_max-10*8,    20, &PID_BLDC.kp,    &default_int, param_float, NULL},
+            {3,"ki",        ips200_x_max-10*8,    40, &PID_BLDC.ki,    &default_int, param_float, NULL},
+            {3,"kd",        ips200_x_max-10*8,    60, &PID_BLDC.kd,    &default_int, param_float, NULL},
+            {3,"kd2",       ips200_x_max-10*8,    80, &PID_BLDC.kd2,   &default_int, param_float, NULL},
+            {3,"maxout",    ips200_x_max-10*8,   100, &PID_BLDC.maxout,&default_int, param_float,NULL},
+            {3,"minout",    ips200_x_max-10*8,   120, &PID_BLDC.minout,&default_int, param_float,NULL},
         {2, "allset0",       0,                  100, &default_float,           &default_int, confirm,     pid_all_set0},
-        {2, "gyro_set0",       0,                  120, &default_float,           &default_int, confirm,     pid_gyro_set0},
-        {2, "angle_set0",      0,                  140, &default_float,           &default_int, confirm,     pid_angle_set0},
-        {2, "V_set0",          0,                  160, &default_float,           &default_int, confirm,     pid_V_set0},
-        {2, "steer_set0",      0,                  180, &default_float,           &default_int, confirm,     pid_steer_set0},
+        {2, "PID_gyro_set0",       0,                  120, &default_float,           &default_int, confirm,     pid_gyro_set0},
+        {2, "PID_angle_set0",      0,                  140, &default_float,           &default_int, confirm,     pid_angle_set0},
+        {2, "PID_V_set0",          0,                  160, &default_float,           &default_int, confirm,     pid_V_set0},
+        {2, "PID_steer_set0",      0,                  180, &default_float,           &default_int, confirm,     pid_steer_set0},
+        {2,"PID_BLDC_set0",      0,                  200, &default_float,           &default_int, confirm,     pid_steer_set0},
     {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
-        {2, "angle",      0,                  20, &default_float, &default_int, catlog,    NULL},
-            {3, "ROLL_angle",    100,                 20, &filtering_angle, &default_int, param_float_readonly,    NULL},
+        {2, "ROLL_angle",    100,                 20, &filtering_angle, &default_int, param_float_readonly,    NULL},
         {2, "display",      0,                  40, &default_float, &default_int, function,    image_show},
 
 
@@ -313,7 +326,7 @@ MENU menu[] =
 
 
 
-enum_Condition condition = NOACTION;
+enum_Condition condition = NOACTION;//菜单行为初始化
 /*
 ------------------------------------------------------------------------------------------------------------------
 函数简介    初始化屏幕 
@@ -590,7 +603,7 @@ void Menu_control(void)
             }
             if(menu_Mode==edit_float)                       //浮点编辑模式下
             {
-                stepper_p_float=(stepper_p_float+1)%5;
+                stepper_p_float=(stepper_p_float+1)%6;
                 break;
             }
             if(menu_Mode==edit_confirm)                     //确认模式下

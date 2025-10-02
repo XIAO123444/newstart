@@ -1,5 +1,5 @@
 #include "zf_common_headfile.h"
-
+#include "BLDC.h"
 #include "menu.h"
 #include "encoder.h"
 #include "key.h"
@@ -42,6 +42,7 @@ void all_init(void)
     Key_init();                 //按键初始化
     BUZZ_init();                // 蜂鸣器初始化
     motor_init();               //电机初始化
+    BLDC_init();
     flash_load_config_default();
 
     while(1) // 摄像头初始化
@@ -60,72 +61,40 @@ void all_init(void)
 
 
 
-int main()
-{
-    all_init();
-    while(1)
-    {
-        Key_Scan();             // 按键扫描
-        Menu_control();         // 菜单控制
-        if(mt9v03x_finish_flag)
-        { 
-            photo_image_process_all();
-            protect(); // 保护    
-            // Velocity_Control();       // 速度控制    
-            if(current_state == 1)
-            {
-                if(stop&&show_flag)
-                {
-                    photo_displayimage();
-                    show_line(); 
-                }          
-            }                                                                   
-
-            mt9v03x_finish_flag = 0;
-        } 
-    }
-}
-
-
-// int main(void)
+// int main()
 // {
 //     all_init();
-//     stop_flag1 = false;
 //     while(1)
-//     { 
-//         if(start_flag == false)
-//         {
-//             Key_Scan();             // 按键扫描
-//             Menu_control();         // 菜单控制
-//             flash_save();           // flash存储
-//         }
-//         BUZZ_cycle();           // ?    涿?器循环
+//     {
+//         Key_Scan();             // 按键扫描
+//         Menu_control();         // 菜单控制
 //         if(mt9v03x_finish_flag)
 //         { 
-//             image_threshold = my_adapt_threshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // 图像获取
-//             set_b_imagine(image_threshold);        // 二值化
-//             image_boundary_process2();              // 图像边界处理
-//             element_check();// 元素检查
-//             Velocity_Control();       // 速度控制    
+//             photo_image_process_all();
+//             protect(); // 保护    
+//             // Velocity_Control();       // 速度控制    
 //             if(current_state == 1)
 //             {
-//                 if(start_flag==false)
+//                 if(stop&&show_flag)
 //                 {
-//                     ips200_show_gray_image(0,120,(const uint8 *)dis_image,MT9V03X_W, MT9V03X_H,MT9V03X_W, MT9V03X_H,0);       //
+//                     photo_displayimage();
 //                     show_line(); 
 //                 }          
 //             }                                                                   
-//             if(encodercounter1 > 70000)
-//             {	
-//                 banmaxian_check(); // 斑马线保护
-//                 black_protect_check();  // 黑色保护
-//             }
-//             if(stop_flag1)
-//             {
-//                 pit_disable(TIM6_PIT);  // 电机停转  
-//                 motor_run(0, 0);
-//             }
+
 //             mt9v03x_finish_flag = 0;
 //         } 
 //     }
 // }
+
+
+int main(void)
+{ 
+    all_init();
+    while (1)
+    {
+        motor_run(1000,1000);//测试代码，电机以10%的速度正转
+        BLDC_run(10); //测试代码，电机以10%的占空比正转 
+    }
+    //注：如反转请改极性，如疯转请反插驱动
+}

@@ -17,7 +17,8 @@ extern int16 forwardsight3;//弯道前瞻
 extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
-extern PID_t PID_steer;         //舵机环
+extern PID_t PID_steer;         //转向环
+extern PID_t PID_BLDC;          //负压风扇环
 void flash_reset(void)
 {
     flash_erase_page(100, 0);                                 // 擦除这一页
@@ -68,11 +69,21 @@ void flash_save_config(int16 i)
         flash_union_buffer[19].float_type = PID_steer.maxout;
         flash_union_buffer[20].float_type = PID_steer.minout;
         flash_union_buffer[25].float_type = PID_steer.kd2;
-        
+        //转向环6个参数
+        flash_union_buffer[26].float_type = PID_BLDC.kp;
+        flash_union_buffer[27].float_type = PID_BLDC.ki;    
+        flash_union_buffer[28].float_type = PID_BLDC.kd;
+        flash_union_buffer[29].float_type = PID_BLDC.maxout;
+        flash_union_buffer[30].float_type = PID_BLDC.minout;
+        flash_union_buffer[31].float_type = PID_BLDC.kd2;
+
+        //负压风扇环5个参数
         //PID21个参数
         flash_union_buffer[21].int16_type = forwardsight;
         flash_union_buffer[22].int16_type = forwardsight2;
         flash_union_buffer[23].int16_type = forwardsight3;
+
+
 
 
         flash_write_page_from_buffer(100+i/4, i%4);        //flash写
@@ -116,7 +127,14 @@ void flash_load_config(int16 i)
     PID_steer.maxout = flash_union_buffer[19].float_type;
     PID_steer.minout = flash_union_buffer[20].float_type;
     PID_steer.kd2=flash_union_buffer[25].float_type;
-    
+    // 转向环6个参数读取
+    PID_BLDC.kp = flash_union_buffer[26].float_type;
+    PID_BLDC.ki = flash_union_buffer[27].float_type;
+    PID_BLDC.kd = flash_union_buffer[28].float_type;
+    PID_BLDC.maxout = flash_union_buffer[29].float_type;
+    PID_BLDC.minout = flash_union_buffer[30].float_type;
+    PID_BLDC.kd2 = flash_union_buffer[31].float_type;
+
     //PID21个参数读取
 
     forwardsight=flash_union_buffer[21].int16_type;

@@ -39,6 +39,16 @@ PID_t PID_steer={
 	  .minout=-5000,
 	  .targ=91,
 };
+//负压风扇环
+PID_t PID_BLDC={
+      .kp=40,   //0.3
+      .ki=0.8, //0.02//0.01
+      .kd=0,
+      .kd2=15,
+      .maxout=3000,
+      .minout=-3000,
+    .targ=0
+};
 void PID_update(PID_t *p) //位置式
 {
     // 更新误差历史: 将上一次误差保存为e(k-1)，当前误差变为e(k)
