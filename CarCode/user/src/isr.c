@@ -1,37 +1,4 @@
-/*********************************************************************************************************************
-* MM32F327X-G8P Opensourec Library 即（MM32F327X-G8P 开源库）是一�?基于官方 SDK 接口的�??三方开源库
-* Copyright (c) 2022 SEEKFREE 逐�?��?�技
-* 
-* �?文件�? MM32F327X-G8P 开源库的一部分
-* 
-* MM32F327X-G8P 开源库 �?免费�?�?
-* 您可以根�?�?由软件基金会发布�? GPL（GNU General Public License，即 GNU通用�?共�?�可证）的条�?
-* �? GPL 的�??3版（�? GPL3.0）或（您选择的）任何后来的版�?，重新发布和/或修改它
-* 
-* �?开源库的发布是希望它能发挥作用，但并未对其作任何的保证
-* 甚至没有隐含的适销性或适合特定用途的保证
-* 更�?�细节�?�参�? GPL
-* 
-* 您应该在收到�?开源库的同时收到一�? GPL 的副�?
-* 如果没有，�?�参�?<https://www.gnu.org/licenses/>
-* 
-* 额�?�注明：
-* �?开源库使用 GPL3.0 开源�?�可证协�? 以上许可申明为译文版�?
-* 许可申明英文版在 libraries/doc 文件夹下�? GPL3_permission_statement.txt 文件�?
-* 许可证副�?�? libraries 文件夹下 即�?�文件夹下的 LICENSE 文件
-* 欢迎各位使用并传�?�?程序 但修改内容时必须保留逐�?��?�技的版权声明（即本声明�?
-* 
-* 文件名称          isr
-* �?司名�?          成都逐�?��?�技有限�?�?
-* 版本信息          查看 libraries/doc 文件夹内 version 文件 版本说明
-* 开发环�?          IAR 8.32.4 or MDK 5.37
-* 适用平台          MM32F327X_G8P
-* 店铺链接          https://seekfree.taobao.com/
-* 
-* �?改�?�录
-* 日期              作�?                备注
-* 2022-08-10        Teternal            first version
-********************************************************************************************************************/
+
 #include "zf_common_headfile.h"
 #include "isr.h"
 #include "PID.h"
@@ -40,6 +7,7 @@
 #include "steer_pid.h"
 #include "track.h"
 #include "screen.h" 
+#include "BLDC.h"
 extern uint32 key1_count;
 extern uint32 key2_count;
 extern uint32 key3_count;
@@ -62,6 +30,11 @@ int turn1 =0;
 int turn2 =0;
 int32 encodercounter1=0;          //里程计数
 int32 gyrocounter=0;                  //陀螺仪积分
+
+extern int16 pitch_angle_count;          //横滚角
+
+extern int16 start_count;      //发车保护
+
 extern int16 extern_gy;     //外部陀螺仪数据
 extern uint16 centerline2[MT9V03X_H];
 int flag=0;
@@ -78,6 +51,7 @@ extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
 extern PID_t PID_steer;         //舵机环
+extern PID_t PID_BLDC;          //负压风扇环
 
 uint8 count1=0;     //毫秒计数1
 uint8 count2=0;     //毫秒计数2
@@ -155,62 +129,86 @@ void TIM5_IRQHandler (void)
 void TIM6_IRQHandler(void)
 {
 
-    // S_PID_CAL();        //转向控制
-    // count1++;
-    // count2++;
-	// count3++;
-    // imu660ra_get_gyro();
-    // imu660ra_get_acc();
-    // imu_filter();
-    // // if (count2 >= 20) {
-    // //     encoder1 = encoder_get_count(TIM3_ENCODER);
-    // //     encoder_clear_count(TIM3_ENCODER);
-    // //     encoder2 = encoder_get_count(TIM4_ENCODER);
-    // //     encoder_clear_count(TIM4_ENCODER);
-    // //     PID_speed.actual = -(encoder2 - encoder1+extern_gy/60) / 2;
-    // //     increment_pid_update(&PID_speed);
-    // //     if (PID_speed.actual < PID_speed.targ * 0.6&&flag==0) {  //发车控制
-    // //         PID_speed.out = 800;
-    // //     }
-	// // 	if (PID_speed.actual > PID_speed.targ * 0.8) {   //达到一定速度
-	// // 				flag=1;
-    // //                 ins_flag=true;
-    // //     }
-    // //     encodercounter1=encodercounter1-encoder1+encoder2;//里程计数
-    // //     gyrocounter=gyrocounter+extern_gy/60; //陀螺仪积分
-    // //     count2 = 0;
-    // // }
-    // if (count1 >= 5) {
-    //     first_order_filtering();
-    //     PID_angle.actual = filtering_angle;
-    //     PID_angle.targ = Med_Angle + PID_speed.out;
-    //     // PID_angle.targ = Med_Angle + 200;
-
-    //     if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
-    //     {
-    //         PID_angle.error0 = 0;
+    S_PID_CAL();        //转向控制
+    count1++;
+    count2++;
+	count3++;
+    imu660ra_get_gyro();
+    imu660ra_get_acc();
+    imu_filter();
+    //速度环20ms
+    // if (count2 >= 20) {
+    //     encoder1 = encoder_get_count(TIM3_ENCODER);
+    //     encoder_clear_count(TIM3_ENCODER);
+    //     encoder2 = encoder_get_count(TIM4_ENCODER);
+    //     encoder_clear_count(TIM4_ENCODER);
+    //     PID_speed.actual = -(encoder2 - encoder1+extern_gy/60) / 2;
+    //     increment_pid_update(&PID_speed);
+    //     if (PID_speed.actual < PID_speed.targ * 0.6&&flag==0) {  //发车控制
+    //         PID_speed.out = 800;
     //     }
-    //     PID_gyro_update(&PID_angle, imu660ra_gyro_x);
-    //     count1 = 0;
+	// 	if (PID_speed.actual > PID_speed.targ * 0.8) {   //达到一定速度
+	// 				flag=1;
+    //                 ins_flag=true;
+    //     }
+    //     encodercounter1=encodercounter1-encoder1+encoder2;//里程计数
+    //     gyrocounter=gyrocounter+extern_gy/60; //陀螺仪积分
+    //     count2 = 0;
     // }
-    // if (count3 >= 3) {
-    // PID_gyro.targ = -PID_angle.out;
-    // PID_gyro.actual = imu660ra_gyro_y;
-    // PID_update(&PID_gyro);
-	// 	count3=0;
-    // }
-    // if(stop==false)
-    // {
-    //     motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out); 
-    // }
-    // else
-    // {
-        
-    //     motor(0,0);
-    //     ins_flag=false;
-    // }
-    // 此�?�编写用户代�?
-    TIM6->SR &= ~TIM6->SR;                                                      // 清空�?�?状�?
+    //风扇速度环5ms
+    if(count2>=10)
+    {
+        first_order_filtering();
+        PID_BLDC.actual = filtering_angle;
+        //BDLC计算  待填的坑
+
+        //速度环单独重写，角度环角速度环可以考虑晚点加。先尝试使用非串环控平衡。
+    }
+    if (count1 >= 5) {
+        first_order_filtering();
+        PID_angle.actual = filtering_angle;
+        PID_angle.targ = Med_Angle + PID_speed.out;
+        // PID_angle.targ = Med_Angle + 200;
+
+        if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
+        {
+            PID_angle.error0 = 0;
+        }
+        PID_gyro_update(&PID_angle, imu660ra_gyro_x);
+        count1 = 0;
+    }
+    //角速度环3ms
+    if (count3 >= 3) {
+    PID_gyro.targ = -PID_angle.out;
+    PID_gyro.actual = imu660ra_gyro_y;
+    PID_update(&PID_gyro);
+		count3=0;
+    }
+    if(stop==false)
+    {   if(start_count<5000)
+        {
+            start_count++;
+        }
+        if(start_count>3000)
+        {
+            BLDC_run(50);//这边改成pidout
+            //这边可以设置一下平衡后再启动
+        }
+        if(start_count>=5000)
+        {
+            pitch_angle_count=0;
+            motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out); 
+        }
+
+    }
+    else
+    {
+        BLDC_run(0);
+        motor(0,0);
+        ins_flag=false;
+    }
+    //此处编写用户代码
+    TIM6->SR &= ~TIM6->SR;                                                
 }
 
 //-------------------------------------------------------------------------------------------------------------------

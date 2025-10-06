@@ -31,7 +31,7 @@ extern int16 threshold1;  // 左上
 extern int16 threshold2;  // 右上
 extern int16 threshold3;  // 左下
 extern int16 threshold4;  // 右下
-
+int16 start_count=0;      //发车保护
 
 //菜单调参
 
@@ -40,7 +40,6 @@ int16 default_int=0;            //默认整型，防止空指针
 float default_float=0.0;        //默认浮点型，防止空指针
 
 uint8 confirm_flag=false;      //确认标志
-//加减封装函数（这个不要删了）↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 int stepper_int[5]={1,5,10,20,50};                  //整型步进值
 float stepper_float[6]={0.01,0.1,1.0,10.0,100.0,500.0};   //浮点型步进值
 uint8 stepper_p_int=0;        //整型步进值指针
@@ -165,12 +164,9 @@ void show_element(void)
 }
 //用于显示经过元素
 
-void choseone_ostuimage(void) //选择一个大津法图像显示
-{
 
-}
 void image_show()   {show_flag=true;}
-void start_the_car() { stop = false; flag = 0; PID_clear();}//开始
+void start_the_car() { stop = false; flag = 0;start_count=0; PID_clear();}//开始
 
 
 void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;PID_gyro.maxout=5000;PID_gyro.minout=-5000;  ips200_show_string(0,180,"set 0 already");} 
@@ -234,12 +230,12 @@ MENU menu[] =
             {3,"kd2",       ips200_x_max-10*8,    80, &PID_BLDC.kd2,   &default_int, param_float, NULL},
             {3,"maxout",    ips200_x_max-10*8,   100, &PID_BLDC.maxout,&default_int, param_float,NULL},
             {3,"minout",    ips200_x_max-10*8,   120, &PID_BLDC.minout,&default_int, param_float,NULL},
-        {2, "allset0",       0,                  100, &default_float,           &default_int, confirm,     pid_all_set0},
-        {2, "PID_gyro_set0",       0,                  120, &default_float,           &default_int, confirm,     pid_gyro_set0},
-        {2, "PID_angle_set0",      0,                  140, &default_float,           &default_int, confirm,     pid_angle_set0},
-        {2, "PID_V_set0",          0,                  160, &default_float,           &default_int, confirm,     pid_V_set0},
-        {2, "PID_steer_set0",      0,                  180, &default_float,           &default_int, confirm,     pid_steer_set0},
-        {2,"PID_BLDC_set0",      0,                  200, &default_float,           &default_int, confirm,     pid_steer_set0},
+        {2, "allset0",       0,                  120, &default_float,           &default_int, confirm,     pid_all_set0},
+        {2, "PID_gyro_set0",       0,                  140, &default_float,           &default_int, confirm,     pid_gyro_set0},
+        {2, "PID_angle_set0",      0,                  160, &default_float,           &default_int, confirm,     pid_angle_set0},
+        {2, "PID_V_set0",          0,                  180, &default_float,           &default_int, confirm,     pid_V_set0},
+        {2, "PID_steer_set0",      0,                  200, &default_float,           &default_int, confirm,     pid_steer_set0},
+        {2,"PID_BLDC_modeset0",      0,                  220, &default_float,           &default_int, confirm,     pid_BLDC_mode_set},
     {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
         {2, "ROLL_angle",    100,                 20, &filtering_angle, &default_int, param_float_readonly,    NULL},
         {2, "display",      0,                  40, &default_float, &default_int, function,    image_show},
@@ -341,7 +337,48 @@ void Menu_Screen_Init(void)
     ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为白底黑字
     ips200_init(IPS200_TYPE_SPI);    //设置通信模式为SPI通信
 }
+/*
+------------------------------------------------------------------------------------------------------------------
+函数简介     快速显示
+参数说明     X1为字符串显示起始位
+                X2为数值显示起始位
+                Y为显示行
+                type为显示类型
+                *a为整型参数地址
+                *p为浮点型参数地址
+                str为参数名字
+返回参数     无
+使用示例     display_fast(0, 100, 0, param_int, &default_int, &default_float, "default");
+备注信息     在0，0位置显示default参数名，在0行100列显示default_int整型参数值
+-------------------------------------------------------------------------------------------------------------------
+*/
+void display_fast(int16 X1,int16 X2,int16 Y,enum_function type,int16* int_p,float* float_p,char str[20])
+{
+    ips200_set_color(RGB565_WHITE, RGB565_BLACK);
+    ips200_show_string(X1,Y,str);
+    if(type==param_int)
+    {
+        ips200_show_int(X2,Y,*int_p,5);
+    }
+    else if(type==param_float)
+    {
+        ips200_show_float(X2,Y,*float_p,4,3);
+    }
+}
+void outputscreen_fast()
+{
+    if(show_flag==false&&current_state==1)//如果图像显示没开且在顶级菜单
+    {    
+        ips200_set_color(RGB565_YELLOW, RGB565_BLACK);
+        ips200_show_string(0,160,"fast_show");
+        ips200_set_color(RGB565_WHITE, RGB565_BLACK);
+        //要添加快速显示请在这里增加
+        
+        display_fast(0, 60, 180, param_float, &default_int, &filtering_angle, "ROLL_angle");
+    }
 
+
+}
 /*
 ------------------------------------------------------------------------------------------------------------------
 函数简介     屏幕显示
@@ -354,6 +391,7 @@ void Menu_Screen_Init(void)
 void output(void) 
 {
     int16 target_priority=current_state-1;
+    outputscreen_fast(); //快速显示
     if(menu_Mode==edit_int)     //整型编辑模式下
     {
         ips200_set_color(RGB565_BROWN, RGB565_BLACK);    //设置为棕色底黑字
@@ -378,12 +416,12 @@ void output(void)
         ips200_show_string(20,300,"WARNING!WARNING!WARNING!");
         return;                     //提前退出
     }
-    if(menu_Mode==special_show_element1)
+    if(menu_Mode==special_show_element1)//显示经过元素模式下
     {
         show_element();
         return;
     }
-    if (target_priority==0)         //顶级菜单
+    if     (target_priority==0)         //顶级菜单
     {
         ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //设置为蓝色黑底
         ips200_show_string(0,0,"menu");//输出标题字符
@@ -426,20 +464,18 @@ void output(void)
             {
                 if(i==p)
                 {
-                    if(menu_Mode==normal)
+                    if(menu_Mode==normal)       //普通显示，仅仅显示箭头
                     {
                         ips200_show_string(0,menu[i].y,"->");//输出指向字符
                         ips200_show_string(20,menu[i].y,menu[i].str);
                     }
-                    else if(menu_Mode==edit_int||menu_Mode==edit_float)
+                    else if(menu_Mode==edit_int||menu_Mode==edit_float) //编辑模式下，改变颜色    
                     {
                         ips200_set_color(RGB565_MAGENTA, RGB565_BLACK);//设置为红色黑底
                         ips200_show_string(0,menu[i].y,"->");//输出指向字符
                         ips200_show_string(20,menu[i].y,menu[i].str);
                         ips200_set_color(RGB565_WHITE, RGB565_BLACK);//设置为黑底白字
                     }
-                    
-                    
                     if(menu[i].type==param_float||menu[i].type==param_float_readonly)
                     {
                        ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,4,3);

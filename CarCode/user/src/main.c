@@ -37,12 +37,12 @@ void all_init(void)
     clock_init(SYSTEM_CLOCK_120M);
     debug_init();
     imu660ra_init();          // IMU660RA 初始化
-    Encoder_Init();
+    Encoder_Init();       // 编码器初始化   TIM6在这里初始化
     Menu_Screen_Init();         //屏幕基础显示初始化        
-    Key_init();                 //按键初始化
+    Key_init();                 //按键初始化        TIm7在这里初始化
     BUZZ_init();                // 蜂鸣器初始化
-    motor_init();               //电机初始化
-    BLDC_init();
+    motor_init();               //电机初始化         
+    BLDC_init();                // BLDC 初始化 TIM2在这里被用作pwm输出
     flash_load_config_default();
 
     while(1) // 摄像头初始化
@@ -60,41 +60,41 @@ void all_init(void)
 }
 
 
-
-// int main()
-// {
-//     all_init();
-//     while(1)
-//     {
-//         Key_Scan();             // 按键扫描
-//         Menu_control();         // 菜单控制
-//         if(mt9v03x_finish_flag)
-//         { 
-//             photo_image_process_all();
-//             protect(); // 保护    
-//             // Velocity_Control();       // 速度控制    
-//             if(current_state == 1)
-//             {
-//                 if(stop&&show_flag)
-//                 {
-//                     photo_displayimage();
-//                     show_line(); 
-//                 }          
-//             }                                                                   
-
-//             mt9v03x_finish_flag = 0;
-//         } 
-//     }
-// }
-
-
-int main(void)
-{ 
+ 
+int main()
+{
     all_init();
-    while (1)
+    while(1)
     {
-        motor_run(1000,1000);//测试代码，电机以10%的速度正转
-        BLDC_run(10); //测试代码，电机以10%的占空比正转 
+        Key_Scan();             // 按键扫描
+        Menu_control();         // 菜单控制
+        if(mt9v03x_finish_flag)
+        { 
+            photo_image_process_all();
+            protect(); // 保护    
+            // Velocity_Control();       // 速度控制    
+            if(current_state == 1)
+            {
+                if(stop&&show_flag)
+                {
+                    photo_displayimage();
+                    show_line(); 
+                }          
+            }                                                                   
+
+            mt9v03x_finish_flag = 0;
+        } 
     }
-    //注：如反转请改极性，如疯转请反插驱动
 }
+
+
+// int main(void)
+// { 
+//     all_init();
+//     while (1)
+//     {
+//         motor_run(1000,1000);//测试代码，电机以10%的速度正转
+//         BLDC_run(10); //测试代码，电机以10%的占空比正转 
+//     }
+//     //注：如反转请改极性，如疯转请反插驱动
+// }

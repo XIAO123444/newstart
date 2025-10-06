@@ -29,6 +29,19 @@ typedef enum
     edit_confirm,
     special_show_element1,          //流程图显示经过元素        
 }enum_menu_mode;
+typedef enum 
+    {
+        param_int,              //整型可编辑
+        param_float,            //浮点可编辑
+        confirm,                //确认
+        catlog,                 //目录
+        function,               //函数
+        param_int_readonly,     //整型只读
+        param_float_readonly,   //浮点只读
+        on_off,                 //开关
+        chose1,                 //只选一个 
+        roadgothrough           //赛道元素通过情况
+    }enum_function;
 //道路元素结构体（用于计数和开关功能）
 typedef struct  
 {
@@ -56,19 +69,7 @@ typedef struct
     uint16 y;                           //显示纵坐标
     float *value_f;                      //浮点数据
     int16 *value_i;                        //整型数据
-    enum function
-    {
-        param_int,              //整型可编辑
-        param_float,            //浮点可编辑
-        confirm,                //确认
-        catlog,                 //目录
-        function,               //函数
-        param_int_readonly,     //整型只读
-        param_float_readonly,   //浮点只读
-        on_off,                 //开关
-        chose1,                 //只选一个 
-        roadgothrough           //赛道元素通过情况
-    } type; //类型:整型参数，浮点参数，目录， 
+    enum_function type; //类型:整型参数，浮点参数，目录， 
     void (*Operate_default)();          //默认执行函数
 
 }MENU;

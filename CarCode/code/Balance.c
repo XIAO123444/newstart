@@ -6,7 +6,7 @@ uint8_t gyro_ration=4;   //陀螺仪置信度
 float filtering_angle=0; //解算出的角度
 float angle_temp;        //角度计算中间变量
 float cycle_T=0.005;         //采样周期
-float pitch_angle;          //横滚角
+int16 pitch_angle_count=0;          //横滚角
 float roll_angle;           //俯仰角
 float yaw_angle;
 imu_err_typdef imu_err={-6,3,-2}; //imu误差结构体
@@ -64,6 +64,7 @@ void first_order_filtering(void)
     gyro_temp = (-gy) * gyro_ration;
     acc_temp = (ax - angle_temp) * acc_ration;
     angle_temp += ((gyro_temp + acc_temp) * cycle_T);
+    pitch_angle_count+=(-gy)*cycle_T; //横滚角积分  待填的坑
     filtering_angle = angle_temp;
 }
 void lift_protection(void)
@@ -84,4 +85,13 @@ void lift_protection(void)
     }
 
     az_last=az; //保存上次加速度计Z轴数据
+}
+
+void gyro_protect(void)
+{
+    if( fabsf(pitch_angle_count)>20000)//待填的坑
+    {
+        stop=true;
+    }
+
 }
