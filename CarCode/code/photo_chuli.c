@@ -1778,7 +1778,7 @@ void image_process2(void)
 void protect()
 {  
         banmaxian_check(); // 斑马线保护
-        black_protect_check();  // 黑色保护
+        // black_protect_check();  // 黑色保护
 		lift_protection(); // 抬升保护
 }
 extern struct_imageshowcase image;

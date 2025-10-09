@@ -37,10 +37,10 @@ extern int16 start_count;      //发车保护
 
 extern int16 extern_gy;     //外部陀螺仪数据
 extern uint16 centerline2[MT9V03X_H];
-int flag=0;
+uint8 flag=0;
 
 //神医
-float Med_Angle=1450;
+float Med_Angle=1450;                  
 
 bool stop=true; //停车标志
 
@@ -50,7 +50,7 @@ extern float filtering_angle;
 extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
-extern PID_t PID_steer;         //舵机环
+extern PID_t PID_steer;         //转向环
 extern PID_t PID_BLDC;          //负压风扇环
 
 uint8 count1=0;     //毫秒计数1
@@ -164,20 +164,21 @@ void TIM6_IRQHandler(void)
 
         //速度环单独重写，角度环角速度环可以考虑晚点加。先尝试使用非串环控平衡。
     }
-    if (count1 >= 5) {
-        first_order_filtering();
-        PID_angle.actual = filtering_angle;
-        PID_angle.targ = Med_Angle + PID_speed.out;
-        // PID_angle.targ = Med_Angle + 200;
+    //角度环
+    // if (count1 >= 5) {
+    //     first_order_filtering();
+    //     PID_angle.actual = filtering_angle;
+    //     PID_angle.targ = Med_Angle + PID_speed.out;
+    //     // PID_angle.targ = Med_Angle + 200;
 
-        if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
-        {
-            PID_angle.error0 = 0;
-        }
-        PID_gyro_update(&PID_angle, imu660ra_gyro_x);
-        count1 = 0;
-    }
-    //角速度环3ms
+    //     if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
+    //     {
+    //         PID_angle.error0 = 0;
+    //     }
+    //     PID_gyro_update(&PID_angle, imu660ra_gyro_x);
+    //     count1 = 0;
+    // }
+    // //角速度环3ms
     if (count3 >= 3) {
     PID_gyro.targ = -PID_angle.out;
     PID_gyro.actual = imu660ra_gyro_y;
@@ -185,21 +186,38 @@ void TIM6_IRQHandler(void)
 		count3=0;
     }
     if(stop==false)
-    {   if(start_count<5000)
+    {  
+        start_count++;
+        if (start_count==3000)
         {
-            start_count++;
+            ips200_show_string(0,180,"BLDC run");//debug信息显示
         }
         if(start_count>3000)
         {
-            BLDC_run(50);//这边改成pidout
+            BLDC_run(10);//这边改成pidout
             //这边可以设置一下平衡后再启动
         }
-        if(start_count>=5000)
+        if(start_count==5000)
+        {
+            ips200_clear();
+            ips200_show_string(0,180,"motor run"); //debug信息显示
+
+        }
+        if(start_count>=5001)
         {
             pitch_angle_count=0;
-            motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out); 
+            // motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out);
+            motor(1000,1000);
         }
 
+        if(start_count>=20000)
+        {
+            ips200_show_string(0,180,"time stop");
+        }
+        if(start_count>=23000)
+        {
+            stop=true;
+        }
     }
     else
     {

@@ -42,14 +42,14 @@ void Motor_SetLeftSpeed(int16 duty)
 {		
 	if (duty >= 0)							//如果设置正转的速度值
 	{
-		gpio_set_level(DIR_L, GPIO_HIGH);
+		gpio_set_level(DIR_L, GPIO_LOW);
 		pwm_set_duty(PWM_L, duty );                  
                               
 		
 	}
 	else									//否则，即设置反转的速度值
 	{  
-		 gpio_set_level(DIR_L, GPIO_LOW);
+		 gpio_set_level(DIR_L, GPIO_HIGH);
         pwm_set_duty(PWM_L, (-duty));
 	}
 }

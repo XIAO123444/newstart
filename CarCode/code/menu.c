@@ -6,16 +6,16 @@
 #include "PID.h"
 #include "flash.h"
 #include "photo_chuli.h"
+#include "zf_device_lora3a22.h"
 
-
-bool showline;
+bool showline; 
 
 
 #define ips200_x_max 240
 #define ips200_y_max 320
 int current_state=1;
-int p=0;//记录当前指针
-int p_nearby=0;//记录所属的指针
+int p=0;                        //记录当前指针
+int p_nearby=0;                 //记录所属的指针
 uint8 input;    //菜单按键输入
 extern int status;
 extern bool start_flag;     //发车标志位
@@ -25,8 +25,6 @@ extern float filtering_angle; //解算出的角度
 
 extern uint8 flag;
 bool show_flag=false;     //显示标志位,全局变量
-
-
 extern int16 threshold1;  // 左上
 extern int16 threshold2;  // 右上
 extern int16 threshold3;  // 左下
@@ -69,29 +67,24 @@ enum_roadelementtypedef roadelementType[50]={zebra,straigh,curve
 int16 element_num=12;       //全局变量，记录经过元素数量
 
 int32 speed;
-int16 forwardsight; //默认前瞻
-int16 forwardsight2;//  直到判断前瞻！！！！注意这个和前瞻不同，用于三轮或者四轮车加速的！！！
-int16 forwardsight3;//弯道前瞻
-//pid
+//前瞻显示+调节参数
+int16 forwardsight;                 //默认前瞻
+int16 forwardsight2;                //  直到判断前瞻！！！！注意这个和前瞻不同，用于三轮或者四轮车加速的！！！
+int16 forwardsight3;                //弯道前瞻
+
+//pid显示+调节参数
 extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
 extern PID_t PID_steer;         //转向环
 extern PID_t PID_BLDC;          //负压风扇环 
-void PID_clear() {
-	PID_gyro.error0 = 0;
-  PID_gyro.errorint = 0;
-	PID_angle.error0 = 0;
-	PID_speed.errorint = 0;
-	PID_steer.error0 = 0;
-	PID_steer.errorint = 0; 
-}
+
 struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
 struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
 struct_imageshowcase image ={0,1,0};            //记录图像显示
 bool startbool=false; //开始标志
 
-//大津法
+//大津法显示＋调节参数
 int16 threshold_down=100;       //大津法阈值上限
 int16 threshold_up=200;         //大津法阈值下限  
 int16 OTSU_calperxpage=5;       //每x张图片计算一次大津法
@@ -166,6 +159,15 @@ void show_element(void)
 
 
 void image_show()   {show_flag=true;}
+void PID_clear() {
+	PID_gyro.error0 = 0;
+    PID_gyro.errorint = 0;
+	PID_angle.error0 = 0;
+	PID_speed.errorint = 0;
+	PID_steer.error0 = 0;
+	PID_steer.errorint = 0; 
+}
+//误差清除函数防止爆炸(填的坑记得补哈)
 void start_the_car() { stop = false; flag = 0;start_count=0; PID_clear();}//开始
 
 
