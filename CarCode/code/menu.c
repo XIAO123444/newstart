@@ -213,7 +213,7 @@ void PID_clear()
 }
 //误差清除函数防止爆炸(填的坑记得补哈)
 void start_the_car() { carmode = car_run_mode1; flag = 0;start_count=0; angle_init();PID_clear();}//开始
-
+void Calibrate_BLDC()   {carmode=Start_Calibrate;}
 
 void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;PID_gyro.maxout=5000;PID_gyro.minout=-5000;  ips200_show_string(0,180,"set 0 already");} 
 void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2=0;PID_angle.maxout=5000;PID_angle.minout=-5000;ips200_show_string(0,180,"set 0 already");}     
@@ -241,7 +241,10 @@ void codeload4(){}
 //菜单结构体
 MENU menu[] = 
 {
-    {1,"start",                   0,               20, &default_float, &default_int, function,       start_the_car},
+    {1,"start",                   0,               20, &default_float, &default_int, catlog,         NULL},
+        {2,"car_go",              0,               20, &default_float, &default_int, function,       start_the_car},
+        {2,"Calibrate",           0,               40, &default_float, &default_int, function,       Calibrate_BLDC},
+
     {1, "pidparam",               0,               40, &default_float, &default_int, catlog,         NULL},
         {2, "PID_gyro",           0,               20, &default_float, &default_int, catlog,         NULL},
             {3, "kp",          ips200_x_max-10*8,  20, &PID_gyro.kp,    &default_int, param_float,   NULL},

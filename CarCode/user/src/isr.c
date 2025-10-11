@@ -57,7 +57,7 @@ extern car_mode carmode;  //车的状态
 extern stop_debug stopdebug; //停车debug
 extern enum_menu_mode menu_Mode;         //菜单模式
 
-
+int32 timer_counter=0; //定时器计数
 uint8 count1=0;     //毫秒计数1
 uint8 count2=0;     //毫秒计数2
 uint8 count3 = 0;     //毫秒计数3
@@ -134,6 +134,30 @@ void TIM5_IRQHandler (void)
 void TIM6_IRQHandler(void)
 {
 
+    timer_counter++;
+    if(carmode==Start_Calibrate)
+    {
+        timer_counter=0;
+        carmode=Now_Calibrate;
+    }
+    if(carmode==Now_Calibrate)
+    {
+        if(timer_counter<=2000)
+        {
+            BLDC_unlock_UP(); //电机校准高电平
+        }   
+        if(timer_counter>2000&&timer_counter<=3000)
+        {
+            BLDC_unlock_DOWN(); //电机校准低电平
+        }
+        if(timer_counter>3000)
+        {
+            carmode=stop;
+        }
+    }
+
+
+
     S_PID_CAL();        //转向控制
     count1++;
     count2++;
@@ -198,7 +222,7 @@ void TIM6_IRQHandler(void)
         }
         if(start_count>3000)
         {
-            BLDC_run(10);//这边改成pidout
+            BLDC_run(0 );//这边改成pidout
             //这边可以设置一下平衡后再启动
         }
         if(start_count==5000)
@@ -213,11 +237,11 @@ void TIM6_IRQHandler(void)
             motor(1000,1000);
         }
 
-        if(start_count>=20000)
+        if(start_count>=13000)
         {
             ips200_show_string(0,180,"time stop");
         }
-        if(start_count>=23000)
+        if(start_count>=15000)
         {
             carmode=stop;                           //停车
             stopdebug=timer_count_stop;             //停车原因
@@ -229,10 +253,10 @@ void TIM6_IRQHandler(void)
     {
 
     }
-    
+
     if(carmode==stop)
-    {
-        BLDC_run(0);
+    {   
+        BLDC_STOP();
         motor(0,0);
         ins_flag=false;   
     }
@@ -450,9 +474,10 @@ void UART6_IRQHandler (void)
     }
     if(UART6->ISR & 0x00000002)                                                 // 串口接收缓冲�?�?
     {
-        wireless_module_uart_handler();
+        // wireless_module_uart_handler();
         // 此�?�编写用户代�?
         // 务必读取数据或者关�?�?�? 否则会一直触发串口接收中�? 
+    lora3a22_uart_callback();
 
         // 此�?�编写用户代�?
         UART6->ICR |= 0x00000002;                                               // 清除�?�?标志�?

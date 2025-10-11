@@ -96,6 +96,8 @@ typedef enum
 {
     stop,       //停止
     remote,     //遥控
+    Start_Calibrate,  //校准
+    Now_Calibrate,      //校准中
     car_run_mode1,     //行驶模式1，发车平衡
     car_run_mode2      //行驶模式2，
 }car_mode;
