@@ -23,11 +23,12 @@ typedef enum
 enum_roadelementtypedef;
 //菜单模式枚举
 typedef enum
-{   normal,
-    edit_int,
-    edit_float,
-    edit_confirm,
-    special_show_element1,          //流程图显示经过元素        
+{   normal,                         //普通菜单显示
+    edit_int,                       //更改整型数据
+    edit_float,                     //更改浮点数据
+    edit_confirm,                   //ON/OFF确认
+    special_show_element1,          //流程图显示经过元素      
+    stop_debug_display              //停车debug显示
 }enum_menu_mode;
 typedef enum 
     {
@@ -90,6 +91,27 @@ typedef enum {
     BACK
 
 }enum_Condition;  
+
+typedef enum 
+{
+    stop,       //停止
+    remote,     //遥控
+    car_run_mode1,     //行驶模式1，发车平衡
+    car_run_mode2      //行驶模式2，
+}car_mode;
+
+typedef enum 
+{
+    normal_debug,            //正常,无触发停车
+    timer_count_stop,             //定时停车
+    blackprotect_stop,       //黑线保护
+    zebra_stop,              //斑马线停车
+    liftup_stop,             //抬升
+    gyro_intrg_pitch_stop,         //陀螺仪积分俯仰角
+    gyro_intrg_roll_stop,          //陀螺仪积分横滚角
+    gyro_intrg_yaw_stop,           //陀螺仪积分偏航角
+    
+}stop_debug;
 
 void output(void);
 void Menu_control(void);

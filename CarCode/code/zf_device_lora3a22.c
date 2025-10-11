@@ -91,8 +91,9 @@ void lora3a22_uart_callback(void)
 
 void lora3a22_init(void)
 {
-
-    uart_init(LORA3A22_UART_INDEX, LORA3A22_UART_BAUDRATE , LORA3A22_UART_RX_PIN, LORA3A22_UART_TX_PIN);
+    gpio_init(LORA3A22_UART_RTS_PIN, GPI, GPIO_HIGH, GPI_PULL_UP);
+    uart_init(LORA3A22_UART_INDEX, LORA3A22_UART_BAUDRATE , LORA3A22_UART_RX_PIN, LORA3A22_UART_TX_PIN);        // 初始化串口
+    uart_rx_interrupt(LORA3A22_UART_INDEX, 1);               // 使能串口接收中断
 
 
 	

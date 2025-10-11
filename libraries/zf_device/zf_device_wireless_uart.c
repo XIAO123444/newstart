@@ -237,9 +237,8 @@ uint8 wireless_uart_init (void)
 {
     uint8 return_state = 0;
     set_wireless_type(WIRELESS_UART, wireless_uart_callback);
-
     fifo_init(&wireless_uart_fifo, FIFO_DATA_8BIT, wireless_uart_buffer, WIRELESS_UART_BUFFER_SIZE);
-    gpio_init(WIRELESS_UART_RTS_PIN, GPI, GPIO_HIGH, GPI_PULL_UP);
+    gpio_init(WIRELESS_UART_RTS_PIN, GPI, GPIO_HIGH, GPI_PULL_UP); 
 #if(0 == WIRELESS_UART_AUTO_BAUD_RATE)                                          // 关闭自动波特率
     // 本函数使用的波特率为115200 为无线转串口模块的默认波特率 如需其他波特率请自行配置模块并修改串口的波特率
     uart_init (WIRELESS_UART_INDEX, WIRELESS_UART_BUAD_RATE, WIRELESS_UART_RX_PIN, WIRELESS_UART_TX_PIN);   // 初始化串口

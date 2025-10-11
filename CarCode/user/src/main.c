@@ -11,8 +11,7 @@
 #include "steer_pid.h"
 #include "buzzer.h"
 #include "speed.h"
-bool stop_flag1;                    // 停止标志
-bool start_flag = false;            // 启动标志
+#include "Balance.h"
 
 extern uint8 leftline_num;          // 左线点数
 extern uint8 rightline_num;         // 右线点数
@@ -29,8 +28,7 @@ extern int16 threshold_down; //大津法阈值下限
 extern uint8 dis_image[MT9V03X_H][MT9V03X_W];
 extern float filtering_angle; 
 extern  int32 gyrocounter;                  //陀螺仪积分
-
-extern bool stop;
+extern car_mode carmode;  //车的状态
 extern bool show_flag;
 void all_init(void)
 {
@@ -43,7 +41,7 @@ void all_init(void)
     BUZZ_init();                // 蜂鸣器初始化
     motor_init();               //电机初始化         
     BLDC_init();                // BLDC 初始化 TIM2在这里被用作pwm输出
-    flash_load_config_default();
+    // flash_load_config_default();
 
     while(1) // 摄像头初始化
     {
@@ -66,7 +64,7 @@ int main()
     all_init();
     while(1)
     {
-        if(stop==true)
+        if(carmode==stop)
         {
             Key_Scan();             // 按键扫描
             Menu_control();         // 菜单控制
@@ -78,7 +76,7 @@ int main()
             // Velocity_Control();       // 速度控制    
             if(current_state == 1)
             {
-                if(stop&&show_flag)
+                if(carmode==stop&&show_flag)
                 {
                     photo_displayimage();
                     show_line(); 

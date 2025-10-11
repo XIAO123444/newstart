@@ -8,6 +8,7 @@
 #define LORA3A22_UART_TX_PIN           (UART6_RX_C7)        // 遥控器接收机的RX引脚 连接单片机的TX引脚
 #define LORA3A22_UART_RX_PIN           (UART6_TX_C6)        // 遥控器接收机的TX引脚 连接单片机的RX引脚
 #define LORA3A22_UART_BAUDRATE         (115200)              // 指定 lora3a22 串口所使用的的串口波特率
+#define LORA3A22_UART_RTS_PIN          ( C13 )                             // 无线串口对应模块的 RTS 引脚
 
 #define LORA3A22_DATA_LEN              ( 18  )               // lora3a22帧长
 #define LORA3A22_FRAME_STAR            ( 0XA3 )              // 帧头信息

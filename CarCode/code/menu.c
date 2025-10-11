@@ -16,29 +16,25 @@ bool showline;
 int current_state=1;
 int p=0;                        //记录当前指针
 int p_nearby=0;                 //记录所属的指针
-uint8 input;    //菜单按键输入
+uint8 input;                    //菜单按键输入
 extern int status;
-extern bool start_flag;     //发车标志位
-extern bool stop;     //停车标志位
 
-extern float filtering_angle; //解算出的角度
 
 extern uint8 flag;
 bool show_flag=false;     //显示标志位,全局变量
-extern int16 threshold1;  // 左上
-extern int16 threshold2;  // 右上
-extern int16 threshold3;  // 左下
-extern int16 threshold4;  // 右下
+
 int16 start_count=0;      //发车保护
 
 //菜单调参
-
+car_mode carmode=stop;                   //车状态默认停止
+stop_debug stopdebug=normal_debug; //停车debug默认正常
 enum_menu_mode menu_Mode=normal;         //菜单模式
+
 int16 default_int=0;            //默认整型，防止空指针
 float default_float=0.0;        //默认浮点型，防止空指针
 
 uint8 confirm_flag=false;      //确认标志
-int stepper_int[5]={1,5,10,20,50};                  //整型步进值
+int stepper_int[5]={1,5,10,20,50};                         //整型步进值
 float stepper_float[6]={0.01,0.1,1.0,10.0,100.0,500.0};   //浮点型步进值
 uint8 stepper_p_int=0;        //整型步进值指针
 uint8 stepper_p_float=0;      //浮点型步进值指针
@@ -67,12 +63,20 @@ enum_roadelementtypedef roadelementType[50]={zebra,straigh,curve
 int16 element_num=12;       //全局变量，记录经过元素数量
 
 int32 speed;
-//前瞻显示+调节参数
+//前瞻显示+调节参数         用于track.h
 int16 forwardsight;                 //默认前瞻
 int16 forwardsight2;                //  直到判断前瞻！！！！注意这个和前瞻不同，用于三轮或者四轮车加速的！！！
 int16 forwardsight3;                //弯道前瞻
 
-//pid显示+调节参数
+//来自balance.c
+extern float filtering_angle;       //解算出的角度
+extern int16 pitch_angle_integr_read;          //俯仰角菜单显示的数据
+extern int16 roll_angle_integr_read;           //横滚角菜单显示的数据
+extern int16 yaw_angle_integr_read;            //偏航角菜单显示的数据
+extern int16 raw_gyro_x ;                       //原始陀螺仪数据
+extern int16 raw_gyro_y ;                       //原始陀螺仪数据
+extern int16 raw_gyro_z ;                       //原始陀螺仪数据        
+//pid显示+调节参数          来自pid.h
 extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
@@ -84,10 +88,16 @@ struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //
 struct_imageshowcase image ={0,1,0};            //记录图像显示
 bool startbool=false; //开始标志
 
-//大津法显示＋调节参数
+//大津法显示＋调节参数          使用于photo_chuli.h
 int16 threshold_down=100;       //大津法阈值上限
 int16 threshold_up=200;         //大津法阈值下限  
 int16 OTSU_calperxpage=5;       //每x张图片计算一次大津法
+
+//来自      photo_chuli.c，分块大津法
+extern int16 threshold1;  // 左上
+extern int16 threshold2;  // 右上
+extern int16 threshold3;  // 左下
+extern int16 threshold4;  // 右下
 //
 //菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
 
@@ -156,10 +166,44 @@ void show_element(void)
     }
 }
 //用于显示经过元素
+void show_stopreason(void)
+{
+    ips200_show_string(0,0,"stop reason:");
+    if(stopdebug==blackprotect_stop)
+    {
+        ips200_show_string(0,20,"blackprotect stop");
+    }
 
-
+    if(stopdebug==zebra_stop)
+    {
+        ips200_show_string(0,20,"zebra stop");
+    }
+    if(stopdebug==liftup_stop)
+    {
+        ips200_show_string(0,20,"liftup stop");
+    }
+    if (stopdebug==gyro_intrg_pitch_stop)
+    {
+        ips200_show_string(0,20,"gyro_intrg_pitch stop");
+    }
+    if (stopdebug==gyro_intrg_roll_stop)
+    {
+        ips200_show_string(0,20,"gyro_intrg_roll stop");
+    }
+    if (stopdebug==gyro_intrg_yaw_stop)         
+    {
+        ips200_show_string(0,20,"gyro_intrg_yaw stop");
+    }
+    if (stopdebug==timer_count_stop)          
+    {
+        ips200_show_string(0,20,"timer stop");
+    }
+ 
+}
+//用于显示停止原因
 void image_show()   {show_flag=true;}
-void PID_clear() {
+void PID_clear()
+{
 	PID_gyro.error0 = 0;
     PID_gyro.errorint = 0;
 	PID_angle.error0 = 0;
@@ -168,7 +212,7 @@ void PID_clear() {
 	PID_steer.errorint = 0; 
 }
 //误差清除函数防止爆炸(填的坑记得补哈)
-void start_the_car() { stop = false; flag = 0;start_count=0; PID_clear();}//开始
+void start_the_car() { carmode = car_run_mode1; flag = 0;start_count=0; angle_init();PID_clear();}//开始
 
 
 void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;PID_gyro.maxout=5000;PID_gyro.minout=-5000;  ips200_show_string(0,180,"set 0 already");} 
@@ -268,18 +312,28 @@ MENU menu[] =
             {3, "forwardsight1",150,               20, &default_float, &forwardsight, param_int, NULL},
             {3, "forwardsight2",150,               40, &default_float, &forwardsight2, param_int, NULL},
             {3, "forwardsight3",150,                60, &default_float, &forwardsight3, param_int, NULL},
-    {1, "element_onoff",      0,                  80, &default_float, &default_int, catlog,      NULL},
-        {2, "crossl",        100,                 20, &default_float, &roadelement_onoff.crossl,    on_off, NULL},
-        {2, "crossr",        100,                 40, &default_float, &roadelement_onoff.crossr,    on_off, NULL},
-        {2, "crossm",        100,                 60, &default_float, &roadelement_onoff.crossm,    on_off, NULL},
-        {2, "islandl",       100,                 80, &default_float, &roadelement_onoff.islandl,   on_off, NULL},
-        {2, "islandR",       100,                100, &default_float, &roadelement_onoff.islandr,   on_off, NULL},
-        {2, "scurve",        100,                120, &default_float, &roadelement_onoff.scurve,    on_off, NULL},
-        {2, "speedup",       100,                140, &default_float, &roadelement_onoff.speedup,   on_off, NULL},
-        {2, "ramp",          100,                160, &default_float, &roadelement_onoff.ramp,      on_off, NULL},
-        {2, "obstacle",      100,                180, &default_float, &roadelement_onoff.obstacle,  on_off, NULL},
-    {1, "element_gothrough",  0,                  100, &default_float, &default_int, catlog,      NULL},
-        {2, "element_count",  0,                  20, &default_float, &default_int, catlog,      NULL},
+    {1, "debug",      0,                  80, &default_float, &default_int, catlog,      NULL},
+        {2,"gyro_info"        ,0,20, &default_float, &default_int,catlog,NULL},
+            {3,"pit_intg"        ,100,20, &default_float, &pitch_angle_integr_read,param_int_readonly,NULL},
+            {3,"yaw_intg"          ,100,40, &default_float,   &yaw_angle_integr_read,param_int_readonly,NULL},
+            {3,"roll_intg"         ,100,60, &default_float, &roll_angle_integr_read,param_int_readonly,NULL},
+            {3, "ROLL_angle",               100,80, &filtering_angle, &default_int, param_float_readonly,   NULL},
+            {3,"raw_gyro_x"       ,100,100, &default_float, &raw_gyro_x,param_int_readonly,NULL},
+            {3,"raw_gyro_y"       ,100,120, &default_float, &raw_gyro_y,param_int_readonly,NULL},
+            {3,"raw_gyro_z"       ,100,140, &default_float, &raw_gyro_z,param_int_readonly,NULL},
+            {3,"imu_gyro_x"       ,100,160, &default_float, &imu660ra_gyro_x,param_int_readonly,NULL},
+    {1, "element",  0,                  100, &default_float, &default_int, catlog,      NULL},
+        {2, "element_onoff",      0,                  20, &default_float, &default_int, catlog,      NULL},
+            {3, "crossl",        100,                 20, &default_float, &roadelement_onoff.crossl,    on_off, NULL},
+            {3, "crossr",        100,                 40, &default_float, &roadelement_onoff.crossr,    on_off, NULL},
+            {3, "crossm",        100,                 60, &default_float, &roadelement_onoff.crossm,    on_off, NULL},
+            {3, "islandl",       100,                 80, &default_float, &roadelement_onoff.islandl,   on_off, NULL},
+            {3, "islandR",       100,                100, &default_float, &roadelement_onoff.islandr,   on_off, NULL},
+            {3, "scurve",        100,                120, &default_float, &roadelement_onoff.scurve,    on_off, NULL},
+            {3, "speedup",       100,                140, &default_float, &roadelement_onoff.speedup,   on_off, NULL},
+            {3, "ramp",          100,                160, &default_float, &roadelement_onoff.ramp,      on_off, NULL},
+            {3, "obstacle",      100,                180, &default_float, &roadelement_onoff.obstacle,  on_off, NULL},
+        {2, "element_count",  0,                  40, &default_float, &default_int, catlog,      NULL},
             {3, "straigh",   100,                 20, &default_float, &roadelement_record.straigh,     param_int_readonly, NULL},
             {3, "crossm",     100,                 40, &default_float, &roadelement_record.crossm,       param_int_readonly, NULL},
             {3, "crossl",     100,                 60, &default_float, &roadelement_record.crossl,       param_int_readonly, NULL},
@@ -294,10 +348,9 @@ MENU menu[] =
             {3, "blackprotect",100,               240, &default_float, &roadelement_record.blackprotect, param_int_readonly, NULL},
             {3, "stall",      100,                260, &default_float, &roadelement_record.stall,        param_int_readonly, NULL},
             {3, "zebra",      100,                280, &default_float, &roadelement_record.zebra,        param_int_readonly, NULL},
-        {2, "element_gothrough",   0,              40, &default_float, &default_int,                     roadgothrough,      NULL},
-        {2, "record_clear",   0,                  60, &default_float, &default_int, function,     NULL},        //清零函数待添加
+        {2, "element_gothrough",   0,              60, &default_float, &default_int,                     roadgothrough,      NULL},
+        {2, "record_clear",   0,                  80, &default_float, &default_int, function,     NULL},        //清零函数待添加
     {1, "flash",              0,                 120, &default_float, &default_int, catlog,       NULL},
-
         {2, "code_load",    100,                 20, &default_float, &default_int, catlog,       NULL},
             {3, "load1",    100,                 20, &default_float, &default_int, confirm,     NULL},
             {3, "load2",    100,                 40, &default_float, &default_int, confirm,     NULL},
@@ -369,7 +422,7 @@ void display_fast(int16 X1,int16 X2,int16 Y,enum_function type,int16* int_p,floa
 }
 void outputscreen_fast()
 {
-    if(show_flag==false&&current_state==1)//如果图像显示没开且在顶级菜单
+    if(show_flag==false&&current_state==1&&menu_Mode==normal)//如果图像显示没开且在顶级菜单
     {    
         ips200_set_color(RGB565_YELLOW, RGB565_BLACK);
         ips200_show_string(0,160,"fast_show");
@@ -423,7 +476,12 @@ void output(void)
         show_element();
         return;
     }
-    if     (target_priority==0)         //顶级菜单
+    if(menu_Mode==stop_debug_display)//停止调试显示模式下
+    {
+        show_stopreason();
+        return;                     //提前退出
+    }
+    if(target_priority==0)         //顶级菜单
     {
         ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //设置为蓝色黑底
         ips200_show_string(0,0,"menu");//输出标题字符
@@ -705,7 +763,7 @@ void Menu_control(void)
             }
             break;
         case BACK:
-        if(menu_Mode==edit_float||menu_Mode==edit_confirm||menu_Mode==edit_int||menu_Mode==special_show_element1) //编辑模式下按返回键退出编辑模式
+        if(menu_Mode==edit_float||menu_Mode==edit_confirm||menu_Mode==edit_int||menu_Mode==special_show_element1||menu_Mode==stop_debug_display) //编辑模式下按返回键退出编辑模式
         {
             menu_Mode=normal;
             break;

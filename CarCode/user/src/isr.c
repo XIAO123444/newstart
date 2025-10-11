@@ -1,4 +1,3 @@
-
 #include "zf_common_headfile.h"
 #include "isr.h"
 #include "PID.h"
@@ -8,6 +7,7 @@
 #include "track.h"
 #include "screen.h" 
 #include "BLDC.h"
+#include "menu.h"
 extern uint32 key1_count;
 extern uint32 key2_count;
 extern uint32 key3_count;
@@ -31,7 +31,6 @@ int turn2 =0;
 int32 encodercounter1=0;          //里程计数
 int32 gyrocounter=0;                  //陀螺仪积分
 
-extern int16 pitch_angle_count;          //横滚角
 
 extern int16 start_count;      //发车保护
 
@@ -40,18 +39,24 @@ extern uint16 centerline2[MT9V03X_H];
 uint8 flag=0;
 
 //神医
-float Med_Angle=1450;                  
+float Med_Angle=1450;                     
 
-bool stop=true; //停车标志
 
 bool ins_flag=false;//惯导标志
 
 extern float filtering_angle;
+//pid显示+调节参数          来自pid.h
 extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
 extern PID_t PID_steer;         //转向环
 extern PID_t PID_BLDC;          //负压风扇环
+
+//来自menu.h
+extern car_mode carmode;  //车的状态
+extern stop_debug stopdebug; //停车debug
+extern enum_menu_mode menu_Mode;         //菜单模式
+
 
 uint8 count1=0;     //毫秒计数1
 uint8 count2=0;     //毫秒计数2
@@ -158,26 +163,25 @@ void TIM6_IRQHandler(void)
     //风扇速度环5ms
     if(count2>=10)
     {
-        first_order_filtering();
         PID_BLDC.actual = filtering_angle;
         //BDLC计算  待填的坑
 
         //速度环单独重写，角度环角速度环可以考虑晚点加。先尝试使用非串环控平衡。
     }
-    //角度环
-    // if (count1 >= 5) {
-    //     first_order_filtering();
-    //     PID_angle.actual = filtering_angle;
-    //     PID_angle.targ = Med_Angle + PID_speed.out;
-    //     // PID_angle.targ = Med_Angle + 200;
+    // 角度环
+    if (count1 >= 5) {
+        first_order_filtering();
+        // PID_angle.actual = filtering_angle;
+        // PID_angle.targ = Med_Angle + PID_speed.out;
+        // // PID_angle.targ = Med_Angle + 200;
 
-    //     if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
-    //     {
-    //         PID_angle.error0 = 0;
-    //     }
-    //     PID_gyro_update(&PID_angle, imu660ra_gyro_x);
-    //     count1 = 0;
-    // }
+        // if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
+        // {
+        //     PID_angle.error0 = 0;
+        // }
+        // PID_gyro_update(&PID_angle, imu660ra_gyro_x);
+        // count1 = 0;
+    }
     // //角速度环3ms
     if (count3 >= 3) {
     PID_gyro.targ = -PID_angle.out;
@@ -185,7 +189,7 @@ void TIM6_IRQHandler(void)
     PID_update(&PID_gyro);
 		count3=0;
     }
-    if(stop==false)
+    if(carmode==car_run_mode1||carmode==car_run_mode2)
     {  
         start_count++;
         if (start_count==3000)
@@ -205,7 +209,6 @@ void TIM6_IRQHandler(void)
         }
         if(start_count>=5001)
         {
-            pitch_angle_count=0;
             // motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out);
             motor(1000,1000);
         }
@@ -216,15 +219,24 @@ void TIM6_IRQHandler(void)
         }
         if(start_count>=23000)
         {
-            stop=true;
+            carmode=stop;                           //停车
+            stopdebug=timer_count_stop;             //停车原因
+            menu_Mode=stop_debug_display;           //菜单切换到停车显示
         }
+    
     }
-    else
+    if (carmode == remote)
+    {
+
+    }
+    
+    if(carmode==stop)
     {
         BLDC_run(0);
         motor(0,0);
-        ins_flag=false;
+        ins_flag=false;   
     }
+
     //此处编写用户代码
     TIM6->SR &= ~TIM6->SR;                                                
 }
@@ -440,7 +452,7 @@ void UART6_IRQHandler (void)
     {
         wireless_module_uart_handler();
         // 此�?�编写用户代�?
-        // 务必读取数据或者关�?�?�? 否则会一直触发串口接收中�?
+        // 务必读取数据或者关�?�?�? 否则会一直触发串口接收中�? 
 
         // 此�?�编写用户代�?
         UART6->ICR |= 0x00000002;                                               // 清除�?�?标志�?

@@ -66,8 +66,6 @@ extern enum  mark carstatus_now;
 //锁列
 extern int16 bailie_lock_crossroad;
 extern int16 bailieright_lock_round;
-extern bool start_flag; //发车标志位
-extern bool stop;
 //线点与丢线↓↓↓↓
 uint8 leftline_num;         //左线点数量
 uint8 rightline_num;        //右线点数量
@@ -83,7 +81,10 @@ int16 left_budandiao       =0;     //左不单调
 int16 right_budandiao      =0;     //右不单调
 //圆环↑↑↑↑
 
-
+// 来自 menu.h
+extern car_mode carmode;  //车的状态
+extern stop_debug stopdebug; //停车debug
+extern enum_menu_mode menu_Mode;         //菜单模式
 
 //差比和↓↓↓↓
 int16 sar_thre = 17;//差比和阈值
@@ -93,7 +94,6 @@ uint8 pix_per_meter = 20;//每米的像素数
 extern int16 threshold_up;  //大津法阈值上限
 extern int16 threshold_down; //大津法阈值下限
 
-extern bool stop;
 float dx1[5]={0};
 float dx2[5]={0};
 
@@ -853,10 +853,9 @@ void black_protect_check(void)
     }
             if (sum>100*0.8)
         {
-					  
-            start_flag=false;
-            stop=true;
-					  stop=true;
+			carmode=stop;
+            stopdebug=blackprotect_stop;
+            menu_Mode=stop_debug_display;           //菜单切换到停车显示
         }
 }
 void banmaxian_check(void)
@@ -875,9 +874,9 @@ void banmaxian_check(void)
                 }
                 if(count>=10)//如果黑色计数大于等于40，认为是斑马线
                 {
-                    
-                    stop=true;
-                    start_flag=false;
+                    carmode=stop;
+                    stopdebug=zebra_stop;
+                    menu_Mode=stop_debug_display;           //菜单切换到停车显示
                 }
             }
 }
