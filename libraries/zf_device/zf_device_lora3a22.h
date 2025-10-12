@@ -1,51 +1,50 @@
-
 #ifndef CODE_ZF_DEVICE_LORA3A22_H_
 #define CODE_ZF_DEVICE_LORA3A22_H_
 
 #include "zf_common_headfile.h"
 
-#define LORA3A22_UART_INDEX            (UART_6)              // ¶¨Òå´®¿ÚÒ£¿ØÆ÷Ê¹ÓÃµÄ´®¿Ú
-#define LORA3A22_UART_TX_PIN           (UART6_RX_C7)        // Ò£¿ØÆ÷½ÓÊÕ»úµÄRXÒı½Å Á¬½Óµ¥Æ¬»úµÄTXÒı½Å
-#define LORA3A22_UART_RX_PIN           (UART6_TX_C6)        // Ò£¿ØÆ÷½ÓÊÕ»úµÄTXÒı½Å Á¬½Óµ¥Æ¬»úµÄRXÒı½Å
-#define LORA3A22_UART_BAUDRATE         (115200)              // Ö¸¶¨ lora3a22 ´®¿ÚËùÊ¹ÓÃµÄµÄ´®¿Ú²¨ÌØÂÊ
-#define LORA3A22_UART_RTS_PIN          ( C13 )                             // ÎŞÏß´®¿Ú¶ÔÓ¦Ä£¿éµÄ RTS Òı½Å
+#define LORA3A22_UART_INDEX            (UART_6)              // å®šä¹‰ä¸²å£é¥æ§å™¨ä½¿ç”¨çš„ä¸²å£
+#define LORA3A22_UART_TX_PIN           (UART6_RX_C7)        // é¥æ§å™¨æ¥æ”¶æœºçš„RXå¼•è„š è¿æ¥å•ç‰‡æœºçš„TXå¼•è„š
+#define LORA3A22_UART_RX_PIN           (UART6_TX_C6)        // é¥æ§å™¨æ¥æ”¶æœºçš„TXå¼•è„š è¿æ¥å•ç‰‡æœºçš„RXå¼•è„š
+#define LORA3A22_UART_BAUDRATE         (115200)              // æŒ‡å®š lora3a22 ä¸²å£æ‰€ä½¿ç”¨çš„çš„ä¸²å£æ³¢ç‰¹ç‡
+#define LORA3A22_UART_RTS_PIN          ( C13 )                             // æ— çº¿ä¸²å£å¯¹åº”æ¨¡å—çš„ RTS å¼•è„š
 
-#define LORA3A22_DATA_LEN              ( 18  )               // lora3a22Ö¡³¤
-#define LORA3A22_FRAME_STAR            ( 0XA3 )              // Ö¡Í·ĞÅÏ¢
+#define LORA3A22_DATA_LEN              ( 18  )               // lora3a22å¸§é•¿
+#define LORA3A22_FRAME_STAR            ( 0XA3 )              // å¸§å¤´ä¿¡æ¯
 
 
 
 typedef struct
 {
-    uint8 head;                         // Ö¡Í·
-    uint8 sum_check;                    // ºÍĞ£Ñé
+    uint8 head;                         // å¸§å¤´
+    uint8 sum_check;                    // å’Œæ ¡éªŒ
 
     int16 joystick[4];
-	// joystick[0]:×ó±ßÒ¡¸Ë×óÓÒÖµ      
-	// joystick[1]:×ó±ßÒ¡¸ËÉÏÏÂÖµ
-	// joystick[2]:ÓÒ±ßÒ¡¸Ë×óÓÒÖµ      
-	// joystick[3]:ÓÒ±ßÒ¡¸ËÉÏÏÂÖµ
+	// joystick[0]:å·¦è¾¹æ‘‡æ†å·¦å³å€¼      
+	// joystick[1]:å·¦è¾¹æ‘‡æ†ä¸Šä¸‹å€¼
+	// joystick[2]:å³è¾¹æ‘‡æ†å·¦å³å€¼      
+	// joystick[3]:å³è¾¹æ‘‡æ†ä¸Šä¸‹å€¼
 
     uint8 key[4];
-	// °´ÏÂ1 ËÉ¿ª0
-    // key[0]-Ò¡¸Ë×ó±ß
-    // key[1]-Ò¡¸ËÓÒ±ß
-    // key[2]-²àÏò°´¼ü×ó±ß
-    // key[3]-²àÏò°´¼üÓÒ±ß
+	// æŒ‰ä¸‹1 æ¾å¼€0
+    // key[0]-æ‘‡æ†å·¦è¾¹
+    // key[1]-æ‘‡æ†å³è¾¹
+    // key[2]-ä¾§å‘æŒ‰é”®å·¦è¾¹
+    // key[3]-ä¾§å‘æŒ‰é”®å³è¾¹
 
     uint8 switch_key[4];
-    // switch_key[0]-×ó±ß²¦Âë¿ª¹Ø_1
-    // switch_key[1]-×ó±ß²¦Âë¿ª¹Ø_2
-    // switch_key[2]-ÓÒ±ß²¦Âë¿ª¹Ø_1
-    // switch_key[3]-ÓÒ±ß²¦Âë¿ª¹Ø_2
+    // switch_key[0]-å·¦è¾¹æ‹¨ç å¼€å…³_1
+    // switch_key[1]-å·¦è¾¹æ‹¨ç å¼€å…³_2
+    // switch_key[2]-å³è¾¹æ‹¨ç å¼€å…³_1
+    // switch_key[3]-å³è¾¹æ‹¨ç å¼€å…³_2
 
 }lora3a22_uart_transfer_dat_struct;
 
 
 extern lora3a22_uart_transfer_dat_struct lora3a22_uart_transfer;
-extern uint8   lora3a22_uart_data[LORA3A22_DATA_LEN];       // lora3a22½ÓÊÕÔ­Ê¼Êı¾İ
+extern uint8   lora3a22_uart_data[LORA3A22_DATA_LEN];       // lora3a22æ¥æ”¶åŸå§‹æ•°æ®
 extern vuint8  lora3a22_finsh_flag;
-extern vuint8  lora3a22_state_flag;                         // Ò£¿ØÆ÷×´Ì¬(1±íÊ¾Õı³££¬·ñÔò±íÊ¾Ê§¿Ø)
+extern vuint8  lora3a22_state_flag;                         // é¥æ§å™¨çŠ¶æ€(1è¡¨ç¤ºæ­£å¸¸ï¼Œå¦åˆ™è¡¨ç¤ºå¤±æ§)
 extern uint16  lora3a22_response_time;
 
 

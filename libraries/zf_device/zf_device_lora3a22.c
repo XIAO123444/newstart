@@ -1,10 +1,10 @@
 #include "zf_device_lora3a22.h"
 
 
-uint8   lora3a22_uart_data[LORA3A22_DATA_LEN]  = {0};               // Ò£¿ØÆ÷½ÓÊÕÆ÷Ô­Ê¼Êı¾İ
+uint8   lora3a22_uart_data[LORA3A22_DATA_LEN]  = {0};               // é¥æ§å™¨æ¥æ”¶å™¨åŸå§‹æ•°æ®
 
-vuint8  lora3a22_finsh_flag = 0;                                    // ±íÊ¾³É¹¦½ÓÊÕµ½Ò»Ö¡Ò£¿ØÆ÷Êı¾İ
-vuint8  lora3a22_state_flag = 1;                                    // Ò£¿ØÆ÷×´Ì¬(1±íÊ¾Õı³££¬·ñÔò±íÊ¾Ê§¿Ø)
+vuint8  lora3a22_finsh_flag = 0;                                    // è¡¨ç¤ºæˆåŠŸæ¥æ”¶åˆ°ä¸€å¸§é¥æ§å™¨æ•°æ®
+vuint8  lora3a22_state_flag = 1;                                    // é¥æ§å™¨çŠ¶æ€(1è¡¨ç¤ºæ­£å¸¸ï¼Œå¦åˆ™è¡¨ç¤ºå¤±æ§)
 uint16  lora3a22_response_time = 0;
 static  fifo_struct                                     lora3a22_uart_fifo;
 static  uint8                                           lora3a22_uart_buffer[WIRELESS_UART_BUFFER_SIZE];
@@ -13,11 +13,11 @@ static          uint8                                   lora3a22_uart_data1     
 lora3a22_uart_transfer_dat_struct lora3a22_uart_transfer;
 
 //--------------------------------  -----------------------------------------------------------------------------------
-// º¯Êı¼ò½é     lora3a22´®¿Ú»Øµ÷º¯Êı
-// ²ÎÊıËµÃ÷     void
-// ·µ»Ø²ÎÊı     void
-// Ê¹ÓÃÊ¾Àı     lora3a22_uart_callback();
-// ±¸×¢ĞÅÏ¢     ´Ëº¯ÊıĞèÒªÔÚ´®¿Ú½ÓÊÕÖĞ¶ÏÄÚ½øĞĞµ÷ÓÃ
+// å‡½æ•°ç®€ä»‹     lora3a22ä¸²å£å›è°ƒå‡½æ•°
+// å‚æ•°è¯´æ˜     void
+// è¿”å›å‚æ•°     void
+// ä½¿ç”¨ç¤ºä¾‹     lora3a22_uart_callback();
+// å¤‡æ³¨ä¿¡æ¯     æ­¤å‡½æ•°éœ€è¦åœ¨ä¸²å£æ¥æ”¶ä¸­æ–­å†…è¿›è¡Œè°ƒç”¨
 //-------------------------------------------------------------------------------------------------------------------
 
 void lora3a22_uart_callback(void )
@@ -30,9 +30,9 @@ void lora3a22_uart_callback(void )
     if((1 == length) && (LORA3A22_FRAME_STAR != lora3a22_uart_data[0]))
     {
         length =  0;
-    }                                                             // ÆğÊ¼Î»ÅĞ¶Ï
+    }                                                             // èµ·å§‹ä½åˆ¤æ–­
 
-    if(LORA3A22_DATA_LEN <= length)                            	  // Êı¾İ³¤¶ÈÅĞ¶Ï
+    if(LORA3A22_DATA_LEN <= length)                            	  // æ•°æ®é•¿åº¦åˆ¤æ–­
     {
         parity_bit = lora3a22_uart_data[1];
         lora3a22_uart_data[1] = 0;
@@ -41,14 +41,14 @@ void lora3a22_uart_callback(void )
             parity_bit_sum += lora3a22_uart_data[i];
         }
 
-        if (parity_bit_sum == parity_bit)                          // ºÍĞ£ÑéÅĞ¶Ï
+        if (parity_bit_sum == parity_bit)                          // å’Œæ ¡éªŒåˆ¤æ–­
         {
             lora3a22_finsh_flag = 1;
             lora3a22_state_flag = 1;
             lora3a22_response_time = 0;
             lora3a22_uart_data[1]= parity_bit;
 
-            // ½«½ÓÊÕµ½µÄÊı¾İ¿½±´µ½½á¹¹ÌåÖĞ
+            // å°†æ¥æ”¶åˆ°çš„æ•°æ®æ‹·è´åˆ°ç»“æ„ä½“ä¸­
             memcpy((uint8*)&lora3a22_uart_transfer, (uint8*)lora3a22_uart_data, \
             sizeof(lora3a22_uart_data));
 
@@ -64,11 +64,11 @@ void lora3a22_uart_callback(void )
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-// º¯Êı¼ò½é     lora3a22³õÊ¼»¯º¯Êı
-// ²ÎÊıËµÃ÷     void
-// ·µ»Ø²ÎÊı     void
-// Ê¹ÓÃÊ¾Àı     lora3a22_init();
-// ±¸×¢ĞÅÏ¢
+// å‡½æ•°ç®€ä»‹     lora3a22åˆå§‹åŒ–å‡½æ•°
+// å‚æ•°è¯´æ˜     void
+// è¿”å›å‚æ•°     void
+// ä½¿ç”¨ç¤ºä¾‹     lora3a22_init();
+// å¤‡æ³¨ä¿¡æ¯
 //-------------------------------------------------------------------------------------------------------------------
 
 
@@ -77,7 +77,7 @@ void lora3a22_init(void)
     set_wireless_type(WIRELESS_UART, lora3a22_uart_callback);
     fifo_init(&lora3a22_uart_fifo, FIFO_DATA_8BIT, lora3a22_uart_buffer, WIRELESS_UART_BUFFER_SIZE);
     gpio_init(LORA3A22_UART_RTS_PIN, GPI, GPIO_HIGH, GPI_PULL_UP);
-    uart_init(LORA3A22_UART_INDEX, LORA3A22_UART_BAUDRATE , LORA3A22_UART_RX_PIN, LORA3A22_UART_TX_PIN);        // ³õÊ¼»¯´®¿Ú
-    uart_rx_interrupt(LORA3A22_UART_INDEX, 1);               // Ê¹ÄÜ´®¿Ú½ÓÊÕÖĞ¶Ï
+    uart_init(LORA3A22_UART_INDEX, LORA3A22_UART_BAUDRATE , LORA3A22_UART_RX_PIN, LORA3A22_UART_TX_PIN);        // åˆå§‹åŒ–ä¸²å£
+    uart_rx_interrupt(LORA3A22_UART_INDEX, 1);               // ä½¿èƒ½ä¸²å£æ¥æ”¶ä¸­æ–­
 
 }
