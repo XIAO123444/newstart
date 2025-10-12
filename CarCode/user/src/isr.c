@@ -8,6 +8,7 @@
 #include "screen.h" 
 #include "BLDC.h"
 #include "menu.h"
+#include "lora3a22.h"
 extern uint32 key1_count;
 extern uint32 key2_count;
 extern uint32 key3_count;
@@ -39,7 +40,7 @@ extern uint16 centerline2[MT9V03X_H];
 uint8 flag=0;
 
 //神医
-float Med_Angle=1450;                     
+float Med_Angle=-1000;                     
 
 
 bool ins_flag=false;//惯导标志
@@ -133,7 +134,6 @@ void TIM5_IRQHandler (void)
 //-------------------------------------------------------------------------------------------------------------------
 void TIM6_IRQHandler(void)
 {
-
     timer_counter++;
     if(carmode==Start_Calibrate)
     {
@@ -193,18 +193,16 @@ void TIM6_IRQHandler(void)
         //速度环单独重写，角度环角速度环可以考虑晚点加。先尝试使用非串环控平衡。
     }
     // 角度环
-    if (count1 >= 5) {
+    if (count1 >= 5){
         first_order_filtering();
-        // PID_angle.actual = filtering_angle;
-        // PID_angle.targ = Med_Angle + PID_speed.out;
-        // // PID_angle.targ = Med_Angle + 200;
-
-        // if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
-        // {
-        //     PID_angle.error0 = 0;
-        // }
-        // PID_gyro_update(&PID_angle, imu660ra_gyro_x);
-        // count1 = 0;
+        PID_angle.actual = filtering_angle;
+        PID_angle.targ = Med_Angle;
+        if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
+        {
+             PID_angle.error0 = 0;
+        }
+        PID_gyro_update(&PID_angle, imu660ra_gyro_x);
+        count1 = 0;
     }
     // //角速度环3ms
     if (count3 >= 3) {
@@ -222,7 +220,8 @@ void TIM6_IRQHandler(void)
         }
         if(start_count>3000)
         {
-            BLDC_run(0 );//这边改成pidout
+           // BLDC_run(30);//这边改成pidout
+					  BLDC_run(PID_gyro.out);
             //这边可以设置一下平衡后再启动
         }
         if(start_count==5000)
@@ -234,7 +233,7 @@ void TIM6_IRQHandler(void)
         if(start_count>=5001)
         {
             // motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out);
-            motor(1000,1000);
+            motor(1000,1000);//这边可以分离开isr
         }
 
         if(start_count>=13000)
@@ -253,12 +252,10 @@ void TIM6_IRQHandler(void)
     {
 
     }
-
     if(carmode==stop)
     {   
         BLDC_STOP();
         motor(0,0);
-        ins_flag=false;   
     }
 
     //此处编写用户代码

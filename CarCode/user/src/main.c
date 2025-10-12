@@ -41,9 +41,9 @@ void all_init(void)
     BUZZ_init();                // 蜂鸣器初始化
     motor_init();               //电机初始化         
     BLDC_init();                // BLDC 初始化 TIM2在这里被用作pwm输出
-    // lora3a22_init();           // lora3a22 初始化
+    lora3a22_init();           // lora3a22 初始化
     // flash_load_config_default();
-    lora3a22_init();
+	  wireless_uart_init();
     while(1) // 摄像头初始化
     {
         if(mt9v03x_init())
@@ -60,34 +60,34 @@ void all_init(void)
 
 
  
-// int main()
-// {
-//     all_init();
-//     while(1)
-//     {
-//         if(carmode!=car_run_mode1&&carmode!=car_run_mode2)
-//         {
-//             Key_Scan();             // 按键扫描
-//             Menu_control();         // 菜单控制
-//         }
-//         if(mt9v03x_finish_flag)
-//         { 
-//             photo_image_process_all();
-//             // protect(); // 保护    
-//             // Velocity_Control();       // 速度控制    
-//             if(current_state == 1)
-//             {
-//                 if(carmode!=car_run_mode1&&carmode!=car_run_mode2&&show_flag) 
-//                 {
-//                     photo_displayimage();
-//                     show_line(); 
-//                 }          
-//             }                                                                   
+ int main()
+ {
+     all_init();
+     while(1)
+     {
+         if(carmode!=car_run_mode1&&carmode!=car_run_mode2)
+         {
+             Key_Scan();             // 按键扫描
+             Menu_control();         // 菜单控制
+         }
+         if(mt9v03x_finish_flag)
+         { 
+             photo_image_process_all();
+             // protect(); // 保护    
+             // Velocity_Control();       // 速度控制    
+             if(current_state == 1)
+             {
+                 if(carmode!=car_run_mode1&&carmode!=car_run_mode2&&show_flag) 
+                 {
+                     photo_displayimage();
+                     show_line(); 
+                 }          
+             }                                                                   
 
-//             mt9v03x_finish_flag = 0;
-//         } 
-//     }
-// }
+             mt9v03x_finish_flag = 0;
+         } 
+     }
+ }
 
 
 
@@ -102,56 +102,3 @@ void all_init(void)
 //     //注：如反转请改极性，如疯转请反插驱动
 // }
 
-int main()
-{
-    all_init();
-    while(1)
-    {
-        if (lora3a22_state_flag == 1)
-        {
-            if (lora3a22_finsh_flag == 1)
-            {
-
-				//lora3a22 帧头
-				printf ("head = %d\r\n",lora3a22_uart_transfer.head);
-
-				//lora3a22 和校验
-				printf ("sum_check = %d\r\n",lora3a22_uart_transfer.sum_check);
-
-				//左边摇杆左右值
-				printf ("joystick[0] = %d\r\n",lora3a22_uart_transfer.joystick[0]);
-				//左边摇杆上下值
-				printf ("joystick[1] = %d\r\n",lora3a22_uart_transfer.joystick[1]);
-				//右边摇杆左右值
-				printf ("joystick[2] = %d\r\n",lora3a22_uart_transfer.joystick[2]);
-				//右边摇杆上下值
-				printf ("joystick[3] = %d\r\n",lora3a22_uart_transfer.joystick[3]);
-
-				//左边摇杆按键
-				printf ("key0 = %d\r\n",lora3a22_uart_transfer.key[0]);
-				//右边摇杆按键
-				printf ("key1 = %d\r\n",lora3a22_uart_transfer.key[1]);
-				// 左边侧向按键
-				printf ("key2 = %d\r\n",lora3a22_uart_transfer.key[2]);
-				// 右边侧向按键
-				printf ("key3 = %d\r\n",lora3a22_uart_transfer.key[3]);
-
-				// 左边拨码开关_1
-				printf ("switch_key[0] = %d\r\n",lora3a22_uart_transfer.switch_key[0]);
-				// 左边拨码开关_2
-				printf ("switch_key[1] = %d\r\n",lora3a22_uart_transfer.switch_key[1]);
-				// 右边拨码开关_1
-				printf ("switch_key[2] = %d\r\n",lora3a22_uart_transfer.switch_key[2]);
-				// 右边拨码开关_2
-				printf ("switch_key[3] = %d\r\n",lora3a22_uart_transfer.switch_key[3]);
-				
-				
-				lora3a22_finsh_flag = 0;
-            }
-        }
-        else
-        {
-            printf("lora3a22 connection fail \r\n");
-        }
-    }
-}
