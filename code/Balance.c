@@ -127,7 +127,6 @@ void gyro_protect(void)
     }
     if( abs(yaw_angle_integr)>20000)//待填的坑
     {
-
         carmode=stop;
         stopdebug=gyro_intrg_yaw_stop;
         menu_Mode=stop_debug_display;           //菜单切换到停车显示

@@ -7,11 +7,11 @@
  *        适合需要精确控制位置的系统[2](@ref)
  */
 PID_t PID_gyro={
-	  .kp=2.5,   //0.3
-	  .ki=0.300,  //0.02//0.01
+	  .kp=0.03,   //0.3
+	  .ki=0.001,  //0.02//0.01
 	  .kd=0,
-	  .maxout=5000,
-	  .minout=-5000,
+	  .maxout=80,
+	  .minout=0,
     .targ=0
 };
 PID_t PID_angle={
@@ -59,8 +59,8 @@ void PID_update(PID_t *p) //位置式
     // 积分项累加：∑e(k) = ∑e(k-1) + e(k)
     p->errorint += p->error0;
     // 积分限幅：防止积分饱和，提高系统稳定性[2](@ref)
-    if(p->errorint > 50000){p->errorint = 50000;}
-    if(p->errorint < -50000){p->errorint = -50000;}
+    if(p->errorint > 1000){p->errorint = 1000;}
+    if(p->errorint < -1000){p->errorint = -1000;}
     
     // PID计算: P + I + D
     // P项: Kp*e(k), I项: Ki*∑e(k), D项: Kd*(e(k)-e(k-1))[9](@ref)
