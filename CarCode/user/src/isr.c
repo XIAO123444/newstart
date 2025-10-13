@@ -37,7 +37,6 @@ extern int16 start_count;      //发车保护
 
 extern int16 extern_gy;     //外部陀螺仪数据
 extern uint16 centerline2[MT9V03X_H];
-uint8 flag=0;
 
 //神医
 float Med_Angle=-1000;                     
@@ -232,7 +231,6 @@ void TIM6_IRQHandler(void)
         }
         if(start_count>=5001)
         {
-            // motor(PID_gyro.out-PID_steer.out,PID_gyro.out+PID_steer.out);
             motor(1000,1000);//这边可以分离开isr
         }
 
@@ -250,7 +248,38 @@ void TIM6_IRQHandler(void)
     }
     if (carmode == remote)
     {
+        start_count++;
+        if (start_count==3000)
+        {
+            ips200_show_string(0,180,"BLDC run");//debug信息显示
+        }
+        if(start_count>3000)
+        {
+           // BLDC_run(30);//这边改成pidout
+					  BLDC_run(PID_gyro.out);
+            //这边可以设置一下平衡后再启动
+        }
+        if(start_count==5000)
+        {
+            ips200_clear();
+            ips200_show_string(0,180,"motor run"); //debug信息显示
 
+        }
+        if(start_count>=5001)
+        {
+            motor(1000,1000);//这边可以分离开isr
+        }
+
+        if(start_count>=13000)
+        {
+            ips200_show_string(0,180,"time stop");
+        }
+        if(start_count>=15000)
+        {
+            carmode=stop;                           //停车
+            stopdebug=timer_count_stop;             //停车原因
+            menu_Mode=stop_debug_display;           //菜单切换到停车显示
+        }
     }
     if(carmode==stop)
     {   

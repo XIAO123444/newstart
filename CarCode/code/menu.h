@@ -32,13 +32,28 @@ typedef enum
 }enum_menu_mode;
 typedef enum 
     {
-        param_int,              //整型可编辑
+        param_int8,             //有符号8位可编辑
+        param_uint8,            //无符号8位可编辑
+        param_int16,              //整型可编辑
+        param_uint16,           //无符号16位可编辑
+        param_int32,             //有符号32位可编辑
+        param_uint32,          //无符号32位可编辑
+        param_uint8_readonly,    //无符号8位只读
+        param_int8_readonly,     //有符号8位只读
+        param_uint16_readonly,   //无符号16位只读
+        param_int16_readonly,     //整型只读
+        param_int32_readonly,     //有符号32位只读
+        param_uint32_readonly,   //无符号32位只读
+        
         param_float,            //浮点可编辑
+        param_double,           //双精度浮点可编辑
+        param_float_readonly,   //浮点只读
+        param_double_readonly,   //双精度浮点只读
+
+
         confirm,                //确认
         catlog,                 //目录
         function,               //函数
-        param_int_readonly,     //整型只读
-        param_float_readonly,   //浮点只读
         on_off,                 //开关
         chose1,                 //只选一个 
         roadgothrough           //赛道元素通过情况
@@ -61,6 +76,18 @@ typedef struct
     int16 stall;        //堵转
     int16 zebra;    //斑马线
 }struct_roadelementypedef;
+//菜单联合体，用于指针转换
+typedef union 
+{
+    int16* param_int16;
+    uint8* param_uint8;
+    int8* param_int8;
+    uint16* param_uint16;
+    int32* param_int32;
+    uint32* param_uint32;
+    double* param_double;
+    float* param_float;
+}union_param;
 //菜单结构体{优先级，名字，坐标，浮点数据，整型数据，类型（枚举），默认执行函数}
 typedef struct 
 {
@@ -68,8 +95,7 @@ typedef struct
     char str[20];                       //名字
     uint16 x;                           //显示横坐标
     uint16 y;                           //显示纵坐标
-    float *value_f;                      //浮点数据
-    int16 *value_i;                        //整型数据
+    union_param param_union;
     enum_function type; //类型:整型参数，浮点参数，目录， 
     void (*Operate_default)();          //默认执行函数
 
@@ -114,6 +140,9 @@ typedef enum
     gyro_intrg_yaw_stop,           //陀螺仪积分偏航角
     
 }stop_debug;
+
+
+
 
 void output(void);
 void Menu_control(void);

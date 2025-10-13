@@ -21,7 +21,7 @@ lora3a22_uart_transfer_dat_struct lora3a22_uart_transfer;
 //-------------------------------------------------------------------------------------------------------------------
 
 void lora3a22_uart_callback(void )
-{
+{ 
     static uint8 length = 0 ;
     uint8  parity_bit_sum  = 0, parity_bit  = 0;
 

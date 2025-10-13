@@ -12,7 +12,7 @@
 #include "buzzer.h"
 #include "speed.h"
 #include "Balance.h"
-#include "zf_device_lora3a22.h"
+#include "lora3a22.h"
 extern uint8 leftline_num;          // 左线点数
 extern uint8 rightline_num;         // 右线点数
 extern int current_state;
@@ -41,9 +41,9 @@ void all_init(void)
     BUZZ_init();                // 蜂鸣器初始化
     motor_init();               //电机初始化         
     BLDC_init();                // BLDC 初始化 TIM2在这里被用作pwm输出
-    lora3a22_init();           // lora3a22 初始化
-    // flash_load_config_default();
-	  wireless_uart_init();
+    lora3a22_init();           // lora3a22 初始化 遥控器
+    wireless_uart_init();
+    flash_load_config_default();
     while(1) // 摄像头初始化
     {
         if(mt9v03x_init())
@@ -64,7 +64,8 @@ void all_init(void)
  {
      all_init();
      while(1)
-     {
+     {  
+        remote_speed_control();
          if(carmode!=car_run_mode1&&carmode!=car_run_mode2)
          {
              Key_Scan();             // 按键扫描

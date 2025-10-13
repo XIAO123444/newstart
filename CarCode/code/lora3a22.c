@@ -1,9 +1,7 @@
 #include "lora3a22.h"
-#include "zf_common_headfile.h"
 #include "motor.h"
-#include <stdio.h>
-#include <math.h>
 #include <stdint.h>
+#include <math.h>
 #include "menu.h"
 extern car_mode carmode;
 // 控制参数结构体
@@ -162,28 +160,35 @@ ControlParams default_params = {
     .acceleration_factor = 0.05f,
     .deceleration_factor = 0.2f
 };
-void remote_speed_control(){
-	TwoWheelController controller;
-    // 初始化控制器
-  controller_init(&controller, &default_params);
-	int left_stick_y =0,right_stick_x =0;   //y:前后, x:左右
-	if (lora3a22_state_flag == 1)
-        {    
-            if (lora3a22_finsh_flag == 1)
-            {   
-							  
-								right_stick_x=lora3a22_uart_transfer.joystick[2];
-							  left_stick_y=lora3a22_uart_transfer.joystick[1];
-							  update_control(&controller, left_stick_y, right_stick_x);
-							  int left_pwm = get_left_motor_pwm(&controller);
-                int right_pwm = get_right_motor_pwm(&controller);
-							  motor(left_pwm,right_pwm);
-//							  printf("%d\n",left_pwm);
-//							  printf("%d\n",right_pwm);
-							if(lora3a22_uart_transfer.key[2]==1){
-								carmode=stop;
-							}
-							  lora3a22_finsh_flag = 0;
-						}
+TwoWheelController controller;
+
+void remote_param_init()
+{
+// 初始化控制器
+controller_init(&controller, &default_params);
 }
+
+void remote_speed_control()
+{
+
+int left_stick_y =0,right_stick_x =0;   //y:前后, x:左右
+    if (lora3a22_state_flag == 1)
+    {    
+        if (lora3a22_finsh_flag == 1)
+        {   
+							  
+            right_stick_x=lora3a22_uart_transfer.joystick[2];
+            left_stick_y=lora3a22_uart_transfer.joystick[1];
+            update_control(&controller, left_stick_y, right_stick_x);
+            int left_pwm = get_left_motor_pwm(&controller);
+            int right_pwm = get_right_motor_pwm(&controller);
+            motor(left_pwm,right_pwm);
+//          printf("%d\n",left_pwm);
+//          printf("%d\n",right_pwm);
+            if(lora3a22_uart_transfer.key[2]==1){
+                carmode=stop;
+            }
+            lora3a22_finsh_flag = 0;
+        }
+    }
 }

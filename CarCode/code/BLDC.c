@@ -10,8 +10,8 @@ void BLDC_init(void)
     pwm_init(PWM_CH1, 100, 0);                                                 // PWM 通道2 初始化10ms
     pwm_init(PWM_CH2, 100, 0);                                                 // PWM 通道2 初始化10ms
 
-    pwm_set_duty(PWM_CH1, 1000);                     // 计算占空比
-    pwm_set_duty(PWM_CH2, 1000);                     // 计算占空比
+    pwm_set_duty(PWM_CH1, 0);                     // 计算占空比
+    pwm_set_duty(PWM_CH2, 0);                     // 计算占空比
 
 
 }

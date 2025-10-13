@@ -26,12 +26,12 @@ bool show_flag=false;     //显示标志位,全局变量
 int16 start_count=0;      //发车保护
 
 //菜单调参
-car_mode carmode=stop;                   //车状态默认停止
-stop_debug stopdebug=normal_debug; //停车debug默认正常
-enum_menu_mode menu_Mode=normal;         //菜单模式
+car_mode carmode=stop;                   //全局变量 车状态默认停止
+stop_debug stopdebug=normal_debug;       //全局变量 停车debug默认正常
+enum_menu_mode menu_Mode=normal;         //全局变量 菜单模式
 
-int16 default_int=0;            //默认整型，防止空指针
-float default_float=0.0;        //默认浮点型，防止空指针
+int16 default_int=0;            //文件内变量 默认整型，防止空指针
+float default_float=0.0;        //文件内变量 默认浮点型，防止空指针
 
 uint8 confirm_flag=false;      //确认标志
 int stepper_int[5]={1,5,10,20,50};                         //整型步进值
@@ -76,6 +76,10 @@ extern int16 yaw_angle_integr_read;            //偏航角菜单显示的数据
 extern int16 raw_gyro_x ;                       //原始陀螺仪数据
 extern int16 raw_gyro_y ;                       //原始陀螺仪数据
 extern int16 raw_gyro_z ;                       //原始陀螺仪数据        
+
+//来自zf_device_lora3a22.c
+extern lora3a22_uart_transfer_dat_struct lora3a22_uart_transfer;
+
 //pid显示+调节参数          来自pid.h
 extern PID_t PID_gyro;          //角速度环
 extern PID_t PID_angle;         //角度环
@@ -212,8 +216,9 @@ void PID_clear()
 	PID_steer.errorint = 0; 
 }
 //误差清除函数防止爆炸(填的坑记得补哈)
-void start_the_car() { carmode = car_run_mode1; flag = 0;start_count=0; angle_init();PID_clear();}//开始
+void start_the_car() { carmode = car_run_mode1;start_count=0; angle_init();PID_clear();}//开始
 void Calibrate_BLDC()   {carmode=Start_Calibrate;}
+void Remote_start()     {carmode =remote;start_count=0; angle_init();PID_clear();}//远程开始
 
 void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;PID_gyro.maxout=5000;PID_gyro.minout=-5000;  ips200_show_string(0,180,"set 0 already");} 
 void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2=0;PID_angle.maxout=5000;PID_angle.minout=-5000;ips200_show_string(0,180,"set 0 already");}     
@@ -241,141 +246,153 @@ void codeload4(){}
 //菜单结构体
 MENU menu[] = 
 {
-    {1,"start",                   0,               20, &default_float, &default_int, catlog,         NULL},
-        {2,"car_go",              0,               20, &default_float, &default_int, function,       start_the_car},
-        {2,"Calibrate",           0,               40, &default_float, &default_int, function,       Calibrate_BLDC},
+    {1,"start",                   0,               20, {.param_float=&default_float}, catlog,         NULL},
+        {2,"car_go",              0,               20, {.param_float=&default_float}, function,       start_the_car},
+        {2,"Calibrate",           0,               40, {.param_float=&default_float}, function,       Calibrate_BLDC},
+        {2,"remote_start",        0,               60, {.param_float=&default_float}, function,       Remote_start},
 
-    {1, "pidparam",               0,               40, &default_float, &default_int, catlog,         NULL},
-        {2, "PID_gyro",           0,               20, &default_float, &default_int, catlog,         NULL},
-            {3, "kp",          ips200_x_max-10*8,  20, &PID_gyro.kp,    &default_int, param_float,   NULL},
-            {3, "ki",          ips200_x_max-10*8,  40, &PID_gyro.ki,    &default_int, param_float,   NULL},
-            {3, "kd",          ips200_x_max-10*8,  60, &PID_gyro.kd,    &default_int, param_float,   NULL},
-            {3, "maxout",      ips200_x_max-10*8,  80, &PID_gyro.maxout, &default_int, param_float,  NULL},
-            {3, "minout",      ips200_x_max-10*8,  100, &PID_gyro.minout, &default_int, param_float, NULL},
-        {2, "PID_angle",      0,                   40, &default_float,           &default_int, catlog,      NULL},
-            {3, "kp",        ips200_x_max-10*8,    20, &PID_angle.kp,    &default_int, param_float, NULL},
-            {3, "ki",        ips200_x_max-10*8,    40, &PID_angle.ki,    &default_int, param_float, NULL},
-            {3, "kd",        ips200_x_max-10*8,    60, &PID_angle.kd,    &default_int, param_float, NULL},
-            {3, "maxout",      ips200_x_max-10*8,  80, &PID_angle.maxout, &default_int, param_float,NULL},
-            {3, "minout",      ips200_x_max-10*8,  100, &PID_angle.minout, &default_int, param_float, NULL},
-        {2, "PID_V",      0,                        60, &default_float,           &default_int, catlog,      NULL},
-            {3, "kp",        ips200_x_max-10*8,    20, &PID_speed.kp,    &default_int, param_float, NULL},
-            {3, "ki",        ips200_x_max-10*8,    40, &PID_speed.ki,    &default_int, param_float, NULL},
-            {3, "kd",        ips200_x_max-10*8,    60, &PID_speed.kd,    &default_int, param_float, NULL},
-            {3, "maxout",      ips200_x_max-10*8,  80, &PID_speed.maxout, &default_int, param_float,NULL},
-            {3, "minout",      ips200_x_max-10*8,  100, &PID_speed.minout, &default_int, param_float, NULL},
-            {3,"target",    ips200_x_max-10*8,    120, &PID_speed.targ,  &default_int, param_float, NULL},
-        {2, "PID_steer",      0,                   80, &default_float,           &default_int, catlog,      NULL},
-            {3, "kp",        ips200_x_max-10*8,    20, &PID_steer.kp,    &default_int, param_float, NULL},
-            {3, "ki",        ips200_x_max-10*8,    40, &PID_steer.ki,    &default_int, param_float, NULL},
-            {3, "kd",        ips200_x_max-10*8,    60, &PID_steer.kd,    &default_int, param_float, NULL},
-            {3, "kd2",        ips200_x_max-10*8,    80, &PID_steer.kd2,    &default_int, param_float, NULL},
-            {3, "maxout",      ips200_x_max-10*8,  100, &PID_steer.maxout, &default_int, param_float,NULL},
-            {3, "minout",      ips200_x_max-10*8,  120, &PID_steer.minout, &default_int, param_float, NULL},
-        {2, "PID_BLDC",      0,                   100, &default_float,           &default_int, catlog,      NULL},
-            {3,"kp",        ips200_x_max-10*8,    20, &PID_BLDC.kp,    &default_int, param_float, NULL},
-            {3,"ki",        ips200_x_max-10*8,    40, &PID_BLDC.ki,    &default_int, param_float, NULL},
-            {3,"kd",        ips200_x_max-10*8,    60, &PID_BLDC.kd,    &default_int, param_float, NULL},
-            {3,"kd2",       ips200_x_max-10*8,    80, &PID_BLDC.kd2,   &default_int, param_float, NULL},
-            {3,"maxout",    ips200_x_max-10*8,   100, &PID_BLDC.maxout,&default_int, param_float,NULL},
-            {3,"minout",    ips200_x_max-10*8,   120, &PID_BLDC.minout,&default_int, param_float,NULL},
-        {2, "allset0",       0,                  120, &default_float,           &default_int, confirm,     pid_all_set0},
-        {2, "PID_gyro_set0",       0,                  140, &default_float,           &default_int, confirm,     pid_gyro_set0},
-        {2, "PID_angle_set0",      0,                  160, &default_float,           &default_int, confirm,     pid_angle_set0},
-        {2, "PID_V_set0",          0,                  180, &default_float,           &default_int, confirm,     pid_V_set0},
-        {2, "PID_steer_set0",      0,                  200, &default_float,           &default_int, confirm,     pid_steer_set0},
-        {2,"PID_BLDC_modeset0",      0,                  220, &default_float,           &default_int, confirm,     pid_BLDC_mode_set},
-    {1, "image",              0,                  60, &default_float, &default_int, catlog,      NULL},
-        {2, "ROLL_angle",    100,                 20, &filtering_angle, &default_int, param_float_readonly,    NULL},
-        {2, "display",      0,                  40, &default_float, &default_int, function,    image_show},
+    {1, "pidparam",               0,               40, {.param_float=&default_float}, catlog,         NULL},
+        {2, "PID_gyro",           0,               20, {.param_float=&default_float}, catlog,         NULL},
+            {3, "kp",          ips200_x_max-10 * 8,  20, {.param_float=&PID_gyro.kp}, param_float,   NULL},
+            {3, "ki",          ips200_x_max-10 * 8,  40, {.param_float=&PID_gyro.ki}, param_float,   NULL},
+            {3, "kd",          ips200_x_max-10 * 8,  60, {.param_float=&PID_gyro.kd}, param_float,   NULL},
+            {3, "maxout",      ips200_x_max-10 * 8,  80, {.param_float=&PID_gyro.maxout}, param_float,  NULL},
+            {3, "minout",      ips200_x_max-10 * 8, 100, {.param_float=&PID_gyro.minout}, param_float, NULL},
+        {2, "PID_angle",      0,                   40, {.param_float=&default_float}, catlog,      NULL},
+            {3, "kp",        ips200_x_max-10 * 8,  20, {.param_float=&PID_angle.kp}, param_float, NULL},
+            {3, "ki",        ips200_x_max-10 * 8,  40, {.param_float=&PID_angle.ki}, param_float, NULL},
+            {3, "kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_angle.kd}, param_float, NULL},
+            {3, "maxout",    ips200_x_max-10 * 8,  80, {.param_float=&PID_angle.maxout}, param_float,NULL},
+            {3, "minout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_angle.minout}, param_float, NULL},
+        {2, "PID_V",         0,                   60, {.param_float=&default_float}, catlog,      NULL},
+            {3, "kp",        ips200_x_max-10 * 8,  20, {.param_float=&PID_speed.kp}, param_float, NULL},
+            {3, "ki",        ips200_x_max-10 * 8,  40, {.param_float=&PID_speed.ki}, param_float, NULL},
+            {3, "kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_speed.kd}, param_float, NULL},
+            {3, "maxout",    ips200_x_max-10 * 8,  80, {.param_float=&PID_speed.maxout}, param_float,NULL},
+            {3, "minout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_speed.minout}, param_float, NULL},
+            {3,"target",     ips200_x_max-10 * 8, 120, {.param_float=&PID_speed.targ}, param_float, NULL},
+        {2, "PID_steer",      0,                  80, {.param_float=&default_float}, catlog,      NULL},
+            {3, "kp",        ips200_x_max-10 * 8,  20, {.param_float=&PID_steer.kp}, param_float, NULL},
+            {3, "ki",        ips200_x_max-10 * 8,  40, {.param_float=&PID_steer.ki}, param_float, NULL},
+            {3, "kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_steer.kd}, param_float, NULL},
+            {3, "kd2",       ips200_x_max-10 * 8,  80, {.param_float=&PID_steer.kd2}, param_float, NULL},
+            {3, "maxout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_steer.maxout}, param_float,NULL},
+            {3, "minout",    ips200_x_max-10 * 8, 120, {.param_float=&PID_steer.minout}, param_float, NULL},
+        {2, "PID_BLDC",      0,                  100, {.param_float=&default_float}, catlog,      NULL},
+            {3,"kp",        ips200_x_max-10 * 8,  20, {.param_float=&PID_BLDC.kp}, param_float, NULL},
+            {3,"ki",        ips200_x_max-10 * 8,  40, {.param_float=&PID_BLDC.ki}, param_float, NULL},
+            {3,"kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_BLDC.kd}, param_float, NULL},
+            {3,"kd2",       ips200_x_max-10 * 8,  80, {.param_float=&PID_BLDC.kd2}, param_float, NULL},
+            {3,"maxout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_BLDC.maxout}, param_float,NULL},
+            {3,"minout",    ips200_x_max-10 * 8, 120, {.param_float=&PID_BLDC.minout}, param_float,NULL},
+        {2, "allset0",       0,                 120, {.param_float=&default_float}, confirm,     pid_all_set0},
+        {2, "PID_gyro_set0", 0,                 140, {.param_float=&default_float}, confirm,     pid_gyro_set0},
+        {2, "PID_angle_set0",0,                 160, {.param_float=&default_float}, confirm,     pid_angle_set0},
+        {2, "PID_V_set0",    0,                 180, {.param_float=&default_float}, confirm,     pid_V_set0},
+        {2, "PID_steer_set0",0,                 200, {.param_float=&default_float}, confirm,     pid_steer_set0},
+        {2,"PID_BLDC_modeset0",0,               220, {.param_float=&default_float}, confirm,     pid_BLDC_mode_set},
+    
+    {1, "image",              0,                  60, {.param_float=&default_float}, catlog,      NULL},
+        {2, "ROLL_angle",    100,                 20, {.param_float=&filtering_angle}, param_float_readonly, NULL},
+        {2, "display",       0,                  40, {.param_float=&default_float}, function,    image_show},
+        {2, "show_image",    0,                  60, {.param_float=&default_float}, catlog,    NULL},
+            {3, "show_grayimage",180,             20, {.param_float=&default_float}, chose1, NULL},
+            {3, "show_ostuimage",180,             40, {.param_float=&default_float}, chose1, NULL},
+            {3, "show_dev_image",180,             60, {.param_float=&default_float}, chose1, NULL},
+        {2, "OTSU_threshold",0,                  80, {.param_float=&default_float}, catlog, NULL},
+            {3, "OTSU_up",   100,                20, {.param_int16=&threshold_up}, param_int16, NULL},
+            {3, "OTSU_DOWN",100,                 40, {.param_int16=&threshold_down}, param_int16, NULL},
+            {3,"OTSU_perx", 100,                 60, {.param_int16=&OTSU_calperxpage}, param_int16, NULL},
+            {3,"threshold1",100,                 80, {.param_int16=&threshold1}, param_int16, NULL},
+            {3,"threshold2",100,                100, {.param_int16=&threshold2}, param_int16, NULL},
+            {3,"threshold3",100,                120, {.param_int16=&threshold3}, param_int16, NULL},
+            {3,"threshold4",100,                140, {.param_int16=&threshold4}, param_int16, NULL},
+        {2, "image_point",   0,                 100, {.param_float=&default_float}, catlog, NULL},
+            {3, "crossroadall",0,                20, {.param_float=&default_float}, catlog, NULL},
+                {4, "r_up_p",100,                20, {.param_int16=&default_int}, param_int16_readonly, NULL},
+                {4, "r_down_p",100,              40, {.param_int16=&default_int}, param_int16_readonly, NULL},
+                {4, "l_up_p",100,                60, {.param_int16=&default_int}, param_int16_readonly, NULL},
+                {4, "l_down_p",100,              80, {.param_int16=&default_int}, param_int16_readonly, NULL},
+            {3, "round",     0,                  40, {.param_float=&default_float}, catlog, NULL},
+        {2, "forwardsight",  0,                 120, {.param_float=&default_float}, catlog, NULL},
+            {3, "forwardsight1",150,             20, {.param_int16=&forwardsight}, param_int16, NULL},
+            {3, "forwardsight2",150,             40, {.param_int16=&forwardsight2}, param_int16, NULL},
+            {3, "forwardsight3",150,             60, {.param_int16=&forwardsight3}, param_int16, NULL},
+    
+    {1, "debug",      0,                  80, {.param_float=&default_float}, catlog, NULL},
+        {2,"gyro_info",      0,                 20, {.param_float=&default_float}, catlog, NULL},
+            {3,"pit_intg",   100,               20, {.param_int16=&pitch_angle_integr_read}, param_int16_readonly, NULL},
+            {3,"yaw_intg",   100,               40, {.param_int16=&yaw_angle_integr_read}, param_int16_readonly, NULL},
+            {3,"roll_intg",  100,               60, {.param_int16=&roll_angle_integr_read}, param_int16_readonly, NULL},
+            {3, "ROLL_angle",100,               80, {.param_float=&filtering_angle}, param_float_readonly, NULL},
+            {3,"raw_gyro_x", 100,              100, {.param_int16=&raw_gyro_x}, param_int16_readonly, NULL},
+            {3,"raw_gyro_y", 100,              120, {.param_int16=&raw_gyro_y}, param_int16_readonly, NULL},
+            {3,"raw_gyro_z", 100,              140, {.param_int16=&raw_gyro_z}, param_int16_readonly, NULL},
+            {3,"imu_gyro_x", 100,              160, {.param_int16=&imu660ra_gyro_x}, param_int16_readonly, NULL},
+        {2,"remote_info",    0,                 40, {.param_float=&default_float}, catlog, NULL},
+            {3,"l_stick_UD", 150,               20, {.param_int16=&lora3a22_uart_transfer.joystick[1]}, param_int16_readonly, NULL},
+            {3,"l_stick_LR", 150,               40, {.param_int16=&lora3a22_uart_transfer.joystick[0]}, param_int16_readonly, NULL},
+            {3,"r_stick_UD", 150,               60, {.param_int16=&lora3a22_uart_transfer.joystick[3]}, param_int16_readonly, NULL},
+            {3,"r_stick_LR", 150,               80, {.param_int16=&lora3a22_uart_transfer.joystick[2]}, param_int16_readonly, NULL},
+            {3,"l_stickey",  150,              100, {.param_uint8=&lora3a22_uart_transfer.key[0]}, param_uint8_readonly, NULL},
+            {3,"r_stickey",  150,              120, {.param_uint8=&lora3a22_uart_transfer.key[1]}, param_uint8_readonly, NULL},
+            {3,"l_key",      150,              140, {.param_uint8=&lora3a22_uart_transfer.key[2]}, param_uint8_readonly, NULL},
+            {3,"r_key",      150,              160, {.param_uint8=&lora3a22_uart_transfer.key[3]}, param_uint8_readonly, NULL},
+            {3,"Lswitch_key1",150,             180, {.param_uint8=&lora3a22_uart_transfer.switch_key[0]}, param_uint8_readonly, NULL},
+            {3,"Lswitch_key2",150,             200, {.param_uint8=&lora3a22_uart_transfer.switch_key[1]}, param_uint8_readonly, NULL},
+            {3,"Rswitch_key1",150,             220, {.param_uint8=&lora3a22_uart_transfer.switch_key[2]}, param_uint8_readonly, NULL},
+            {3,"Rswitch_key2",150,             240, {.param_uint8=&lora3a22_uart_transfer.switch_key[3]}, param_uint8_readonly, NULL},
 
-
-        {2, "show_image",      0,                  60, &default_float, &default_int, catlog,    NULL},
-            {3, "show_grayimage",      180,                  20, &default_float, &image.gray_image, chose1,    NULL},
-            {3, "show_ostuimage",      180,                  40, &default_float, &image.OSTU_fast_image, chose1,    NULL},
-            {3, "show_dev_image",      180,                  60, &default_float, &image.OTSU_dev_image, chose1,    NULL},
-
-        {2, "OTSU_threshold",  0,                  80, &default_float, &default_int, catlog,         NULL},
-            {3, "OTSU_up",    100,                 20, &default_float, &threshold_up, param_int,     NULL},
-            {3, "OTSU_DOWN",  100,                 40, &default_float, &threshold_down, param_int,   NULL},
-            {3,"OTSU_perx",   100,                 60, &default_float, &OTSU_calperxpage, param_int, NULL},
-            {3,"threshold1",   100,                  80, &default_float, &threshold1, param_int, NULL},
-            {3,"threshold2",   100,                 100, &default_float, &threshold2, param_int, NULL},
-            {3,"threshold3",   100,                 120, &default_float, &threshold3, param_int, NULL},
-            {3,"threshold4",   100,                 140, &default_float, &threshold4, param_int, NULL},
-
-        {2, "image_point",     0,                  100, &default_float, &default_int, catlog,      NULL},
-            {3, "crossroadall",0,                  20, &default_float, &default_int, catlog,      NULL},
-                {4, "r_up_p",   100,               20, &default_float, &default_int, param_int_readonly, NULL},
-                {4, "r_down_p", 100,               40, &default_float, &default_int, param_int_readonly, NULL}, 
-                {4, "l_up_p",   100,               60, &default_float, &default_int, param_int_readonly, NULL},
-                {4, "l_down_p", 100,               80, &default_float, &default_int, param_int_readonly, NULL},
-            {3, "round",       0,                  40, &default_float, &default_int, catlog,      NULL},
-        {2, "forwardsight",    0,                  120, &default_float, &default_int, catlog,    NULL},
-            {3, "forwardsight1",150,               20, &default_float, &forwardsight, param_int, NULL},
-            {3, "forwardsight2",150,               40, &default_float, &forwardsight2, param_int, NULL},
-            {3, "forwardsight3",150,                60, &default_float, &forwardsight3, param_int, NULL},
-    {1, "debug",      0,                  80, &default_float, &default_int, catlog,      NULL},
-        {2,"gyro_info"        ,0,20, &default_float, &default_int,catlog,NULL},
-            {3,"pit_intg"        ,100,20, &default_float, &pitch_angle_integr_read,param_int_readonly,NULL},
-            {3,"yaw_intg"          ,100,40, &default_float,   &yaw_angle_integr_read,param_int_readonly,NULL},
-            {3,"roll_intg"         ,100,60, &default_float, &roll_angle_integr_read,param_int_readonly,NULL},
-            {3, "ROLL_angle",               100,80, &filtering_angle, &default_int, param_float_readonly,   NULL},
-            {3,"raw_gyro_x"       ,100,100, &default_float, &raw_gyro_x,param_int_readonly,NULL},
-            {3,"raw_gyro_y"       ,100,120, &default_float, &raw_gyro_y,param_int_readonly,NULL},
-            {3,"raw_gyro_z"       ,100,140, &default_float, &raw_gyro_z,param_int_readonly,NULL},
-            {3,"imu_gyro_x"       ,100,160, &default_float, &imu660ra_gyro_x,param_int_readonly,NULL},
-    {1, "element",  0,                  100, &default_float, &default_int, catlog,      NULL},
-        {2, "element_onoff",      0,                  20, &default_float, &default_int, catlog,      NULL},
-            {3, "crossl",        100,                 20, &default_float, &roadelement_onoff.crossl,    on_off, NULL},
-            {3, "crossr",        100,                 40, &default_float, &roadelement_onoff.crossr,    on_off, NULL},
-            {3, "crossm",        100,                 60, &default_float, &roadelement_onoff.crossm,    on_off, NULL},
-            {3, "islandl",       100,                 80, &default_float, &roadelement_onoff.islandl,   on_off, NULL},
-            {3, "islandR",       100,                100, &default_float, &roadelement_onoff.islandr,   on_off, NULL},
-            {3, "scurve",        100,                120, &default_float, &roadelement_onoff.scurve,    on_off, NULL},
-            {3, "speedup",       100,                140, &default_float, &roadelement_onoff.speedup,   on_off, NULL},
-            {3, "ramp",          100,                160, &default_float, &roadelement_onoff.ramp,      on_off, NULL},
-            {3, "obstacle",      100,                180, &default_float, &roadelement_onoff.obstacle,  on_off, NULL},
-        {2, "element_count",  0,                  40, &default_float, &default_int, catlog,      NULL},
-            {3, "straigh",   100,                 20, &default_float, &roadelement_record.straigh,     param_int_readonly, NULL},
-            {3, "crossm",     100,                 40, &default_float, &roadelement_record.crossm,       param_int_readonly, NULL},
-            {3, "crossl",     100,                 60, &default_float, &roadelement_record.crossl,       param_int_readonly, NULL},
-            {3, "crossr",     100,                 80, &default_float, &roadelement_record.crossr,       param_int_readonly, NULL},
-            {3, "islandl",    100,                100, &default_float, &roadelement_record.islandl,      param_int_readonly, NULL},
-            {3, "islandr",    100,                120, &default_float, &roadelement_record.islandr,      param_int_readonly, NULL},
-            {3, "scurve",     100,                140, &default_float, &roadelement_record.scurve,       param_int_readonly, NULL},
-            {3, "curve",      100,                160, &default_float, &roadelement_record.curve,        param_int_readonly, NULL},
-            {3, "speedup",    100,                180, &default_float, &roadelement_record.speedup,      param_int_readonly, NULL},
-            {3, "ramp",       100,                200, &default_float, &roadelement_record.ramp,         param_int_readonly, NULL},
-            {3, "obstacle",   100,                220, &default_float, &roadelement_record.obstacle,     param_int_readonly, NULL},
-            {3, "blackprotect",100,               240, &default_float, &roadelement_record.blackprotect, param_int_readonly, NULL},
-            {3, "stall",      100,                260, &default_float, &roadelement_record.stall,        param_int_readonly, NULL},
-            {3, "zebra",      100,                280, &default_float, &roadelement_record.zebra,        param_int_readonly, NULL},
-        {2, "element_gothrough",   0,              60, &default_float, &default_int,                     roadgothrough,      NULL},
-        {2, "record_clear",   0,                  80, &default_float, &default_int, function,     NULL},        //清零函数待添加
-    {1, "flash",              0,                 120, &default_float, &default_int, catlog,       NULL},
-        {2, "code_load",    100,                 20, &default_float, &default_int, catlog,       NULL},
-            {3, "load1",    100,                 20, &default_float, &default_int, confirm,     NULL},
-            {3, "load2",    100,                 40, &default_float, &default_int, confirm,     NULL},
-            {3, "load3",    100,                 60, &default_float, &default_int, confirm,     NULL},
-            {3, "load4",    100,                 80, &default_float, &default_int, confirm,     NULL},
-        {2, "flash_load",   100,                 40, &default_float, &default_int, catlog,       NULL},
-            {3, "load1",    100,                 20, &default_float, &default_int, confirm,     flash_load_config_1},
-            {3, "load2",    100,                 40, &default_float, &default_int, confirm,     flash_load_config_2},
-            {3, "load3",    100,                 60, &default_float, &default_int, confirm,     flash_load_config_3},
-            {3, "load4",    100,                 80, &default_float, &default_int, confirm,     flash_load_config_4},
-            {3, "loaddefault", 100,             100, &default_float, &default_int, confirm,     flash_load_config_default},
-
-        {2, "flash_save",   100,                 60, &default_float, &default_int, catlog,       NULL},
-            {3, "save1",    100,                 20, &default_float, &default_int, confirm,     flash_save_config_1},
-            {3, "save2",    100,                 40, &default_float, &default_int, confirm,     flash_save_config_2},
-            {3, "save3",    100,                 60, &default_float, &default_int, confirm,     flash_save_config_3},
-            {3, "save4",    100,                 80, &default_float, &default_int, confirm,     flash_save_config_4},
-
-
-        {2, "resetflash",        100,            80, &default_float, &default_int, confirm,      flash_reset},
-    {1, "setting",            0,                 140, &default_float, &default_int, catlog,      NULL},
-    {1, "end",                0,                   0, &default_float, &default_int, catlog,      NULL}
+    {1, "element",  0,                  100, {.param_float=&default_float}, catlog, NULL},
+        {2, "element_onoff", 0,                  20, {.param_float=&default_float}, catlog, NULL},
+            {3, "crossl",    100,                20, {.param_int16=&roadelement_onoff.crossl}, on_off, NULL},
+            {3, "crossr",    100,                40, {.param_int16=&roadelement_onoff.crossr}, on_off, NULL},
+            {3, "crossm",    100,                60, {.param_int16=&roadelement_onoff.crossm}, on_off, NULL},
+            {3, "islandl",   100,                80, {.param_int16=&roadelement_onoff.islandl}, on_off, NULL},
+            {3, "islandR",   100,               100, {.param_int16=&roadelement_onoff.islandr}, on_off, NULL},
+            {3, "scurve",    100,               120, {.param_int16=&roadelement_onoff.scurve}, on_off, NULL},
+            {3, "speedup",   100,               140, {.param_int16=&roadelement_onoff.speedup}, on_off, NULL},
+            {3, "ramp",      100,               160, {.param_int16=&roadelement_onoff.ramp}, on_off, NULL},
+            {3, "obstacle",  100,               180, {.param_int16=&roadelement_onoff.obstacle}, on_off, NULL},
+        {2, "element_count",0,                  40, {.param_float=&default_float}, catlog, NULL},
+            {3, "straigh",  100,                20, {.param_int16=&roadelement_record.straigh}, param_int16_readonly, NULL},
+            {3, "crossm",    100,                40, {.param_int16=&roadelement_record.crossm}, param_int16_readonly, NULL},
+            {3, "crossl",    100,                60, {.param_int16=&roadelement_record.crossl}, param_int16_readonly, NULL},
+            {3, "crossr",    100,                80, {.param_int16=&roadelement_record.crossr}, param_int16_readonly, NULL},
+            {3, "islandl",   100,               100, {.param_int16=&roadelement_record.islandl}, param_int16_readonly, NULL},
+            {3, "islandr",   100,               120, {.param_int16=&roadelement_record.islandr}, param_int16_readonly, NULL},
+            {3, "scurve",    100,               140, {.param_int16=&roadelement_record.scurve}, param_int16_readonly, NULL},
+            {3, "curve",     100,               160, {.param_int16=&roadelement_record.curve}, param_int16_readonly, NULL},
+            {3, "speedup",   100,               180, {.param_int16=&roadelement_record.speedup}, param_int16_readonly, NULL},
+            {3, "ramp",      100,               200, {.param_int16=&roadelement_record.ramp}, param_int16_readonly, NULL},
+            {3, "obstacle",  100,               220, {.param_int16=&roadelement_record.obstacle}, param_int16_readonly, NULL},
+            {3, "blackprotect",100,             240, {.param_int16=&roadelement_record.blackprotect}, param_int16_readonly, NULL},
+            {3, "stall",     100,               260, {.param_int16=&roadelement_record.stall}, param_int16_readonly, NULL},
+            {3, "zebra",     100,               280, {.param_int16=&roadelement_record.zebra}, param_int16_readonly, NULL},
+        {2, "element_gothrough",0,              60, {.param_float=&default_float}, roadgothrough, NULL},
+        {2, "record_clear", 0,                  80, {.param_float=&default_float}, function, NULL},
+    
+    {1, "flash",              0,                 120, {.param_float=&default_float}, catlog, NULL},
+        {2, "code_load",    100,                 20, {.param_float=&default_float}, catlog, NULL},
+            {3, "load1",    100,                 20, {.param_float=&default_float}, confirm, NULL},
+            {3, "load2",    100,                 40, {.param_float=&default_float}, confirm, NULL},
+            {3, "load3",    100,                 60, {.param_float=&default_float}, confirm, NULL},
+            {3, "load4",    100,                 80, {.param_float=&default_float}, confirm, NULL},
+        {2, "flash_load",   100,                 40, {.param_float=&default_float}, catlog, NULL},
+            {3, "load1",    100,                 20, {.param_float=&default_float}, confirm, flash_load_config_1},
+            {3, "load2",    100,                 40, {.param_float=&default_float}, confirm, flash_load_config_2},
+            {3, "load3",    100,                 60, {.param_float=&default_float}, confirm, flash_load_config_3},
+            {3, "load4",    100,                 80, {.param_float=&default_float}, confirm, flash_load_config_4},
+            {3, "loaddefault",100,              100, {.param_float=&default_float}, confirm, flash_load_config_default},
+        {2, "flash_save",   100,                 60, {.param_float=&default_float}, catlog, NULL},
+            {3, "save1",    100,                 20, {.param_float=&default_float}, confirm, flash_save_config_1},
+            {3, "save2",    100,                 40, {.param_float=&default_float}, confirm, flash_save_config_2},
+            {3, "save3",    100,                 60, {.param_float=&default_float}, confirm, flash_save_config_3},
+            {3, "save4",    100,                 80, {.param_float=&default_float}, confirm, flash_save_config_4},
+        {2, "resetflash",   100,                 80, {.param_float=&default_float}, confirm, flash_reset},
+    
+    {1, "setting",            0,                 140, {.param_float=&default_float}, catlog, NULL},
+    {1, "end",                0,                   0, {.param_float=&default_float}, catlog, NULL}
 };
 
 
@@ -406,22 +423,55 @@ void Menu_Screen_Init(void)
                 *p为浮点型参数地址
                 str为参数名字
 返回参数     无
-使用示例     display_fast(0, 100, 0, param_int, &default_int, &default_float, "default");
+使用示例     display_fast(0, 100, 0, param_int16, &default_int,  "default");
 备注信息     在0，0位置显示default参数名，在0行100列显示default_int整型参数值
 -------------------------------------------------------------------------------------------------------------------
 */
-void display_fast(int16 X1,int16 X2,int16 Y,enum_function type,int16* int_p,float* float_p,char str[20])
+
+union_param fast_show[7]={
+{.param_float=&filtering_angle},
+{.param_float=&default_float},
+{.param_float=&default_float},
+{.param_float=&default_float},
+{.param_float=&default_float},
+{.param_float=&default_float},
+{.param_float=&default_float}
+};
+
+void display_fast(int16 X1,int16 X2,int16 Y,enum_function type,union_param Union_param,char str[20])
 {
     ips200_set_color(RGB565_WHITE, RGB565_BLACK);
     ips200_show_string(X1,Y,str);
-    if(type==param_int)
+    switch (type)
     {
-        ips200_show_int(X2,Y,*int_p,5);
+    case param_uint8:
+        ips200_show_int(X2,Y,*Union_param.param_uint8,5);
+        break;
+    case param_int8:
+        ips200_show_int(X2,Y,*Union_param.param_int8,5);    
+        break;
+    case param_uint16:
+        ips200_show_int(X2,Y,*Union_param.param_uint16,5);
+        break;
+    case param_int16:
+        ips200_show_int(X2,Y,*Union_param.param_int16,5);
+        break;
+    case param_uint32:
+        ips200_show_int(X2,Y,*Union_param.param_uint32,10); 
+        break;
+    case param_int32:       
+        ips200_show_int(X2,Y,*Union_param.param_int32,10); 
+        break;
+    case param_float:
+        ips200_show_float(X2,Y,*Union_param.param_float,5,3); 
+        break;
+    case param_double:
+        ips200_show_float(X2,Y,*Union_param.param_double,10,6); 
+        break;    
+    default:
+        break;
     }
-    else if(type==param_float)
-    {
-        ips200_show_float(X2,Y,*float_p,4,3);
-    }
+
 }
 void outputscreen_fast()
 {
@@ -431,8 +481,8 @@ void outputscreen_fast()
         ips200_show_string(0,160,"fast_show");
         ips200_set_color(RGB565_WHITE, RGB565_BLACK);
         //要添加快速显示请在这里增加
-        
-        display_fast(0, 60, 180, param_float, &default_int, &filtering_angle, "ROLL_angle");
+
+        display_fast(0, 60, 180, param_float,fast_show[0] , "ROLL_angle");
     }
 
 
@@ -517,9 +567,9 @@ void output(void)
     }
     else if(target_priority!=0)//非顶级菜单
     {
-    ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //设置为绿色黑底
-    ips200_show_string(0,0,menu[p_nearby].str);//输出上级字符
-    ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为绿色黑底
+        ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //设置为绿色黑底
+        ips200_show_string(0,0,menu[p_nearby].str);//输出上级字符
+        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //设置为绿色黑底
 
         for(int i=p_nearby+1;menu[i].priority!=target_priority;i++)
         {
@@ -541,16 +591,60 @@ void output(void)
                     }
                     if(menu[i].type==param_float||menu[i].type==param_float_readonly)
                     {
-                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,4,3);
+                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].param_union.param_float,4,3);
                     }
-                    else if(menu[i].type==param_int||menu[i].type==param_int_readonly)
+                    else if(menu[i].type>=param_int8&&menu[i].type<=param_uint32_readonly)
                     {
-                       ips200_show_int(menu[i].x,menu[i].y,*menu[i].value_i,5);
+                        int32 temp;
+                        switch (menu[i].type)
+                        {
+                        case param_int8:
+                            temp = (int32)(*menu[i].param_union.param_int8);
+                            break;
+                        case param_uint8:
+                            temp = (int32)(*menu[i].param_union.param_uint8);
+                            break;
+                        case param_int16:
+                            temp = (int32)(*menu[i].param_union.param_int16);   
+                            break;
+                        case param_uint16:
+                            temp = (int32)(*menu[i].param_union.param_uint16);
+                            break;
+                        case param_int32:
+                            temp = *menu[i].param_union.param_int32;
+                            break;
+                        case param_uint32:
+                            temp = (int32)(*menu[i].param_union.param_uint32);
+                            break;
+                        case param_uint8_readonly:
+                            temp = (int32)(*menu[i].param_union.param_uint8);
+                            break;
+                        case param_int8_readonly:
+                            temp = (int32)(*menu[i].param_union.param_int8);
+                            break;
+                        case param_uint16_readonly:
+                            temp = (int32)(*menu[i].param_union.param_uint16);
+                            break;
+                        case param_int16_readonly:
+                            temp = (int32)(*menu[i].param_union.param_int16);   
+                            break;
+                        case param_int32_readonly:
+                            temp = *menu[i].param_union.param_int32;    
+                            break;
+                        case param_uint32_readonly: 
+                            temp = (int32)(*menu[i].param_union.param_uint32);
+                            break;
+
+                                
+                        default:
+                            break;
+                        }
+                       ips200_show_int(menu[i].x,menu[i].y,temp,5);
                     }
                     else if(menu[i].type==on_off||menu[i].type==chose1)
                     {
                         ips200_set_color(RGB565_ORANGE, RGB565_BLACK);    //设置为红色黑底
-                        if (*menu[i].value_i)
+                        if (*menu[i].param_union.param_int16)
                         {
                             ips200_show_string(menu[i].x,menu[i].y,"ON");
 
@@ -569,15 +663,54 @@ void output(void)
                     ips200_show_string(20,menu[i].y,menu[i].str);
                     if(menu[i].type==param_float||menu[i].type==param_float_readonly)
                     {
-                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].value_f,4,3);
+                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].param_union.param_float,4,3);
                     }
-                    else if(menu[i].type==param_int||menu[i].type==param_int_readonly)
+                    else if(menu[i].type>=param_int8&&menu[i].type<=param_uint32_readonly)
                     {
-                       ips200_show_int(menu[i].x,menu[i].y,*menu[i].value_i,5);
+                        int32 temp;
+                        switch (menu[i].type)
+                        {
+                        case param_int8:
+                            temp = (int32)(*menu[i].param_union.param_int8);
+                            break;
+                        case param_uint8:
+                            temp = (int32)(*menu[i].param_union.param_uint8);
+                            break;
+                        case param_int16:
+                            temp = (int32)(*menu[i].param_union.param_int16);   
+                            break;
+                        case param_uint16:
+                            temp = (int32)(*menu[i].param_union.param_uint16);
+                            break;
+                        case param_int32:
+                            temp = *menu[i].param_union.param_int32;
+                            break;
+                        case param_uint32:
+                            temp = (int32)(*menu[i].param_union.param_uint32);
+                            break;
+                        case param_uint8_readonly:
+                            temp = (int32)(*menu[i].param_union.param_uint8);
+                            break;
+                        case param_int8_readonly:
+                            temp = (int32)(*menu[i].param_union.param_int8);
+                            break;
+                        case param_uint16_readonly:
+                            temp = (int32)(*menu[i].param_union.param_uint16);
+                            break;
+                        case param_int16_readonly:
+                            temp = (int32)(*menu[i].param_union.param_int16);
+                            break;
+                        case param_int32_readonly:
+                            temp = *menu[i].param_union.param_int32;    
+                            break;
+                        default:
+                            break;
+                        }
+                       ips200_show_int(menu[i].x,menu[i].y,temp,5);
                     }
                     else if(menu[i].type==on_off||menu[i].type==chose1)
                     {
-                        if (*menu[i].value_i)
+                        if (*menu[i].param_union.param_int16)
                         {
                             ips200_show_string(menu[i].x,menu[i].y,"ON");
 
@@ -621,13 +754,47 @@ void Menu_control(void)
         case DOWN:
             if(menu_Mode==edit_int)  //整型编辑模式下
             {
-                *menu[p].value_i-=stepper_int[stepper_p_int];
-                break;
+                switch (menu[p].type)
+                {
+                case param_int8:
+                    *menu[p].param_union.param_int8-=stepper_int[stepper_p_int];
+                    break;
+                case param_uint8:
+                    *menu[p].param_union.param_uint8-=stepper_int[stepper_p_int];
+                    break;
+                case param_int16:
+                    *menu[p].param_union.param_int16-=stepper_int[stepper_p_int];
+                    break;
+                case param_uint16:
+                    *menu[p].param_union.param_uint16-=stepper_int[stepper_p_int];
+                    break;
+                case param_int32:
+                    *menu[p].param_union.param_int32-=stepper_int[stepper_p_int];
+                    break;
+                case param_uint32:
+                    *menu[p].param_union.param_uint32-=stepper_int[stepper_p_int];
+                    break;
+                default:
+                    break;
+                }
+                // *menu[p].param_union.param_int16-=stepper_int[stepper_p_int];
+                return;
             }
             if(menu_Mode==edit_float)
             { 
-                *menu[p].value_f-=stepper_float[stepper_p_float];
-                break;
+                switch (menu[p].type)
+                {
+                case param_float:
+                    *menu[p].param_union.param_float-=stepper_float[stepper_p_float];
+                    break;
+                case param_double:
+                    *menu[p].param_union.param_double-=stepper_float[stepper_p_float];
+                    break;
+                
+                default:
+                    break;
+                }
+                return;
             }
             if (strcmp(menu[p].str, "end") != 0&&menu[p+1].priority>=menu[p].priority)        //换菜单等级(读者不要动)
 
@@ -661,15 +828,48 @@ void Menu_control(void)
             break;
         case UP:
         //增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  
-            if(menu_Mode==edit_int)         //整型编辑模式下
+            if(menu_Mode==edit_int)         //整型编辑模式下,包含所有整型数据类型
             {
-                *menu[p].value_i+=stepper_int[stepper_p_int];
-                break;
+                switch (menu[p].type)
+                {
+                case param_int8:
+                    *menu[p].param_union.param_int8+=stepper_int[stepper_p_int];
+                    break;
+                case param_uint8:
+                    *menu[p].param_union.param_uint8+=stepper_int[stepper_p_int];
+                    break;
+                case param_int16:
+                    *menu[p].param_union.param_int16+=stepper_int[stepper_p_int];
+                    break;
+                case param_uint16:
+                    *menu[p].param_union.param_uint16+=stepper_int[stepper_p_int];
+                    break;
+                case param_int32:
+                    *menu[p].param_union.param_int32+=stepper_int[stepper_p_int];
+                    break;
+                case param_uint32:
+                    *menu[p].param_union.param_uint32+=stepper_int[stepper_p_int];
+                    break;
+                default:
+                    break;
+                }
+                return;
             }
-            if(menu_Mode==edit_float)       //浮点编辑模式下
+            if(menu_Mode==edit_float)       //浮点编辑模式下,包含所有浮点数据类型
             { 
-                *menu[p].value_f+=stepper_float[stepper_p_float];
-                break;
+                switch (menu[p].type)
+                {
+                case param_float:
+                    *menu[p].param_union.param_float+=stepper_float[stepper_p_float];
+                    break;
+                case param_double:
+                    *menu[p].param_union.param_double+=stepper_float[stepper_p_float];
+                    break;
+                
+                default:
+                    break;
+                }
+                return;
             }
         //增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  增减功能实现  
             if(p!=0&&menu[p-1].priority>=menu[p].priority)      //换菜单等级(读者不要动)
@@ -713,13 +913,15 @@ void Menu_control(void)
                 break;
             }
         //菜单种类情况
-            if(menu[p].type==param_float)                   //菜单参数情况                      
+            if(menu[p].type==param_float||menu[p].type==param_double)                   //菜单参数情况                      
             {
                 menu_Mode=edit_float;
                 break;
                 //进入浮点数编辑模式
             }
-            if(menu[p].type==param_int)                 //菜单参数情况
+            if(menu[p].type==param_int16||menu[p].type==param_int32
+                ||menu[p].type==param_int8||menu[p].type==param_uint16
+                ||menu[p].type==param_uint32||menu[p].type==param_uint8)                 //菜单参数情况
             {
                 menu_Mode=edit_int;
                 break;
@@ -732,7 +934,7 @@ void Menu_control(void)
             }
             if(menu[p].type==on_off)                    //开关情况
             {
-                *menu[p].value_i=1-*menu[p].value_i;
+                *menu[p].param_union.param_int16=1-*menu[p].param_union.param_int16;
                 break;
             }
             if(menu[p].type==function)                  //函数情况
@@ -745,28 +947,32 @@ void Menu_control(void)
                 menu_Mode=special_show_element1;        //进入显示经过元素模式
                 break;
             }
-            if(menu[p].type==param_float_readonly||menu[p].type==param_int_readonly)        //只读参数情况
+            if(menu[p].type==param_float_readonly||menu[p].type==param_int16_readonly
+                ||menu[p].type==param_int32_readonly||menu[p].type==param_uint16_readonly
+                ||menu[p].type==param_uint32_readonly||menu[p].type==param_double_readonly
+                ||menu[p].type==param_int8_readonly||menu[p].type==param_uint8_readonly)        //只读参数情况
             {
                 ips200_show_string(0,180,"error_readonly");
             }
-            if(menu[p].type==chose1)
+            if(menu[p].type==chose1)        //同一父级下同等级同种类只选一个
             {
                 for(int i=p_nearby+1;menu[i].priority!=current_state-1;i++)
                 {
                     if(menu[i].priority==current_state&&menu[i].type==chose1&&i!=p)
                     {
-                        *menu[i].value_i=0;
+                        *menu[i].param_union.param_int16=0;
                     }
                     if(i==p)
                     {
-                        *menu[p].value_i=1;
+                        *menu[p].param_union.param_int16=1;
                     }
                 }
                 break;
             }
             break;
         case BACK:
-        if(menu_Mode==edit_float||menu_Mode==edit_confirm||menu_Mode==edit_int||menu_Mode==special_show_element1||menu_Mode==stop_debug_display) //编辑模式下按返回键退出编辑模式
+        if(menu_Mode==edit_float||menu_Mode==edit_confirm||menu_Mode==edit_int
+        ||menu_Mode==special_show_element1||menu_Mode==stop_debug_display) //编辑模式下按返回键退出编辑模式
         {
             menu_Mode=normal;
             break;
