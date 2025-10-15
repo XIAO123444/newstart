@@ -1,7 +1,11 @@
 #include "encoder.h"
 
-int32 encoder1;
-int32 encoder2;
+int32 encoder_R;     //ÓÒ±àÂëÆ÷
+int32 encoder_L;     //×ó±àÂëÆ÷
+int32 encoder_R_last=0; //ÓÒ±àÂëÆ÷ÉÏ´ÎÖµ
+int32 encoder_L_last=0; //×ó±àÂëÆ÷ÉÏ´ÎÖµ
+int32 encoder_R_d=0;    //ÓÒ±àÂëÆ÷¦¤
+int32 encoder_L_d=0;    //×ó±àÂëÆ÷¦¤
 
 void Encoder_Init()
 {
@@ -14,9 +18,9 @@ void Encoder_Init()
 
 int Encoder_GetInfo_L(void)
 {
-     return encoder2;
+     return encoder_L;
 }
 int Encoder_GetInfo_R(void)
 {
-    return encoder1;
+    return encoder_R;
 }

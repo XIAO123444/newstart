@@ -1,9 +1,9 @@
 #include "key.h"
 
-#define KEY1                    (E3 )
-#define KEY2                    (E2 )
-#define KEY3                    (E4 )
-#define KEY4                    (E5 )
+#define KEY1                    (E4 )
+#define KEY2                    (E5 )
+#define KEY3                    (E3 )
+#define KEY4                    (E2 )
 int8 offset=0;
 
 uint32 key1_count;

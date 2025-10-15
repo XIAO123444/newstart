@@ -22,25 +22,33 @@ extern uint32 count_time;
 extern uint8 car_situation;
 extern uint8 input;
 uint8 status=0;
-extern int32 encoder1;
-extern int32 encoder2;
+
+//来自  encoder.c
+extern int32 encoder_L;
+extern int32 encoder_R;
+extern int32 encoder_R_last;
+extern int32 encoder_L_last;
+extern int32 encoder_R_d;
+extern int32 encoder_L_d;
+ 
+//来自BLDC.h
+extern BLDC_Param bldc_param;
+
 extern bool save_flag;          //布尔类型flash存储标志
 int32 PID_speed_stragety;
 int32 forwardsight_stragety;
 int turn1 =0;
 int turn2 =0;
 int32 encodercounter1=0;          //里程计数
-int32 gyrocounter=0;                  //陀螺仪积分
 
 
-extern int16 start_count;      //发车保护
+extern int32 start_count;      //发车保护
 
-extern int16 extern_gy;     //外部陀螺仪数据
 extern uint16 centerline2[MT9V03X_H];
 
 //神医
-float Med_Angle=-1000;                     
-
+float Med_Angle=-900 ;                     
+extern int16 gy; //陀螺仪数据
 
 bool ins_flag=false;//惯导标志
 
@@ -139,7 +147,7 @@ void TIM6_IRQHandler(void)
         timer_counter=0;
         carmode=Now_Calibrate;
     }
-    if(carmode==Now_Calibrate)
+    if(carmode==Now_Calibrate) 
     {
         if(timer_counter<=2000)
         {
@@ -154,9 +162,6 @@ void TIM6_IRQHandler(void)
             carmode=stop;
         }
     }
-
-
-
     S_PID_CAL();        //转向控制
     count1++;
     count2++;
@@ -164,33 +169,26 @@ void TIM6_IRQHandler(void)
     imu660ra_get_gyro();
     imu660ra_get_acc();
     imu_filter();
-    //速度环20ms
-    // if (count2 >= 20) {
-    //     encoder1 = encoder_get_count(TIM3_ENCODER);
-    //     encoder_clear_count(TIM3_ENCODER);
-    //     encoder2 = encoder_get_count(TIM4_ENCODER);
-    //     encoder_clear_count(TIM4_ENCODER);
-    //     PID_speed.actual = -(encoder2 - encoder1+extern_gy/60) / 2;
-    //     increment_pid_update(&PID_speed);
-    //     if (PID_speed.actual < PID_speed.targ * 0.6&&flag==0) {  //发车控制
-    //         PID_speed.out = 800;
-    //     }
-	// 	if (PID_speed.actual > PID_speed.targ * 0.8) {   //达到一定速度
-	// 				flag=1;
-    //                 ins_flag=true;
-    //     }
-    //     encodercounter1=encodercounter1-encoder1+encoder2;//里程计数
-    //     gyrocounter=gyrocounter+extern_gy/60; //陀螺仪积分
-    //     count2 = 0;
-    // }
-    //风扇速度环5ms
-    if(count2>=10)
-    {
-        PID_BLDC.actual = filtering_angle;
-        //BDLC计算  待填的坑
 
-        //速度环单独重写，角度环角速度环可以考虑晚点加。先尝试使用非串环控平衡。
+
+    if (count2 >= 5) {
+        encoder_L_last = encoder_L;
+        encoder_R_last = encoder_R;
+        encoder_R = -encoder_get_count(TIM3_ENCODER);
+        encoder_clear_count(TIM3_ENCODER);
+        encoder_L = encoder_get_count(TIM4_ENCODER);
+        encoder_clear_count(TIM4_ENCODER);
+        encoder_L_d = encoder_L - encoder_L_last;       //差值输入
+        encoder_R_d = encoder_R - encoder_R_last;       //差值输入
+
+
+
+        PID_speed.actual = (encoder_L + encoder_R + gy / 60) / 2;
+        increment_pid_update(&PID_speed);
+        encodercounter1=encodercounter1+encoder_R+encoder_L;//里程计数
+        count2 = 0;
     }
+    //风扇速度环5ms
     // 角度环
     if (count1 >= 5){
         first_order_filtering();
@@ -199,7 +197,7 @@ void TIM6_IRQHandler(void)
         if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
         {
              PID_angle.error0 = 0;
-        }
+        } 
         PID_gyro_update(&PID_angle, imu660ra_gyro_x);
         count1 = 0;
     }
@@ -212,6 +210,7 @@ void TIM6_IRQHandler(void)
     }
     if(carmode==car_run_mode1||carmode==car_run_mode2)
     {  
+        remote_check_stoponly();
         start_count++;
         if (start_count==3000)
         {
@@ -219,8 +218,13 @@ void TIM6_IRQHandler(void)
         }
         if(start_count>3000)
         {
-           // BLDC_run(30);//这边改成pidout
-					  BLDC_run(PID_gyro.out);
+        bldc_param.output=(bldc_param.encoder_p*(encoder_L_d+encoder_R_d)/2);
+           if(bldc_param.output>bldc_param.max_output)
+           {bldc_param.output=bldc_param.max_output;}
+           if(bldc_param.output<bldc_param.min_output)
+           {bldc_param.output=bldc_param.min_output;}
+
+            BLDC_run(bldc_param.basic_duty + PID_gyro.out+bldc_param.output);//可以添加编码器补偿
             //这边可以设置一下平衡后再启动
         }
         if(start_count==5000)
@@ -229,12 +233,12 @@ void TIM6_IRQHandler(void)
             ips200_show_string(0,180,"motor run"); //debug信息显示
 
         }
-        if(start_count>=5001)
+        if(start_count>=5001) 
         {
-            motor(1000,1000);//这边可以分离开isr
+            motor(PID_speed.out-PID_steer.out,PID_speed.out+PID_steer.out);//这边可以分离开isr
         }
 
-        if(start_count>=13000)
+        if(start_count==13000)
         {
             ips200_show_string(0,180,"time stop");
         }
@@ -248,6 +252,7 @@ void TIM6_IRQHandler(void)
     }
     if (carmode == remote)
     {
+        remote_speed_control();
         start_count++;
         if (start_count==3000)
         {
@@ -256,25 +261,20 @@ void TIM6_IRQHandler(void)
         if(start_count>3000)
         {
            // BLDC_run(30);//这边改成pidout
-					  BLDC_run(PID_gyro.out);
-            //这边可以设置一下平衡后再启动
-        }
-        if(start_count==5000)
-        {
-            ips200_clear();
-            ips200_show_string(0,180,"motor run"); //debug信息显示
+           bldc_param.output=(bldc_param.encoder_p*(encoder_L_d+encoder_R_d)/2);
+           if(bldc_param.output>bldc_param.max_output)
+           {bldc_param.output=bldc_param.max_output;}
+           if(bldc_param.output<bldc_param.min_output)
+           {bldc_param.output=bldc_param.min_output;}
 
+            BLDC_run(PID_gyro.out+bldc_param.basic_duty-bldc_param.output);//可以添加编码器补偿
+            //可以添加编码器补偿
         }
-        if(start_count>=5001)
-        {
-            motor(1000,1000);//这边可以分离开isr
-        }
-
-        if(start_count>=13000)
+        if(start_count==50000)
         {
             ips200_show_string(0,180,"time stop");
         }
-        if(start_count>=15000)
+        if(start_count>=51000)
         {
             carmode=stop;                           //停车
             stopdebug=timer_count_stop;             //停车原因

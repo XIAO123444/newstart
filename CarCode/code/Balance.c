@@ -22,6 +22,7 @@ uint16 az_last=0; //上次加速度计Z轴数据
 extern car_mode carmode;  //车的状态
 extern stop_debug stopdebug; //停车debug
 extern enum_menu_mode menu_Mode;         //菜单模式
+int16 gx, gy, gz, ax, ay, az;
 
 
 // 改进的低通滤波函数
@@ -73,7 +74,6 @@ void imu_filter(){
 }
 void first_order_filtering(void)
 {
-    int16 gx, gy, gz, ax, ay, az;
     //临时变量存储                                                      
     gx = raw_gyro_x;
     gy = raw_gyro_y;

@@ -102,9 +102,9 @@ typedef struct
 }MENU;
 typedef struct 
 {
-    int16 gray_image;     //灰度图像
-    int16 OSTU_fast_image;//快速大津法图像
-    int16 OTSU_dev_image;     //分块大津法
+    uint8 gray_image;     //灰度图像
+    uint8 OSTU_fast_image; //快速大津法图像
+    uint8 OTSU_dev_image;  //分块大津法
 }struct_imageshowcase;
 
 
@@ -131,10 +131,11 @@ typedef enum
 typedef enum 
 {
     normal_debug,            //正常,无触发停车
-    timer_count_stop,             //定时停车
+    timer_count_stop,        //定时停车
     blackprotect_stop,       //黑线保护
     zebra_stop,              //斑马线停车
     liftup_stop,             //抬升
+    remotestop,             //远程控制停车
     gyro_intrg_pitch_stop,         //陀螺仪积分俯仰角
     gyro_intrg_roll_stop,          //陀螺仪积分横滚角
     gyro_intrg_yaw_stop,           //陀螺仪积分偏航角

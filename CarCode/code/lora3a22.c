@@ -3,7 +3,11 @@
 #include <stdint.h>
 #include <math.h>
 #include "menu.h"
+
+//来自 menu.h
 extern car_mode carmode;
+extern stop_debug stopdebug; //停车debug
+extern enum_menu_mode menu_Mode;         //菜单模式
 // 控制参数结构体
 typedef struct {
     int max_pwm;           // PWM上限
@@ -167,7 +171,21 @@ void remote_param_init()
 // 初始化控制器
 controller_init(&controller, &default_params);
 }
-
+void remote_check_stoponly(void)
+{
+    if (lora3a22_state_flag == 1)
+    {    
+        if (lora3a22_finsh_flag == 1)
+        {   
+            if(lora3a22_uart_transfer.key[2]==1){
+                carmode=stop;                           //停车
+                stopdebug=remotestop;             //停车原因
+                menu_Mode=stop_debug_display;           //菜单切换到停车显示
+            }
+            lora3a22_finsh_flag = 0;
+        }
+    }
+}
 void remote_speed_control()
 {
 
@@ -180,13 +198,15 @@ int left_stick_y =0,right_stick_x =0;   //y:前后, x:左右
             right_stick_x=lora3a22_uart_transfer.joystick[2];
             left_stick_y=lora3a22_uart_transfer.joystick[1];
             update_control(&controller, left_stick_y, right_stick_x);
-            int left_pwm = get_left_motor_pwm(&controller);
-            int right_pwm = get_right_motor_pwm(&controller);
-            motor(left_pwm,right_pwm);
+            int left_pwm =right_stick_x ;
+            int right_pwm = left_stick_y;
+            motor(left_pwm,left_pwm);
 //          printf("%d\n",left_pwm);
 //          printf("%d\n",right_pwm);
             if(lora3a22_uart_transfer.key[2]==1){
-                carmode=stop;
+                carmode=stop;                           //停车
+                stopdebug=remotestop;             //停车原因
+                menu_Mode=stop_debug_display;           //菜单切换到停车显示
             }
             lora3a22_finsh_flag = 0;
         }

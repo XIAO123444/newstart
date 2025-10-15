@@ -2,6 +2,7 @@
 #include "steer_pid.h"
 #include "menu.h"
 #include "pid.h"
+#include "BLDC.h"
 
 
 
@@ -19,6 +20,8 @@ extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
 extern PID_t PID_steer;         //转向环
 extern PID_t PID_BLDC;          //负压风扇环
+
+extern BLDC_Param bldc_param;
 void flash_reset(void)
 {
     flash_erase_page(100, 0);                                 // 擦除这一页
@@ -82,7 +85,11 @@ void flash_save_config(int16 i)
         flash_union_buffer[21].int16_type = forwardsight;
         flash_union_buffer[22].int16_type = forwardsight2;
         flash_union_buffer[23].int16_type = forwardsight3;
-
+        //前瞻3个参数
+        flash_union_buffer[24].int16_type = bldc_param.basic_duty;
+        flash_union_buffer[25].int16_type = bldc_param.encoder_p;
+        flash_union_buffer[26].int16_type = bldc_param.max_output;
+        flash_union_buffer[27].int16_type = bldc_param.min_output;
 
 
 
@@ -140,6 +147,12 @@ void flash_load_config(int16 i)
     forwardsight=flash_union_buffer[21].int16_type;
     forwardsight2=flash_union_buffer[22].int16_type;
     forwardsight3=flash_union_buffer[23].int16_type;
+    //前瞻3个参数读取
+    bldc_param.basic_duty=flash_union_buffer[24].int16_type;
+    bldc_param.encoder_p=flash_union_buffer[25].int16_type;
+    bldc_param.max_output=flash_union_buffer[26].int16_type;
+    bldc_param.min_output=flash_union_buffer[27].int16_type;        
+    //bldc4个参数读取
 
 
 } 

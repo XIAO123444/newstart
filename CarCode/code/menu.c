@@ -7,6 +7,7 @@
 #include "flash.h"
 #include "photo_chuli.h"
 #include "zf_device_lora3a22.h"
+#include "BLDC.h"
 
 bool showline; 
 
@@ -23,7 +24,7 @@ extern int status;
 extern uint8 flag;
 bool show_flag=false;     //显示标志位,全局变量
 
-int16 start_count=0;      //发车保护
+int32 start_count=0;      //发车保护
 
 //菜单调参
 car_mode carmode=stop;                   //全局变量 车状态默认停止
@@ -86,6 +87,8 @@ extern PID_t PID_angle;         //角度环
 extern PID_t PID_speed;         //速度环  
 extern PID_t PID_steer;         //转向环
 extern PID_t PID_BLDC;          //负压风扇环 
+//BLDC参数          来自BLDC.h
+extern BLDC_Param bldc_param;
 
 struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //赛道元素功能开启关闭
 struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //记录赛道元素
@@ -101,7 +104,16 @@ int16 OTSU_calperxpage=5;       //每x张图片计算一次大津法
 extern int16 threshold1;  // 左上
 extern int16 threshold2;  // 右上
 extern int16 threshold3;  // 左下
-extern int16 threshold4;  // 右下
+extern int16 threshold4;  // 右下 
+
+//来自encoder.c
+extern int32 encoder_R;     //右编码器
+extern int32 encoder_L;    //左编码器
+extern int32 encoder_R_d;   //右编码器差值
+extern int32 encoder_L_d;   //左编码器差值
+extern int32 encoder_R_last; //右编码器上次值
+extern int32 encoder_L_last; //左编码器上次值
+
 //
 //菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量菜单变量
 
@@ -202,6 +214,10 @@ void show_stopreason(void)
     {
         ips200_show_string(0,20,"timer stop");
     }
+    if(stopdebug==remotestop)          
+    {
+        ips200_show_string(0,20,"remote stop");
+    }   
  
 }
 //用于显示停止原因
@@ -230,7 +246,8 @@ void pid_BLDC_mode_set(){pid_gyro_set0();PID_gyro.maxout=100;PID_gyro.minout=0;p
     PID_angle.minout=0;pid_V_set0();PID_speed.maxout=100;PID_speed.minout=0;
     pid_steer_set0();PID_steer.maxout=100;PID_steer.minout=0;pid_BLDC_set0();
     PID_BLDC.maxout=0;PID_BLDC.minout=0;}
-//闪存存储 
+void pid_Bldc_param_set0(){bldc_param.basic_duty=400;bldc_param.encoder_p=1;bldc_param.max_output=600;bldc_param.min_output=-400;ips200_show_string(0,180,"set 0 already");}
+    //闪存存储 
 
 
 
@@ -264,7 +281,7 @@ MENU menu[] =
             {3, "kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_angle.kd}, param_float, NULL},
             {3, "maxout",    ips200_x_max-10 * 8,  80, {.param_float=&PID_angle.maxout}, param_float,NULL},
             {3, "minout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_angle.minout}, param_float, NULL},
-        {2, "PID_V",         0,                   60, {.param_float=&default_float}, catlog,      NULL},
+        {2, "PID_Speed",         0,                   60, {.param_float=&default_float}, catlog,      NULL},
             {3, "kp",        ips200_x_max-10 * 8,  20, {.param_float=&PID_speed.kp}, param_float, NULL},
             {3, "ki",        ips200_x_max-10 * 8,  40, {.param_float=&PID_speed.ki}, param_float, NULL},
             {3, "kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_speed.kd}, param_float, NULL},
@@ -278,27 +295,27 @@ MENU menu[] =
             {3, "kd2",       ips200_x_max-10 * 8,  80, {.param_float=&PID_steer.kd2}, param_float, NULL},
             {3, "maxout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_steer.maxout}, param_float,NULL},
             {3, "minout",    ips200_x_max-10 * 8, 120, {.param_float=&PID_steer.minout}, param_float, NULL},
-        {2, "PID_BLDC",      0,                  100, {.param_float=&default_float}, catlog,      NULL},
-            {3,"kp",        ips200_x_max-10 * 8,  20, {.param_float=&PID_BLDC.kp}, param_float, NULL},
-            {3,"ki",        ips200_x_max-10 * 8,  40, {.param_float=&PID_BLDC.ki}, param_float, NULL},
-            {3,"kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_BLDC.kd}, param_float, NULL},
-            {3,"kd2",       ips200_x_max-10 * 8,  80, {.param_float=&PID_BLDC.kd2}, param_float, NULL},
-            {3,"maxout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_BLDC.maxout}, param_float,NULL},
-            {3,"minout",    ips200_x_max-10 * 8, 120, {.param_float=&PID_BLDC.minout}, param_float,NULL},
+        {2, "BLDC_param",      0,                  100, {.param_float=&default_float}, catlog,      NULL},
+            {3, "basic_duty", ips200_x_max-10 * 8,  20, {.param_int16=&bldc_param.basic_duty},param_int16, NULL},
+            {3, "encoder_p", ips200_x_max-10 * 8,  40, {.param_int16=&bldc_param.encoder_p}, param_int16, NULL},
+            {3, "max_output",ips200_x_max-10 * 8,  60, {.param_int16=&bldc_param.max_output}, param_int16, NULL},
+            {3, "min_output",ips200_x_max-10 * 8,  80, {.param_int16=&bldc_param.min_output}, param_int16, NULL},
+
         {2, "allset0",       0,                 120, {.param_float=&default_float}, confirm,     pid_all_set0},
         {2, "PID_gyro_set0", 0,                 140, {.param_float=&default_float}, confirm,     pid_gyro_set0},
         {2, "PID_angle_set0",0,                 160, {.param_float=&default_float}, confirm,     pid_angle_set0},
         {2, "PID_V_set0",    0,                 180, {.param_float=&default_float}, confirm,     pid_V_set0},
         {2, "PID_steer_set0",0,                 200, {.param_float=&default_float}, confirm,     pid_steer_set0},
         {2,"PID_BLDC_modeset0",0,               220, {.param_float=&default_float}, confirm,     pid_BLDC_mode_set},
-    
+        {2,"PID_Bldc_paramset0",0,               240, {.param_float=&default_float}, confirm,     pid_Bldc_param_set0},
+
     {1, "image",              0,                  60, {.param_float=&default_float}, catlog,      NULL},
         {2, "ROLL_angle",    100,                 20, {.param_float=&filtering_angle}, param_float_readonly, NULL},
         {2, "display",       0,                  40, {.param_float=&default_float}, function,    image_show},
         {2, "show_image",    0,                  60, {.param_float=&default_float}, catlog,    NULL},
-            {3, "show_grayimage",180,             20, {.param_float=&default_float}, chose1, NULL},
-            {3, "show_ostuimage",180,             40, {.param_float=&default_float}, chose1, NULL},
-            {3, "show_dev_image",180,             60, {.param_float=&default_float}, chose1, NULL},
+            {3, "show_grayimage",180,             20, {.param_uint8=&image.gray_image}, chose1, NULL},
+            {3, "show_ostuimage",180,             40, {.param_uint8=&image.OSTU_fast_image}, chose1, NULL},
+            {3, "show_dev_image",180,             60, {.param_uint8=&image.OTSU_dev_image}, chose1, NULL},
         {2, "OTSU_threshold",0,                  80, {.param_float=&default_float}, catlog, NULL},
             {3, "OTSU_up",   100,                20, {.param_int16=&threshold_up}, param_int16, NULL},
             {3, "OTSU_DOWN",100,                 40, {.param_int16=&threshold_down}, param_int16, NULL},
@@ -329,6 +346,8 @@ MENU menu[] =
             {3,"raw_gyro_y", 100,              120, {.param_int16=&raw_gyro_y}, param_int16_readonly, NULL},
             {3,"raw_gyro_z", 100,              140, {.param_int16=&raw_gyro_z}, param_int16_readonly, NULL},
             {3,"imu_gyro_x", 100,              160, {.param_int16=&imu660ra_gyro_x}, param_int16_readonly, NULL},
+            {3,"left_encode",150,               180, {.param_int32=&encoder_L}, param_int32_readonly, NULL},
+            {3,"right_encode",150,              200, {.param_int32=&encoder_R}, param_int32_readonly, NULL},
         {2,"remote_info",    0,                 40, {.param_float=&default_float}, catlog, NULL},
             {3,"l_stick_UD", 150,               20, {.param_int16=&lora3a22_uart_transfer.joystick[1]}, param_int16_readonly, NULL},
             {3,"l_stick_LR", 150,               40, {.param_int16=&lora3a22_uart_transfer.joystick[0]}, param_int16_readonly, NULL},
@@ -342,7 +361,13 @@ MENU menu[] =
             {3,"Lswitch_key2",150,             200, {.param_uint8=&lora3a22_uart_transfer.switch_key[1]}, param_uint8_readonly, NULL},
             {3,"Rswitch_key1",150,             220, {.param_uint8=&lora3a22_uart_transfer.switch_key[2]}, param_uint8_readonly, NULL},
             {3,"Rswitch_key2",150,             240, {.param_uint8=&lora3a22_uart_transfer.switch_key[3]}, param_uint8_readonly, NULL},
-
+        {2,"Encoder_info",   0,                 60, {.param_float=&default_float}, catlog, NULL},
+            {3,"left_encode",150,               20, {.param_int32=&encoder_L}, param_int32_readonly, NULL},
+            {3,"right_encode",150,              40, {.param_int32=&encoder_R}, param_int32_readonly, NULL},
+            {3,"left_encode_d",150,             60, {.param_int32=&encoder_L_d}, param_int32_readonly, NULL},
+            {3,"right_encode_d",150,            80, {.param_int32=&encoder_R_d}, param_int32_readonly, NULL},
+            {3,"left_encode_last",150,         100, {.param_int32=&encoder_L_last}, param_int32_readonly, NULL},
+            {3,"right_encode_last",150,        120, {.param_int32=&encoder_R_last}, param_int32_readonly, NULL},
     {1, "element",  0,                  100, {.param_float=&default_float}, catlog, NULL},
         {2, "element_onoff", 0,                  20, {.param_float=&default_float}, catlog, NULL},
             {3, "crossl",    100,                20, {.param_int16=&roadelement_onoff.crossl}, on_off, NULL},
@@ -644,7 +669,7 @@ void output(void)
                     else if(menu[i].type==on_off||menu[i].type==chose1)
                     {
                         ips200_set_color(RGB565_ORANGE, RGB565_BLACK);    //设置为红色黑底
-                        if (*menu[i].param_union.param_int16)
+                        if (*menu[i].param_union.param_uint8)
                         {
                             ips200_show_string(menu[i].x,menu[i].y,"ON");
 
@@ -710,7 +735,7 @@ void output(void)
                     }
                     else if(menu[i].type==on_off||menu[i].type==chose1)
                     {
-                        if (*menu[i].param_union.param_int16)
+                        if (*menu[i].param_union.param_uint8)
                         {
                             ips200_show_string(menu[i].x,menu[i].y,"ON");
 
@@ -960,11 +985,11 @@ void Menu_control(void)
                 {
                     if(menu[i].priority==current_state&&menu[i].type==chose1&&i!=p)
                     {
-                        *menu[i].param_union.param_int16=0;
+                        *menu[i].param_union.param_uint8=0;
                     }
                     if(i==p)
                     {
-                        *menu[p].param_union.param_int16=1;
+                        *menu[p].param_union.param_uint8=1;
                     }
                 }
                 break;
@@ -979,6 +1004,7 @@ void Menu_control(void)
         }
         if(menu[p].priority==1)
         {
+            show_flag=false;
             flash_save_config_default();
             ips200_set_color(RGB565_PURPLE,RGB565_BLACK);
             ips200_show_string(0,300,"save default already");
