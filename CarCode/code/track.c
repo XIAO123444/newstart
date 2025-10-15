@@ -199,33 +199,33 @@ void element_check(void) {
     {
 
         //十字判断
-        if(search_stop<13)
-        {
-            if(continuity_pointLeft[0] != 0 && continuity_pointRight[0] != 0 && Right_Up_Find != 0 && Left_Up_Find != 0&&(Right_Up_Find>search_stop-2&&Left_Up_Find>search_stop-2))//左不连续点找到 且右不连续点找到，且左上拐点找到且右上拐点找到，此时为正入十字
-            {
-                carstatus_now = crossroad; // 进入十字路口状态
-                return;
-            }
-            if(continuity_pointLeft[0] != 0&& Left_Up_Find != 0&&Left_Up_Find>search_stop-2&&rightlostpoint[0]>50&&abs(left_budandiao-Left_Up_Find)>5)//左不连续点找到 且右不连续点未找到，且左上拐点找到，此时为左斜入十字后续加入左丢线点
-            {
-                carstatus_now = crossroadL; // 进入十字路口状态
-                return; 
-            }
+        // if(search_stop<13)
+        // {
+        //     if(continuity_pointLeft[0] != 0 && continuity_pointRight[0] != 0 && Right_Up_Find != 0 && Left_Up_Find != 0&&(Right_Up_Find>search_stop-2&&Left_Up_Find>search_stop-2))//左不连续点找到 且右不连续点找到，且左上拐点找到且右上拐点找到，此时为正入十字
+        //     {
+        //         carstatus_now = crossroad; // 进入十字路口状态
+        //         return;
+        //     }
+        //     if(continuity_pointLeft[0] != 0&& Left_Up_Find != 0&&Left_Up_Find>search_stop-2&&rightlostpoint[0]>50&&abs(left_budandiao-Left_Up_Find)>5)//左不连续点找到 且右不连续点未找到，且左上拐点找到，此时为左斜入十字后续加入左丢线点
+        //     {
+        //         carstatus_now = crossroadL; // 进入十字路口状态
+        //         return; 
+        //     }
 
-            if( continuity_pointRight[0] != 0 && Right_Up_Find != 0&&Right_Up_Find>search_stop-2&&leftlostpoint[0]>50)//左不连续点未找到 右不连续点找到，且右上拐点找到，此时为右斜入十字
-            {
-                carstatus_now = crossroadR; // 进入十字路口状态
-                return; 
-            }
-        }
-        //圆环判断
-        if(right_budandiao&&Right_Down_Find>35&&rightlostpoint[0]>10&&rightlostpoint[0]<80&&search_stop<3&&leftlostpoint[0]<10&&Left_Up_Find==0)
-        //右不单调点存在，右下拐点存在，右丢线点数量在10-40之间，左丢线点小于10，且搜索终止点小于10
-        {
-            carstatus_now=round_1; // 进入入环补直线状态
-            BUZZ_START();
-            return;
-        }
+        //     if( continuity_pointRight[0] != 0 && Right_Up_Find != 0&&Right_Up_Find>search_stop-2&&leftlostpoint[0]>50)//左不连续点未找到 右不连续点找到，且右上拐点找到，此时为右斜入十字
+        //     {
+        //         carstatus_now = crossroadR; // 进入十字路口状态
+        //         return; 
+        //     }
+        // }
+        // //圆环判断
+        // if(right_budandiao&&Right_Down_Find>35&&rightlostpoint[0]>10&&rightlostpoint[0]<80&&search_stop<3&&leftlostpoint[0]<10&&Left_Up_Find==0)
+        // //右不单调点存在，右下拐点存在，右丢线点数量在10-40之间，左丢线点小于10，且搜索终止点小于10
+        // {
+        //     carstatus_now=round_1; // 进入入环补直线状态
+        //     BUZZ_START();
+        //     return;
+        // }
 
         // //ips200_show_string(0,300,"straig");
     }

@@ -691,6 +691,8 @@ void find_y_point(void)
 }
 
 void image_boundary_process2(void)
+
+
 	{
     uint8 row;//ÐÐ
     param_init();
@@ -710,7 +712,7 @@ void image_boundary_process2(void)
         }
     }
     memcpy(white_point_count1, white_point_count, sizeof(white_point_count)); //½«°×µã¼ÆÊý¸´ÖÆµ½°×µã¼ÆÊýÂË²¨1
-    find_y_point(); 
+    // find_y_point(); 
     if(leftorright==0)
     {
         // ips200_show_string(0,240,"middle");
@@ -780,8 +782,6 @@ void image_boundary_process2(void)
             }
         }
     }
-    
-
     search_stop=(right_longest[0]< left_longest[0])?(MT9V03X_H-right_longest[0]-1):(MT9V03X_H-1-left_longest[0]); //ÓÉÓÚÊÇ´ÓÆÁÄ»ÏÂÍùÉÏ£¬ËùÒÔÊÇÑ¡´óµÄ
     search_stop1=search_stop; //ËÑË÷ÖÕÖ¹µã1
     if(search_stop==-1)
@@ -1759,7 +1759,7 @@ void image_filter(uint8(*bin_image)[MT9V03X_W])//ÐÎÌ¬Ñ§ÂË²¨£¬¼òµ¥À´Ëµ¾ÍÊÇÅòÕÍºÍ¸
 }
 void image_process(void)
 {   
-	  image_filter(dis_image);
+	//   image_filter(dis_image);
     image_threshold = my_adapt_threshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // Í¼Ïñ»ñÈ¡
     set_b_imagine(image_threshold);        // ¶þÖµ»¯
     image_boundary_process2();              // Í¼Ïñ±ß½ç´¦Àí
@@ -1769,6 +1769,7 @@ void image_process(void)
 void image_process2(void)
 {   
     // image_filter(dis_image);
+
     my_adapt_threshold_block4(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // ·ÖÇø´ó½ò·¨»ñÈ¡
     set_b_imagine_block4();
     // image_boundary_process2();              // Í¼Ïñ±ß½ç´¦Àí
@@ -1776,8 +1777,8 @@ void image_process2(void)
 }
 void protect()
 {  
-        banmaxian_check(); // °ßÂíÏß±£»¤
-        // black_protect_check();  // ºÚÉ«±£»¤
+        // banmaxian_check(); // °ßÂíÏß±£»¤
+        black_protect_check();  // ºÚÉ«±£»¤
 		lift_protection(); // Ì§Éý±£»¤
 }
 extern struct_imageshowcase image;

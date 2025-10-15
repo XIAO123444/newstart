@@ -47,7 +47,7 @@ extern int32 start_count;      //发车保护
 extern uint16 centerline2[MT9V03X_H];
 
 //神医
-float Med_Angle=-900 ;                     
+float Med_Angle=-700 ;                     
 extern int16 gy; //陀螺仪数据
 
 bool ins_flag=false;//惯导标志
@@ -219,7 +219,7 @@ void TIM6_IRQHandler(void)
         if(start_count>3000)
         {
         bldc_param.output=(bldc_param.encoder_p*(encoder_L_d+encoder_R_d)/2);
-           if(bldc_param.output>bldc_param.max_output)
+           if(bldc_param.output>bldc_param.max_output) 
            {bldc_param.output=bldc_param.max_output;}
            if(bldc_param.output<bldc_param.min_output)
            {bldc_param.output=bldc_param.min_output;}

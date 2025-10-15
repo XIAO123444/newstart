@@ -29,6 +29,7 @@ extern uint8 dis_image[MT9V03X_H][MT9V03X_W];
 extern float filtering_angle; 
 extern  int32 gyrocounter;                  //陀螺仪积分
 extern car_mode carmode;  //车的状态
+
 extern bool show_flag;
 void all_init(void)
 {
@@ -73,7 +74,7 @@ void all_init(void)
          if(mt9v03x_finish_flag)
          { 
              photo_image_process_all();
-             // protect(); // 保护    
+            //  protect(); // 保护    
              // Velocity_Control();       // 速度控制    
              if(current_state == 1)
              {

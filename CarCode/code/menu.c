@@ -455,7 +455,7 @@ void Menu_Screen_Init(void)
 
 union_param fast_show[7]={
 {.param_float=&filtering_angle},
-{.param_float=&default_float},
+{.param_float=&PID_steer.out},
 {.param_float=&default_float},
 {.param_float=&default_float},
 {.param_float=&default_float},
@@ -508,6 +508,7 @@ void outputscreen_fast()
         //要添加快速显示请在这里增加
 
         display_fast(0, 60, 180, param_float,fast_show[0] , "ROLL_angle");
+        display_fast(0, 160, 200, param_float,fast_show[1] , "STEER_out");
     }
 
 
