@@ -254,37 +254,37 @@ void TIM6_IRQHandler(void)
         }
     
     }
-    if (carmode == remote)
-    {
-        remote_speed_control();
-        start_count++;
-        if (start_count==3000)
-        {
-            ips200_show_string(0,180,"BLDC run");//debug信息显示
-        }
-        if(start_count>3000)
-        {
-           // BLDC_run(30);//这边改成pidout
-           bldc_param.output=(bldc_param.encoder_p*(encoder_L_d+encoder_R_d)/2);
-           if(bldc_param.output>bldc_param.max_output)
-           {bldc_param.output=bldc_param.max_output;}
-           if(bldc_param.output<bldc_param.min_output)
-           {bldc_param.output=bldc_param.min_output;}
+    // if (carmode == remote)
+    // {
+    //     remote_speed_control();
+    //     start_count++;
+    //     if (start_count==3000)
+    //     {
+    //         ips200_show_string(0,180,"BLDC run");//debug信息显示
+    //     }
+    //     if(start_count>3000)
+    //     {
+    //        // BLDC_run(30);//这边改成pidout
+    //        bldc_param.output=(bldc_param.encoder_p*(encoder_L_d+encoder_R_d)/2);
+    //        if(bldc_param.output>bldc_param.max_output)
+    //        {bldc_param.output=bldc_param.max_output;}
+    //        if(bldc_param.output<bldc_param.min_output)
+    //        {bldc_param.output=bldc_param.min_output;}
 
-            BLDC_run(PID_gyro.out-bldc_param.basic_duty+bldc_param.output);//可以添加编码器补偿
-            //可以添加编码器补偿
-        }
-        if(start_count==50000)
-        {
-            ips200_show_string(0,180,"time stop");
-        }
-        if(start_count>=51000)
-        {
-            carmode=stop;                           //停车
-            stopdebug=timer_count_stop;             //停车原因
-            menu_Mode=stop_debug_display;           //菜单切换到停车显示
-        }
-    }
+    //         BLDC_run(PID_gyro.out-bldc_param.basic_duty+bldc_param.output);//可以添加编码器补偿
+    //         //可以添加编码器补偿
+    //     }
+    //     if(start_count==50000)
+    //     {
+    //         ips200_show_string(0,180,"time stop");
+    //     }
+    //     if(start_count>=51000)
+    //     {
+    //         carmode=stop;                           //停车
+    //         stopdebug=timer_count_stop;             //停车原因
+    //         menu_Mode=stop_debug_display;           //菜单切换到停车显示
+    //     }
+    // }
     if(carmode==stop)
     {   
         BLDC_STOP();

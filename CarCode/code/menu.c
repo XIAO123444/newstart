@@ -1,4 +1,4 @@
- #include "menu.h"
+#include "menu.h"
 #include "encoder.h"
 #include "key.h"
 #include "steer_pid.h"
@@ -9,164 +9,164 @@
 #include "zf_device_lora3a22.h"
 #include "BLDC.h"
 
-bool showline; 
+bool showline; // æ˜¾ç¤ºçº¿æ¡æ ‡å¿—
 
+#define ips200_x_max 240 // IPSå±å¹•æœ€å¤§Xåæ ‡
+#define ips200_y_max 320 // IPSå±å¹•æœ€å¤§Yåæ ‡
+int current_state=1;    // å½“å‰èœå•å±‚çº§
+int p=0;                // å½“å‰èœå•é¡¹æŒ‡é’ˆ
+int p_nearby=0;         // é‚»è¿‘èœå•é¡¹æŒ‡é’ˆ
+uint8 input;            // èœå•è¾“å…¥å€¼
+extern int status;      // å¤–éƒ¨çŠ¶æ€å˜é‡
 
-#define ips200_x_max 240
-#define ips200_y_max 320
-int current_state=1;
-int p=0;                        //¼ÇÂ¼µ±Ç°Ö¸Õë
-int p_nearby=0;                 //¼ÇÂ¼ËùÊôµÄÖ¸Õë
-uint8 input;                    //²Ëµ¥°´¼üÊäÈë
-extern int status;
+extern uint8 flag;      // å¤–éƒ¨æ ‡å¿—ä½
+bool show_flag=false;   // æ˜¾ç¤ºæ ‡å¿—ä½ï¼Œå…¨å±€å˜é‡
 
+int32 start_count=0;    // å¯åŠ¨è®¡æ•°å™¨
 
-extern uint8 flag;
-bool show_flag=false;     //ÏÔÊ¾±êÖ¾Î»,È«¾Ö±äÁ¿
+// èœå•ç›¸å…³å˜é‡
+car_mode carmode=stop;                   // å°è½¦æ¨¡å¼ï¼Œé»˜è®¤ä¸ºåœæ­¢
+stop_debug stopdebug=normal_debug;       // åœæ­¢è°ƒè¯•æ¨¡å¼ï¼Œé»˜è®¤ä¸ºæ™®é€šè°ƒè¯•
+enum_menu_mode menu_Mode=normal;         // èœå•æ¨¡å¼ï¼Œé»˜è®¤ä¸ºæ™®é€šæ¨¡å¼
 
-int32 start_count=0;      //·¢³µ±£»¤
+int16 default_int=0;            // é»˜è®¤æ•´æ•°å€¼
+float default_float=0.0;        // é»˜è®¤æµ®ç‚¹å€¼
 
-//²Ëµ¥µ÷²Î
-car_mode carmode=stop;                   //È«¾Ö±äÁ¿ ³µ×´Ì¬Ä¬ÈÏÍ£Ö¹
-stop_debug stopdebug=normal_debug;       //È«¾Ö±äÁ¿ Í£³µdebugÄ¬ÈÏÕı³£
-enum_menu_mode menu_Mode=normal;         //È«¾Ö±äÁ¿ ²Ëµ¥Ä£Ê½
+uint8 confirm_flag=false;      // ç¡®è®¤æ ‡å¿—
+int stepper_int[5]={1,5,10,20,50};       // æ•´å‹æ­¥è¿›å€¼
+float stepper_float[6]={0.01,0.1,1.0,10.0,100.0,500.0}; // æµ®ç‚¹æ­¥è¿›å€¼
+uint8 stepper_p_int=0;        // æ•´å‹æ­¥è¿›æŒ‡é’ˆ
+uint8 stepper_p_float=0;      // æµ®ç‚¹æ­¥è¿›æŒ‡é’ˆ
 
-int16 default_int=0;            //ÎÄ¼şÄÚ±äÁ¿ Ä¬ÈÏÕûĞÍ£¬·ÀÖ¹¿ÕÖ¸Õë
-float default_float=0.0;        //ÎÄ¼şÄÚ±äÁ¿ Ä¬ÈÏ¸¡µãĞÍ£¬·ÀÖ¹¿ÕÖ¸Õë
-
-uint8 confirm_flag=false;      //È·ÈÏ±êÖ¾
-int stepper_int[5]={1,5,10,20,50};                         //ÕûĞÍ²½½øÖµ
-float stepper_float[6]={0.01,0.1,1.0,10.0,100.0,500.0};   //¸¡µãĞÍ²½½øÖµ
-uint8 stepper_p_int=0;        //ÕûĞÍ²½½øÖµÖ¸Õë
-uint8 stepper_p_float=0;      //¸¡µãĞÍ²½½øÖµÖ¸Õë
-
+// æ•´å‹å‚æ•°å¢åŠ 
 void add_intparam(int16* a)
 {
     *a+=stepper_int[stepper_p_int];
 }
+// æ•´å‹å‚æ•°å‡å°‘
 void sub_intparam(int16* a)
 {
     *a-=stepper_int[stepper_p_int];
 }
+// æµ®ç‚¹å‚æ•°å¢åŠ 
 void add_floatparam(float* a)
 {
     *a+=stepper_float[stepper_p_float];
 }
+// æµ®ç‚¹å‚æ•°å‡å°‘
 void sub_floatparam(float* a)
 {
     *a-=stepper_float[stepper_p_float];
 }
-//¼Ó¼õ·â×°º¯Êı£¨Õâ¸ö²»ÒªÉ¾ÁË£©¡ü¡ü¡ü¡ü¡ü¡ü
-//²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿
+
+// é“è·¯å…ƒç´ ç±»å‹æšä¸¾
 enum_roadelementtypedef roadelementType[50]={zebra,straigh,curve
     ,straigh,ramp,crossr,straigh,speedup
-    ,obstacle,islandl,straigh,zebra};//È«¾Ö±äÁ¿¼ÇÂ¼¾­¹ıµÄÔªËØ
-int16 element_num=12;       //È«¾Ö±äÁ¿£¬¼ÇÂ¼¾­¹ıÔªËØÊıÁ¿
+    ,obstacle,islandl,straigh,zebra}; // è®°å½•é“è·¯å…ƒç´ ç±»å‹
+int16 element_num=12;       // è®°å½•é“è·¯å…ƒç´ æ•°é‡
 
-int32 speed;
-//Ç°Õ°ÏÔÊ¾+µ÷½Ú²ÎÊı         ÓÃÓÚtrack.h
-int16 forwardsight;                 //Ä¬ÈÏÇ°Õ°
-int16 forwardsight2;                //  Ö±µ½ÅĞ¶ÏÇ°Õ°£¡£¡£¡£¡×¢ÒâÕâ¸öºÍÇ°Õ°²»Í¬£¬ÓÃÓÚÈıÂÖ»òÕßËÄÂÖ³µ¼ÓËÙµÄ£¡£¡£¡
-int16 forwardsight3;                //ÍäµÀÇ°Õ°
+int32 speed; // é€Ÿåº¦å˜é‡
 
-//À´×Ôbalance.c
-extern float filtering_angle;       //½âËã³öµÄ½Ç¶È
-extern int16 pitch_angle_integr_read;          //¸©Ñö½Ç²Ëµ¥ÏÔÊ¾µÄÊı¾İ
-extern int16 roll_angle_integr_read;           //ºá¹ö½Ç²Ëµ¥ÏÔÊ¾µÄÊı¾İ
-extern int16 yaw_angle_integr_read;            //Æ«º½½Ç²Ëµ¥ÏÔÊ¾µÄÊı¾İ
-extern int16 raw_gyro_x ;                       //Ô­Ê¼ÍÓÂİÒÇÊı¾İ
-extern int16 raw_gyro_y ;                       //Ô­Ê¼ÍÓÂİÒÇÊı¾İ
-extern int16 raw_gyro_z ;                       //Ô­Ê¼ÍÓÂİÒÇÊı¾İ        
+// å‰ç»è·ç¦»è®¾ç½®
+int16 forwardsight;         // é»˜è®¤å‰ç»
+int16 forwardsight2;        // ç›´é“åˆ¤æ–­å‰ç»
+int16 forwardsight3;        // å¼¯é“å‰ç»
 
-//À´×Ôzf_device_lora3a22.c
+// å¹³è¡¡ç›¸å…³å˜é‡
+extern float filtering_angle;       // æ»¤æ³¢åçš„è§’åº¦
+extern int16 pitch_angle_integr_read; // ä¿¯ä»°è§’ç§¯åˆ†å€¼
+extern int16 roll_angle_integr_read;  // æ¨ªæ»šè§’ç§¯åˆ†å€¼
+extern int16 yaw_angle_integr_read;   // åèˆªè§’ç§¯åˆ†å€¼
+extern int16 raw_gyro_x;             // åŸå§‹é™€èºä»ªXå€¼
+extern int16 raw_gyro_y;             // åŸå§‹é™€èºä»ªYå€¼
+extern int16 raw_gyro_z;             // åŸå§‹é™€èºä»ªZå€¼        
+
+// LoRaé€šä¿¡ç›¸å…³
 extern lora3a22_uart_transfer_dat_struct lora3a22_uart_transfer;
 
-//pidÏÔÊ¾+µ÷½Ú²ÎÊı          À´×Ôpid.h
-extern PID_t PID_gyro;          //½ÇËÙ¶È»·
-extern PID_t PID_angle;         //½Ç¶È»·
-extern PID_t PID_speed;         //ËÙ¶È»·  
-extern PID_t PID_steer;         //×ªÏò»·
-extern PID_t PID_BLDC;          //¸ºÑ¹·çÉÈ»· 
-//BLDC²ÎÊı          À´×ÔBLDC.h
+// PIDæ§åˆ¶å™¨
+extern PID_t PID_gyro;      // è§’é€Ÿåº¦ç¯
+extern PID_t PID_angle;     // è§’åº¦ç¯
+extern PID_t PID_speed;     // é€Ÿåº¦ç¯  
+extern PID_t PID_steer;     // è½¬å‘ç¯
+extern PID_t PID_BLDC;      // ç”µå‹é—­ç¯ 
+
+// BLDCç”µæœºå‚æ•°
 extern BLDC_Param bldc_param;
 
-struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1};      //ÈüµÀÔªËØ¹¦ÄÜ¿ªÆô¹Ø±Õ
-struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0};    //¼ÇÂ¼ÈüµÀÔªËØ
-struct_imageshowcase image ={0,1,0};            //¼ÇÂ¼Í¼ÏñÏÔÊ¾
-bool startbool=false; //¿ªÊ¼±êÖ¾
+// é“è·¯å…ƒç´ å¼€å…³å’Œè®°å½•
+struct_roadelementypedef roadelement_onoff={1,1,1,1,1,1,1,1,1,1,1,1,1,1}; // é“è·¯å…ƒç´ åŠŸèƒ½å¼€å…³
+struct_roadelementypedef roadelement_record={0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // è®°å½•é“è·¯å…ƒç´ 
+struct_imageshowcase image ={0,1,0}; // å›¾åƒæ˜¾ç¤ºè®¾ç½®
+bool startbool=false; // å¯åŠ¨æ ‡å¿—
 
-//´ó½ò·¨ÏÔÊ¾£«µ÷½Ú²ÎÊı          Ê¹ÓÃÓÚphoto_chuli.h
-int16 threshold_down=100;       //´ó½ò·¨ãĞÖµÉÏÏŞ
-int16 threshold_up=200;         //´ó½ò·¨ãĞÖµÏÂÏŞ  
-int16 OTSU_calperxpage=5;       //Ã¿xÕÅÍ¼Æ¬¼ÆËãÒ»´Î´ó½ò·¨
+// å›¾åƒå¤„ç†å‚æ•°
+int16 threshold_down=100;   // äºŒå€¼åŒ–ä¸‹é™
+int16 threshold_up=200;     // äºŒå€¼åŒ–ä¸Šé™  
+int16 OTSU_calperxpage=5;   // æ¯xè¡Œå›¾åƒè®¡ç®—ä¸€æ¬¡
 
-//À´×Ô      photo_chuli.c£¬·Ö¿é´ó½ò·¨
-extern int16 threshold1;  // ×óÉÏ
-extern int16 threshold2;  // ÓÒÉÏ
-extern int16 threshold3;  // ×óÏÂ
-extern int16 threshold4;  // ÓÒÏÂ 
+// å›¾åƒå¤„ç†é˜ˆå€¼
+extern int16 threshold1;  // é˜ˆå€¼1
+extern int16 threshold2;  // é˜ˆå€¼2
+extern int16 threshold3;  // é˜ˆå€¼3
+extern int16 threshold4;  // é˜ˆå€¼4
 
-//À´×Ôencoder.c
-extern int32 encoder_R;     //ÓÒ±àÂëÆ÷
-extern int32 encoder_L;    //×ó±àÂëÆ÷
-extern int32 encoder_R_d;   //ÓÒ±àÂëÆ÷²îÖµ
-extern int32 encoder_L_d;   //×ó±àÂëÆ÷²îÖµ
-extern int32 encoder_R_last; //ÓÒ±àÂëÆ÷ÉÏ´ÎÖµ
-extern int32 encoder_L_last; //×ó±àÂëÆ÷ÉÏ´ÎÖµ
+// ç¼–ç å™¨æ•°æ®
+extern int32 encoder_R;    // å³ç¼–ç å™¨
+extern int32 encoder_L;    // å·¦ç¼–ç å™¨
+extern int32 encoder_R_d;  // å³ç¼–ç å™¨å·®å€¼
+extern int32 encoder_L_d;  // å·¦ç¼–ç å™¨å·®å€¼
+extern int32 encoder_R_last; // å³ç¼–ç å™¨ä¸Šæ¬¡å€¼
+extern int32 encoder_L_last; // å·¦ç¼–ç å™¨ä¸Šæ¬¡å€¼
 
-//
-//²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿²Ëµ¥±äÁ¿
-
-
-//²Ëµ¥º¯Êı²Ëµ¥º¯Êı²Ëµ¥º¯Êı²Ëµ¥º¯Êı²Ëµ¥º¯Êı²Ëµ¥º¯Êı²Ëµ¥º¯Êı
+// æ˜¾ç¤ºé“è·¯å…ƒç´ 
 void show_element(void)
 {
     for (int16 i = 0; i < element_num; i++)
     {
         switch (roadelementType[i])
         {
-            
         case straigh:
-            ips200_show_string(72*(i%3),30*(i/3),"straigh");
+            ips200_show_string(72*(i%3),30*(i/3),"straigh"); // ç›´é“
             break;
         case crossm:
-            ips200_show_string(72*(i%3),30*(i/3)," crossM "); // ÕıÈëÊ®×Ö
+            ips200_show_string(72*(i%3),30*(i/3)," crossM "); // åå­—è·¯å£
             break;
         case crossl:
-            ips200_show_string(72*(i%3),30*(i/3)," crossL "); // ×óĞ±Ê®×Ö
+            ips200_show_string(72*(i%3),30*(i/3)," crossL "); // å·¦æ–œåå­—
             break;
         case crossr:
-            ips200_show_string(72*(i%3),30*(i/3)," crossR "); // ÓÒĞ±Ê®×Ö
+            ips200_show_string(72*(i%3),30*(i/3)," crossR "); // å³æ–œåå­—
             break;
         case islandl:
-            ips200_show_string(72*(i%3),30*(i/3),"islandL"); // »·µº×ó
+            ips200_show_string(72*(i%3),30*(i/3),"islandL"); // å·¦ç¯å²›
             break;
         case islandr:
-            ips200_show_string(72*(i%3),30*(i/3),"islandR"); // »·µºÓÒ
+            ips200_show_string(72*(i%3),30*(i/3),"islandR"); // å³ç¯å²›
             break;
         case scurve:
-            ips200_show_string(72*(i%3),30*(i/3)," S-curve"); // SÍä
+            ips200_show_string(72*(i%3),30*(i/3)," S-curve"); // Så¼¯
             break;
         case curve:
-            ips200_show_string(72*(i%3),30*(i/3)," curve "); // ÍäµÀ
+            ips200_show_string(72*(i%3),30*(i/3)," curve "); // å¼¯é“
             break;
         case speedup:
-            ips200_show_string(72*(i%3),30*(i/3),"speedUp"); // ¼ÓËÙ´ø
+            ips200_show_string(72*(i%3),30*(i/3),"speedUp"); // åŠ é€Ÿå¸¦
             break;
         case ramp:
-            ips200_show_string(72*(i%3),30*(i/3),"  ramp "); // ÆÂµÀ
+            ips200_show_string(72*(i%3),30*(i/3),"  ramp "); // å¡é“
             break;
         case obstacle:
-            ips200_show_string(72*(i%3),30*(i/3),"obstacle"); // ÕÏ°­Îï
+            ips200_show_string(72*(i%3),30*(i/3),"obstacle"); // éšœç¢ç‰©
             break;
         case blackprotect:
-            ips200_show_string(72*(i%3),30*(i/3),"blkProt"); // ºÚÏß±£»¤
+            ips200_show_string(72*(i%3),30*(i/3),"blkProt"); // é»‘çº¿ä¿æŠ¤
             break;
         case stall:
-            ips200_show_string(72*(i%3),30*(i/3)," stall "); // ¶Â×ª
+            ips200_show_string(72*(i%3),30*(i/3)," stall "); // åœè½¦
             break;
         case zebra:
-            ips200_show_string(72*(i%3),30*(i/3),"  zebra "); // °ßÂíÏß
+            ips200_show_string(72*(i%3),30*(i/3),"  zebra "); // æ–‘é©¬çº¿
             break;
         default:
             break;
@@ -176,12 +176,11 @@ void show_element(void)
             ips200_set_color(RGB565_ORANGE, RGB565_BLACK);
             ips200_show_string(72*(i%3)+64,30*(i/3),">");
             ips200_set_color(RGB565_WHITE, RGB565_BLACK);
-
         }
-
     }
 }
-//ÓÃÓÚÏÔÊ¾¾­¹ıÔªËØ
+
+// æ˜¾ç¤ºåœæ­¢åŸå› 
 void show_stopreason(void)
 {
     ips200_show_string(0,0,"stop reason:");
@@ -189,7 +188,6 @@ void show_stopreason(void)
     {
         ips200_show_string(0,20,"blackprotect stop");
     }
-
     if(stopdebug==zebra_stop)
     {
         ips200_show_string(0,20,"zebra stop");
@@ -218,244 +216,248 @@ void show_stopreason(void)
     {
         ips200_show_string(0,20,"remote stop");
     }   
- 
 }
-//ÓÃÓÚÏÔÊ¾Í£Ö¹Ô­Òò
+
+// å›¾åƒæ˜¾ç¤ºå‡½æ•°
 void image_show()   {show_flag=true;}
+
+// æ¸…é™¤PIDå‚æ•°
 void PID_clear()
 {
-	PID_gyro.error0 = 0;
+    PID_gyro.error0 = 0;
     PID_gyro.errorint = 0;
-	PID_angle.error0 = 0;
-	PID_speed.errorint = 0;
-	PID_steer.error0 = 0;
-	PID_steer.errorint = 0; 
+    PID_angle.error0 = 0;
+    PID_speed.errorint = 0;
+    PID_steer.error0 = 0;
+    PID_steer.errorint = 0; 
 }
-//Îó²îÇå³ıº¯Êı·ÀÖ¹±¬Õ¨(ÌîµÄ¿Ó¼ÇµÃ²¹¹ş)
-void start_the_car() { carmode = car_run_mode1;start_count=0; angle_init();PID_clear();}//¿ªÊ¼
-void Calibrate_BLDC()   {carmode=Start_Calibrate;}
-void Remote_start()     {carmode =remote;start_count=0; angle_init();PID_clear();}//Ô¶³Ì¿ªÊ¼
 
-void pid_gyro_set0(){ PID_gyro.kp=0;PID_gyro.ki=0;PID_gyro.kd=0;PID_gyro.kd2=0;PID_gyro.maxout=5000;PID_gyro.minout=-5000;  ips200_show_string(0,180,"set 0 already");} 
-void pid_angle_set0(){PID_angle.kp=0;PID_angle.ki=0;PID_angle.kd=0;PID_angle.kd2=0;PID_angle.maxout=5000;PID_angle.minout=-5000;ips200_show_string(0,180,"set 0 already");}     
-void pid_V_set0(){PID_speed.kp=0;PID_speed.ki=0;PID_speed.kd=0;PID_speed.kd2=0;PID_speed.maxout=5000;PID_speed.minout=-5000;PID_speed.targ=400;ips200_show_string(0,180,"set 0 already");} 
-void pid_steer_set0(){PID_steer.kp=0;PID_steer.ki=0;PID_steer.kd=0;PID_steer.kd2=0;PID_steer.maxout=5000;PID_steer.minout=-5000; ips200_show_string(0,180,"set 0 already");} 
-void pid_BLDC_set0(){PID_BLDC.kp=0;PID_BLDC.ki=0;PID_BLDC.kd=0;PID_BLDC.kd2=0;PID_BLDC.maxout=0;PID_BLDC.minout=0; ips200_show_string(0,180,"set 0 already");}
+// å¯åŠ¨å°è½¦
+void start_the_car() { carmode = car_run_mode1;start_count=0; angle_init();PID_clear();}
+
+// BLDCæ ¡å‡†
+void Calibrate_BLDC()   {carmode=Start_Calibrate;}
+
+// è¿œç¨‹å¯åŠ¨
+void Remote_start()     {carmode =remote;start_count=0; angle_init();PID_clear();}
+
+// é€šç”¨PIDå‚æ•°é‡ç½®å‡½æ•°
+void reset_pid_params(PID_t* pid, float maxout, float minout, float targ)
+{
+    pid->kp = 0;
+    pid->ki = 0;
+    pid->kd = 0;
+    pid->kd2 = 0;
+    pid->maxout = maxout;
+    pid->minout = minout;
+    pid->targ = targ;
+}
+
+// å„ç§PIDå‚æ•°é‡ç½®å‡½æ•°
+void pid_gyro_set0() { reset_pid_params(&PID_gyro, 5000, -5000, 0); ips200_show_string(0,180,"set 0 already"); }
+void pid_angle_set0() { reset_pid_params(&PID_angle, 5000, -5000, 0); ips200_show_string(0,180,"set 0 already"); }
+void pid_V_set0() { reset_pid_params(&PID_speed, 5000, -5000, 400); ips200_show_string(0,180,"set 0 already"); }
+void pid_steer_set0() { reset_pid_params(&PID_steer, 5000, -5000, 0); ips200_show_string(0,180,"set 0 already"); }
+void pid_BLDC_set0() { reset_pid_params(&PID_BLDC, 0, 0, 0); ips200_show_string(0,180,"set 0 already"); }
 void pid_all_set0(){pid_gyro_set0();pid_angle_set0();pid_V_set0();pid_steer_set0();pid_BLDC_set0();}
 void pid_BLDC_mode_set(){pid_gyro_set0();PID_gyro.maxout=100;PID_gyro.minout=0;pid_angle_set0();PID_angle.maxout=40;
     PID_angle.minout=0;pid_V_set0();PID_speed.maxout=100;PID_speed.minout=0;
     pid_steer_set0();PID_steer.maxout=100;PID_steer.minout=0;pid_BLDC_set0();
     PID_BLDC.maxout=0;PID_BLDC.minout=0;}
 void pid_Bldc_param_set0(){bldc_param.basic_duty=400;bldc_param.encoder_p=1;bldc_param.max_output=600;bldc_param.min_output=-400;ips200_show_string(0,180,"set 0 already");}
-    //ÉÁ´æ´æ´¢ 
 
-
-
-//´úÂë´æ´¢
+// ä»£ç åŠ è½½å‡½æ•°
 void codeload1(){}
 void codeload2(){}
 void codeload3(){}
 void codeload4(){}
-//½á¹¹Ìå±äÁ¿ÖÃ0³õÊ¼»¯(ÓĞ²ÎÊı)
 
-
- 
-//²Ëµ¥½á¹¹Ìå
+// èœå•ç»“æ„ä½“
 MENU menu[] = 
 {
-    {1,"start",                   0,               20, {.param_float=&default_float}, catlog,         NULL},
-        {2,"car_go",              0,               20, {.param_float=&default_float}, function,       start_the_car},
-        {2,"Calibrate",           0,               40, {.param_float=&default_float}, function,       Calibrate_BLDC},
-        {2,"remote_start",        0,               60, {.param_float=&default_float}, function,       Remote_start},
+    // ä¸»èœå•é¡¹
+    {1,"start", 0, 20, {.param_float=&default_float}, catlog, NULL},
+        {2,"car_go", 0, 20, {.param_float=&default_float}, function, start_the_car},
+        {2,"Calibrate", 0, 40, {.param_float=&default_float}, function, Calibrate_BLDC},
+        {2,"remote_start", 0, 60, {.param_float=&default_float}, function, Remote_start},
 
-    {1, "pidparam",               0,               40, {.param_float=&default_float}, catlog,         NULL},
-        {2, "PID_gyro",           0,               20, {.param_float=&default_float}, catlog,         NULL},
-            {3, "kp",          ips200_x_max-10 * 8,  20, {.param_float=&PID_gyro.kp}, param_float,   NULL},
-            {3, "ki",          ips200_x_max-10 * 8,  40, {.param_float=&PID_gyro.ki}, param_float,   NULL},
-            {3, "kd",          ips200_x_max-10 * 8,  60, {.param_float=&PID_gyro.kd}, param_float,   NULL},
-            {3, "maxout",      ips200_x_max-10 * 8,  80, {.param_float=&PID_gyro.maxout}, param_float,  NULL},
-            {3, "minout",      ips200_x_max-10 * 8, 100, {.param_float=&PID_gyro.minout}, param_float, NULL},
-        {2, "PID_angle",      0,                   40, {.param_float=&default_float}, catlog,      NULL},
-            {3, "kp",        ips200_x_max-10 * 8,  20, {.param_float=&PID_angle.kp}, param_float, NULL},
-            {3, "ki",        ips200_x_max-10 * 8,  40, {.param_float=&PID_angle.ki}, param_float, NULL},
-            {3, "kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_angle.kd}, param_float, NULL},
-            {3, "maxout",    ips200_x_max-10 * 8,  80, {.param_float=&PID_angle.maxout}, param_float,NULL},
-            {3, "minout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_angle.minout}, param_float, NULL},
-        {2, "PID_Speed",         0,                   60, {.param_float=&default_float}, catlog,      NULL},
-            {3, "kp",        ips200_x_max-10 * 8,  20, {.param_float=&PID_speed.kp}, param_float, NULL},
-            {3, "ki",        ips200_x_max-10 * 8,  40, {.param_float=&PID_speed.ki}, param_float, NULL},
-            {3, "kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_speed.kd}, param_float, NULL},
-            {3, "maxout",    ips200_x_max-10 * 8,  80, {.param_float=&PID_speed.maxout}, param_float,NULL},
-            {3, "minout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_speed.minout}, param_float, NULL},
-            {3,"target",     ips200_x_max-10 * 8, 120, {.param_float=&PID_speed.targ}, param_float, NULL},
-        {2, "PID_steer",      0,                  80, {.param_float=&default_float}, catlog,      NULL},
-            {3, "kp",        ips200_x_max-10 * 8,  20, {.param_float=&PID_steer.kp}, param_float, NULL},
-            {3, "ki",        ips200_x_max-10 * 8,  40, {.param_float=&PID_steer.ki}, param_float, NULL},
-            {3, "kd",        ips200_x_max-10 * 8,  60, {.param_float=&PID_steer.kd}, param_float, NULL},
-            {3, "kd2",       ips200_x_max-10 * 8,  80, {.param_float=&PID_steer.kd2}, param_float, NULL},
-            {3, "maxout",    ips200_x_max-10 * 8, 100, {.param_float=&PID_steer.maxout}, param_float,NULL},
-            {3, "minout",    ips200_x_max-10 * 8, 120, {.param_float=&PID_steer.minout}, param_float, NULL},
-        {2, "BLDC_param",      0,                  100, {.param_float=&default_float}, catlog,      NULL},
-            {3, "basic_duty", ips200_x_max-10 * 8,  20, {.param_int16=&bldc_param.basic_duty},param_int16, NULL},
-            {3, "encoder_p", ips200_x_max-10 * 8,  40, {.param_int16=&bldc_param.encoder_p}, param_int16, NULL},
-            {3, "max_output",ips200_x_max-10 * 8,  60, {.param_int16=&bldc_param.max_output}, param_int16, NULL},
-            {3, "min_output",ips200_x_max-10 * 8,  80, {.param_int16=&bldc_param.min_output}, param_int16, NULL},
+    // PIDå‚æ•°èœå•
+    {1, "pidparam", 0, 40, {.param_float=&default_float}, catlog, NULL},
+        // é™€èºä»ªPID
+        {2, "PID_gyro", 0, 20, {.param_float=&default_float}, catlog, NULL},
+            {3, "kp", ips200_x_max-10 * 8, 20, {.param_float=&PID_gyro.kp}, param_float, NULL},
+            {3, "ki", ips200_x_max-10 * 8, 40, {.param_float=&PID_gyro.ki}, param_float, NULL},
+            {3, "kd", ips200_x_max-10 * 8, 60, {.param_float=&PID_gyro.kd}, param_float, NULL},
+            {3, "maxout", ips200_x_max-10 * 8, 80, {.param_float=&PID_gyro.maxout}, param_float, NULL},
+            {3, "minout", ips200_x_max-10 * 8, 100, {.param_float=&PID_gyro.minout}, param_float, NULL},
+        // è§’åº¦PID
+        {2, "PID_angle", 0, 40, {.param_float=&default_float}, catlog, NULL},
+            {3, "kp", ips200_x_max-10 * 8, 20, {.param_float=&PID_angle.kp}, param_float, NULL},
+            {3, "ki", ips200_x_max-10 * 8, 40, {.param_float=&PID_angle.ki}, param_float, NULL},
+            {3, "kd", ips200_x_max-10 * 8, 60, {.param_float=&PID_angle.kd}, param_float, NULL},
+            {3, "maxout", ips200_x_max-10 * 8, 80, {.param_float=&PID_angle.maxout}, param_float,NULL},
+            {3, "minout", ips200_x_max-10 * 8, 100, {.param_float=&PID_angle.minout}, param_float, NULL},
+        // é€Ÿåº¦PID
+        {2, "PID_Speed", 0, 60, {.param_float=&default_float}, catlog, NULL},
+            {3, "kp", ips200_x_max-10 * 8, 20, {.param_float=&PID_speed.kp}, param_float, NULL},
+            {3, "ki", ips200_x_max-10 * 8, 40, {.param_float=&PID_speed.ki}, param_float, NULL},
+            {3, "kd", ips200_x_max-10 * 8, 60, {.param_float=&PID_speed.kd}, param_float, NULL},
+            {3, "maxout", ips200_x_max-10 * 8, 80, {.param_float=&PID_speed.maxout}, param_float,NULL},
+            {3, "minout", ips200_x_max-10 * 8, 100, {.param_float=&PID_speed.minout}, param_float, NULL},
+            {3,"target", ips200_x_max-10 * 8, 120, {.param_float=&PID_speed.targ}, param_float, NULL},
+        // è½¬å‘PID
+        {2, "PID_steer", 0, 80, {.param_float=&default_float}, catlog, NULL},
+            {3, "kp", ips200_x_max-10 * 8, 20, {.param_float=&PID_steer.kp}, param_float, NULL},
+            {3, "ki", ips200_x_max-10 * 8, 40, {.param_float=&PID_steer.ki}, param_float, NULL},
+            {3, "kd", ips200_x_max-10 * 8, 60, {.param_float=&PID_steer.kd}, param_float, NULL},
+            {3, "kd2", ips200_x_max-10 * 8, 80, {.param_float=&PID_steer.kd2}, param_float, NULL},
+            {3, "maxout", ips200_x_max-10 * 8, 100, {.param_float=&PID_steer.maxout}, param_float,NULL},
+            {3, "minout", ips200_x_max-10 * 8, 120, {.param_float=&PID_steer.minout}, param_float, NULL},
+        // BLDCå‚æ•°
+        {2, "BLDC_param", 0, 100, {.param_float=&default_float}, catlog, NULL},
+            {3, "basic_duty", ips200_x_max-10 * 8, 20, {.param_int16=&bldc_param.basic_duty},param_int16, NULL},
+            {3, "encoder_p", ips200_x_max-10 * 8, 40, {.param_int16=&bldc_param.encoder_p}, param_int16, NULL},
+            {3, "max_output",ips200_x_max-10 * 8, 60, {.param_int16=&bldc_param.max_output}, param_int16, NULL},
+            {3, "min_output",ips200_x_max-10 * 8, 80, {.param_int16=&bldc_param.min_output}, param_int16, NULL},
+        // PIDé‡ç½®é€‰é¡¹
+        {2, "allset0", 0, 120, {.param_float=&default_float}, confirm, pid_all_set0},
+        {2, "PID_gyro_set0", 0, 140, {.param_float=&default_float}, confirm, pid_gyro_set0},
+        {2, "PID_angle_set0",0, 160, {.param_float=&default_float}, confirm, pid_angle_set0},
+        {2, "PID_V_set0", 0, 180, {.param_float=&default_float}, confirm, pid_V_set0},
+        {2, "PID_steer_set0",0, 200, {.param_float=&default_float}, confirm, pid_steer_set0},
+        {2,"PID_BLDC_modeset0",0, 220, {.param_float=&default_float}, confirm, pid_BLDC_mode_set},
+        {2,"PID_Bldc_paramset0",0, 240, {.param_float=&default_float}, confirm, pid_Bldc_param_set0},
 
-        {2, "allset0",       0,                 120, {.param_float=&default_float}, confirm,     pid_all_set0},
-        {2, "PID_gyro_set0", 0,                 140, {.param_float=&default_float}, confirm,     pid_gyro_set0},
-        {2, "PID_angle_set0",0,                 160, {.param_float=&default_float}, confirm,     pid_angle_set0},
-        {2, "PID_V_set0",    0,                 180, {.param_float=&default_float}, confirm,     pid_V_set0},
-        {2, "PID_steer_set0",0,                 200, {.param_float=&default_float}, confirm,     pid_steer_set0},
-        {2,"PID_BLDC_modeset0",0,               220, {.param_float=&default_float}, confirm,     pid_BLDC_mode_set},
-        {2,"PID_Bldc_paramset0",0,               240, {.param_float=&default_float}, confirm,     pid_Bldc_param_set0},
-
-    {1, "image",              0,                  60, {.param_float=&default_float}, catlog,      NULL},
-        {2, "ROLL_angle",    100,                 20, {.param_float=&filtering_angle}, param_float_readonly, NULL},
-        {2, "display",       0,                  40, {.param_float=&default_float}, function,    image_show},
-        {2, "show_image",    0,                  60, {.param_float=&default_float}, catlog,    NULL},
-            {3, "show_grayimage",180,             20, {.param_uint8=&image.gray_image}, chose1, NULL},
-            {3, "show_ostuimage",180,             40, {.param_uint8=&image.OSTU_fast_image}, chose1, NULL},
-            {3, "show_dev_image",180,             60, {.param_uint8=&image.OTSU_dev_image}, chose1, NULL},
-        {2, "OTSU_threshold",0,                  80, {.param_float=&default_float}, catlog, NULL},
-            {3, "OTSU_up",   100,                20, {.param_int16=&threshold_up}, param_int16, NULL},
-            {3, "OTSU_DOWN",100,                 40, {.param_int16=&threshold_down}, param_int16, NULL},
-            {3,"OTSU_perx", 100,                 60, {.param_int16=&OTSU_calperxpage}, param_int16, NULL},
-            {3,"threshold1",100,                 80, {.param_int16=&threshold1}, param_int16, NULL},
-            {3,"threshold2",100,                100, {.param_int16=&threshold2}, param_int16, NULL},
-            {3,"threshold3",100,                120, {.param_int16=&threshold3}, param_int16, NULL},
-            {3,"threshold4",100,                140, {.param_int16=&threshold4}, param_int16, NULL},
-        {2, "image_point",   0,                 100, {.param_float=&default_float}, catlog, NULL},
-            {3, "crossroadall",0,                20, {.param_float=&default_float}, catlog, NULL},
-                {4, "r_up_p",100,                20, {.param_int16=&default_int}, param_int16_readonly, NULL},
-                {4, "r_down_p",100,              40, {.param_int16=&default_int}, param_int16_readonly, NULL},
-                {4, "l_up_p",100,                60, {.param_int16=&default_int}, param_int16_readonly, NULL},
-                {4, "l_down_p",100,              80, {.param_int16=&default_int}, param_int16_readonly, NULL},
-            {3, "round",     0,                  40, {.param_float=&default_float}, catlog, NULL},
-        {2, "forwardsight",  0,                 120, {.param_float=&default_float}, catlog, NULL},
-            {3, "forwardsight1",150,             20, {.param_int16=&forwardsight}, param_int16, NULL},
-            {3, "forwardsight2",150,             40, {.param_int16=&forwardsight2}, param_int16, NULL},
-            {3, "forwardsight3",150,             60, {.param_int16=&forwardsight3}, param_int16, NULL},
+    // å›¾åƒèœå•
+    {1, "image", 0, 60, {.param_float=&default_float}, catlog, NULL},
+        {2, "ROLL_angle", 100, 20, {.param_float=&filtering_angle}, param_float_readonly, NULL},
+        {2, "display", 0, 40, {.param_float=&default_float}, function, image_show},
+        {2, "show_image", 0, 60, {.param_float=&default_float}, catlog, NULL},
+            {3, "show_grayimage",180, 20, {.param_uint8=&image.gray_image}, chose1, NULL},
+            {3, "show_ostuimage",180, 40, {.param_uint8=&image.OSTU_fast_image}, chose1, NULL},
+            {3, "show_dev_image",180, 60, {.param_uint8=&image.OTSU_dev_image}, chose1, NULL},
+        {2, "OTSU_threshold",0, 80, {.param_float=&default_float}, catlog, NULL},
+            {3, "OTSU_up", 100, 20, {.param_int16=&threshold_up}, param_int16, NULL},
+            {3, "OTSU_DOWN",100, 40, {.param_int16=&threshold_down}, param_int16, NULL},
+            {3,"OTSU_perx", 100, 60, {.param_int16=&OTSU_calperxpage}, param_int16, NULL},
+            {3,"threshold1",100, 80, {.param_int16=&threshold1}, param_int16, NULL},
+            {3,"threshold2",100, 100, {.param_int16=&threshold2}, param_int16, NULL},
+            {3,"threshold3",100, 120, {.param_int16=&threshold3}, param_int16, NULL},
+            {3,"threshold4",100, 140, {.param_int16=&threshold4}, param_int16, NULL},
+        {2, "image_point", 0, 100, {.param_float=&default_float}, catlog, NULL},
+            {3, "crossroadall",0, 20, {.param_float=&default_float}, catlog, NULL},
+                {4, "r_up_p",100, 20, {.param_int16=&default_int}, param_int16_readonly, NULL},
+                {4, "r_down_p",100, 40, {.param_int16=&default_int}, param_int16_readonly, NULL},
+                {4, "l_up_p",100, 60, {.param_int16=&default_int}, param_int16_readonly, NULL},
+                {4, "l_down_p",100, 80, {.param_int16=&default_int}, param_int16_readonly, NULL},
+            {3, "round", 0, 40, {.param_float=&default_float}, catlog, NULL},
+        {2, "forwardsight", 0, 120, {.param_float=&default_float}, catlog, NULL},
+            {3, "forwardsight1",150, 20, {.param_int16=&forwardsight}, param_int16, NULL},
+            {3, "forwardsight2",150, 40, {.param_int16=&forwardsight2}, param_int16, NULL},
+            {3, "forwardsight3",150, 60, {.param_int16=&forwardsight3}, param_int16, NULL},
     
-    {1, "debug",      0,                  80, {.param_float=&default_float}, catlog, NULL},
-        {2,"gyro_info",      0,                 20, {.param_float=&default_float}, catlog, NULL},
-            {3,"pit_intg",   100,               20, {.param_int16=&pitch_angle_integr_read}, param_int16_readonly, NULL},
-            {3,"yaw_intg",   100,               40, {.param_int16=&yaw_angle_integr_read}, param_int16_readonly, NULL},
-            {3,"roll_intg",  100,               60, {.param_int16=&roll_angle_integr_read}, param_int16_readonly, NULL},
-            {3, "ROLL_angle",100,               80, {.param_float=&filtering_angle}, param_float_readonly, NULL},
-            {3,"raw_gyro_x", 100,              100, {.param_int16=&raw_gyro_x}, param_int16_readonly, NULL},
-            {3,"raw_gyro_y", 100,              120, {.param_int16=&raw_gyro_y}, param_int16_readonly, NULL},
-            {3,"raw_gyro_z", 100,              140, {.param_int16=&raw_gyro_z}, param_int16_readonly, NULL},
-            {3,"imu_gyro_x", 100,              160, {.param_int16=&imu660ra_gyro_x}, param_int16_readonly, NULL},
-            {3,"left_encode",150,               180, {.param_int32=&encoder_L}, param_int32_readonly, NULL},
-            {3,"right_encode",150,              200, {.param_int32=&encoder_R}, param_int32_readonly, NULL},
-        {2,"remote_info",    0,                 40, {.param_float=&default_float}, catlog, NULL},
-            {3,"l_stick_UD", 150,               20, {.param_int16=&lora3a22_uart_transfer.joystick[1]}, param_int16_readonly, NULL},
-            {3,"l_stick_LR", 150,               40, {.param_int16=&lora3a22_uart_transfer.joystick[0]}, param_int16_readonly, NULL},
-            {3,"r_stick_UD", 150,               60, {.param_int16=&lora3a22_uart_transfer.joystick[3]}, param_int16_readonly, NULL},
-            {3,"r_stick_LR", 150,               80, {.param_int16=&lora3a22_uart_transfer.joystick[2]}, param_int16_readonly, NULL},
-            {3,"l_stickey",  150,              100, {.param_uint8=&lora3a22_uart_transfer.key[0]}, param_uint8_readonly, NULL},
-            {3,"r_stickey",  150,              120, {.param_uint8=&lora3a22_uart_transfer.key[1]}, param_uint8_readonly, NULL},
-            {3,"l_key",      150,              140, {.param_uint8=&lora3a22_uart_transfer.key[2]}, param_uint8_readonly, NULL},
-            {3,"r_key",      150,              160, {.param_uint8=&lora3a22_uart_transfer.key[3]}, param_uint8_readonly, NULL},
-            {3,"Lswitch_key1",150,             180, {.param_uint8=&lora3a22_uart_transfer.switch_key[0]}, param_uint8_readonly, NULL},
-            {3,"Lswitch_key2",150,             200, {.param_uint8=&lora3a22_uart_transfer.switch_key[1]}, param_uint8_readonly, NULL},
-            {3,"Rswitch_key1",150,             220, {.param_uint8=&lora3a22_uart_transfer.switch_key[2]}, param_uint8_readonly, NULL},
-            {3,"Rswitch_key2",150,             240, {.param_uint8=&lora3a22_uart_transfer.switch_key[3]}, param_uint8_readonly, NULL},
-        {2,"Encoder_info",   0,                 60, {.param_float=&default_float}, catlog, NULL},
-            {3,"left_encode",150,               20, {.param_int32=&encoder_L}, param_int32_readonly, NULL},
-            {3,"right_encode",150,              40, {.param_int32=&encoder_R}, param_int32_readonly, NULL},
-            {3,"left_encode_d",150,             60, {.param_int32=&encoder_L_d}, param_int32_readonly, NULL},
-            {3,"right_encode_d",150,            80, {.param_int32=&encoder_R_d}, param_int32_readonly, NULL},
-            {3,"left_encode_last",150,         100, {.param_int32=&encoder_L_last}, param_int32_readonly, NULL},
-            {3,"right_encode_last",150,        120, {.param_int32=&encoder_R_last}, param_int32_readonly, NULL},
-    {1, "element",  0,                  100, {.param_float=&default_float}, catlog, NULL},
-        {2, "element_onoff", 0,                  20, {.param_float=&default_float}, catlog, NULL},
-            {3, "crossl",    100,                20, {.param_int16=&roadelement_onoff.crossl}, on_off, NULL},
-            {3, "crossr",    100,                40, {.param_int16=&roadelement_onoff.crossr}, on_off, NULL},
-            {3, "crossm",    100,                60, {.param_int16=&roadelement_onoff.crossm}, on_off, NULL},
-            {3, "islandl",   100,                80, {.param_int16=&roadelement_onoff.islandl}, on_off, NULL},
-            {3, "islandR",   100,               100, {.param_int16=&roadelement_onoff.islandr}, on_off, NULL},
-            {3, "scurve",    100,               120, {.param_int16=&roadelement_onoff.scurve}, on_off, NULL},
-            {3, "speedup",   100,               140, {.param_int16=&roadelement_onoff.speedup}, on_off, NULL},
-            {3, "ramp",      100,               160, {.param_int16=&roadelement_onoff.ramp}, on_off, NULL},
-            {3, "obstacle",  100,               180, {.param_int16=&roadelement_onoff.obstacle}, on_off, NULL},
-        {2, "element_count",0,                  40, {.param_float=&default_float}, catlog, NULL},
-            {3, "straigh",  100,                20, {.param_int16=&roadelement_record.straigh}, param_int16_readonly, NULL},
-            {3, "crossm",    100,                40, {.param_int16=&roadelement_record.crossm}, param_int16_readonly, NULL},
-            {3, "crossl",    100,                60, {.param_int16=&roadelement_record.crossl}, param_int16_readonly, NULL},
-            {3, "crossr",    100,                80, {.param_int16=&roadelement_record.crossr}, param_int16_readonly, NULL},
-            {3, "islandl",   100,               100, {.param_int16=&roadelement_record.islandl}, param_int16_readonly, NULL},
-            {3, "islandr",   100,               120, {.param_int16=&roadelement_record.islandr}, param_int16_readonly, NULL},
-            {3, "scurve",    100,               140, {.param_int16=&roadelement_record.scurve}, param_int16_readonly, NULL},
-            {3, "curve",     100,               160, {.param_int16=&roadelement_record.curve}, param_int16_readonly, NULL},
-            {3, "speedup",   100,               180, {.param_int16=&roadelement_record.speedup}, param_int16_readonly, NULL},
-            {3, "ramp",      100,               200, {.param_int16=&roadelement_record.ramp}, param_int16_readonly, NULL},
-            {3, "obstacle",  100,               220, {.param_int16=&roadelement_record.obstacle}, param_int16_readonly, NULL},
-            {3, "blackprotect",100,             240, {.param_int16=&roadelement_record.blackprotect}, param_int16_readonly, NULL},
-            {3, "stall",     100,               260, {.param_int16=&roadelement_record.stall}, param_int16_readonly, NULL},
-            {3, "zebra",     100,               280, {.param_int16=&roadelement_record.zebra}, param_int16_readonly, NULL},
-        {2, "element_gothrough",0,              60, {.param_float=&default_float}, roadgothrough, NULL},
-        {2, "record_clear", 0,                  80, {.param_float=&default_float}, function, NULL},
+    // è°ƒè¯•èœå•
+    {1, "debug", 0, 80, {.param_float=&default_float}, catlog, NULL},
+        {2,"gyro_info", 0, 20, {.param_float=&default_float}, catlog, NULL},
+            {3,"pit_intg", 100, 20, {.param_int16=&pitch_angle_integr_read}, param_int16_readonly, NULL},
+            {3,"yaw_intg", 100, 40, {.param_int16=&yaw_angle_integr_read}, param_int16_readonly, NULL},
+            {3,"roll_intg", 100, 60, {.param_int16=&roll_angle_integr_read}, param_int16_readonly, NULL},
+            {3, "ROLL_angle",100, 80, {.param_float=&filtering_angle}, param_float_readonly, NULL},
+            {3,"raw_gyro_x", 100, 100, {.param_int16=&raw_gyro_x}, param_int16_readonly, NULL},
+            {3,"raw_gyro_y", 100, 120, {.param_int16=&raw_gyro_y}, param_int16_readonly, NULL},
+            {3,"raw_gyro_z", 100, 140, {.param_int16=&raw_gyro_z}, param_int16_readonly, NULL},
+            {3,"imu_gyro_x", 100, 160, {.param_int16=&imu660ra_gyro_x}, param_int16_readonly, NULL},
+            {3,"left_encode",150, 180, {.param_int32=&encoder_L}, param_int32_readonly, NULL},
+            {3,"right_encode",150, 200, {.param_int32=&encoder_R}, param_int32_readonly, NULL},
+        {2,"remote_info", 0, 40, {.param_float=&default_float}, catlog, NULL},
+            {3,"l_stick_UD", 150, 20, {.param_int16=&lora3a22_uart_transfer.joystick[1]}, param_int16_readonly, NULL},
+            {3,"l_stick_LR", 150, 40, {.param_int16=&lora3a22_uart_transfer.joystick[0]}, param_int16_readonly, NULL},
+            {3,"r_stick_UD", 150, 60, {.param_int16=&lora3a22_uart_transfer.joystick[3]}, param_int16_readonly, NULL},
+            {3,"r_stick_LR", 150, 80, {.param_int16=&lora3a22_uart_transfer.joystick[2]}, param_int16_readonly, NULL},
+            {3,"l_stickey", 150, 100, {.param_uint8=&lora3a22_uart_transfer.key[0]}, param_uint8_readonly, NULL},
+            {3,"r_stickey", 150, 120, {.param_uint8=&lora3a22_uart_transfer.key[1]}, param_uint8_readonly, NULL},
+            {3,"l_key", 150, 140, {.param_uint8=&lora3a22_uart_transfer.key[2]}, param_uint8_readonly, NULL},
+            {3,"r_key", 150, 160, {.param_uint8=&lora3a22_uart_transfer.key[3]}, param_uint8_readonly, NULL},
+            {3,"Lswitch_key1",150, 180, {.param_uint8=&lora3a22_uart_transfer.switch_key[0]}, param_uint8_readonly, NULL},
+            {3,"Lswitch_key2",150, 200, {.param_uint8=&lora3a22_uart_transfer.switch_key[1]}, param_uint8_readonly, NULL},
+            {3,"Rswitch_key1",150, 220, {.param_uint8=&lora3a22_uart_transfer.switch_key[2]}, param_uint8_readonly, NULL},
+            {3,"Rswitch_key2",150, 240, {.param_uint8=&lora3a22_uart_transfer.switch_key[3]}, param_uint8_readonly, NULL},
+        {2,"Encoder_info", 0, 60, {.param_float=&default_float}, catlog, NULL},
+            {3,"left_encode",150, 20, {.param_int32=&encoder_L}, param_int32_readonly, NULL},
+            {3,"right_encode",150, 40, {.param_int32=&encoder_R}, param_int32_readonly, NULL},
+            {3,"left_encode_d",150, 60, {.param_int32=&encoder_L_d}, param_int32_readonly, NULL},
+            {3,"right_encode_d",150, 80, {.param_int32=&encoder_R_d}, param_int32_readonly, NULL},
+            {3,"left_encode_last",150, 100, {.param_int32=&encoder_L_last}, param_int32_readonly, NULL},
+            {3,"right_encode_last",150, 120, {.param_int32=&encoder_R_last}, param_int32_readonly, NULL},
     
-    {1, "flash",              0,                 120, {.param_float=&default_float}, catlog, NULL},
-        {2, "code_load",    100,                 20, {.param_float=&default_float}, catlog, NULL},
-            {3, "load1",    100,                 20, {.param_float=&default_float}, confirm, NULL},
-            {3, "load2",    100,                 40, {.param_float=&default_float}, confirm, NULL},
-            {3, "load3",    100,                 60, {.param_float=&default_float}, confirm, NULL},
-            {3, "load4",    100,                 80, {.param_float=&default_float}, confirm, NULL},
-        {2, "flash_load",   100,                 40, {.param_float=&default_float}, catlog, NULL},
-            {3, "load1",    100,                 20, {.param_float=&default_float}, confirm, flash_load_config_1},
-            {3, "load2",    100,                 40, {.param_float=&default_float}, confirm, flash_load_config_2},
-            {3, "load3",    100,                 60, {.param_float=&default_float}, confirm, flash_load_config_3},
-            {3, "load4",    100,                 80, {.param_float=&default_float}, confirm, flash_load_config_4},
-            {3, "loaddefault",100,              100, {.param_float=&default_float}, confirm, flash_load_config_default},
-        {2, "flash_save",   100,                 60, {.param_float=&default_float}, catlog, NULL},
-            {3, "save1",    100,                 20, {.param_float=&default_float}, confirm, flash_save_config_1},
-            {3, "save2",    100,                 40, {.param_float=&default_float}, confirm, flash_save_config_2},
-            {3, "save3",    100,                 60, {.param_float=&default_float}, confirm, flash_save_config_3},
-            {3, "save4",    100,                 80, {.param_float=&default_float}, confirm, flash_save_config_4},
-        {2, "resetflash",   100,                 80, {.param_float=&default_float}, confirm, flash_reset},
+    // é“è·¯å…ƒç´ èœå•
+    {1, "element", 0, 100, {.param_float=&default_float}, catlog, NULL},
+        {2, "element_onoff", 0, 20, {.param_float=&default_float}, catlog, NULL},
+            {3, "crossl", 100, 20, {.param_int16=&roadelement_onoff.crossl}, on_off, NULL},
+            {3, "crossr", 100, 40, {.param_int16=&roadelement_onoff.crossr}, on_off, NULL},
+            {3, "crossm", 100, 60, {.param_int16=&roadelement_onoff.crossm}, on_off, NULL},
+            {3, "islandl", 100, 80, {.param_int16=&roadelement_onoff.islandl}, on_off, NULL},
+            {3, "islandR", 100, 100, {.param_int16=&roadelement_onoff.islandr}, on_off, NULL},
+            {3, "scurve", 100, 120, {.param_int16=&roadelement_onoff.scurve}, on_off, NULL},
+            {3, "speedup", 100, 140, {.param_int16=&roadelement_onoff.speedup}, on_off, NULL},
+            {3, "ramp", 100, 160, {.param_int16=&roadelement_onoff.ramp}, on_off, NULL},
+            {3, "obstacle", 100, 180, {.param_int16=&roadelement_onoff.obstacle}, on_off, NULL},
+        {2, "element_count",0, 40, {.param_float=&default_float}, catlog, NULL},
+            {3, "straigh", 100, 20, {.param_int16=&roadelement_record.straigh}, param_int16_readonly, NULL},
+            {3, "crossm", 100, 40, {.param_int16=&roadelement_record.crossm}, param_int16_readonly, NULL},
+            {3, "crossl", 100, 60, {.param_int16=&roadelement_record.crossl}, param_int16_readonly, NULL},
+            {3, "crossr", 100, 80, {.param_int16=&roadelement_record.crossr}, param_int16_readonly, NULL},
+            {3, "islandl", 100, 100, {.param_int16=&roadelement_record.islandl}, param_int16_readonly, NULL},
+            {3, "islandr", 100, 120, {.param_int16=&roadelement_record.islandr}, param_int16_readonly, NULL},
+            {3, "scurve", 100, 140, {.param_int16=&roadelement_record.scurve}, param_int16_readonly, NULL},
+            {3, "curve", 100, 160, {.param_int16=&roadelement_record.curve}, param_int16_readonly, NULL},
+            {3, "speedup", 100, 180, {.param_int16=&roadelement_record.speedup}, param_int16_readonly, NULL},
+            {3, "ramp", 100, 200, {.param_int16=&roadelement_record.ramp}, param_int16_readonly, NULL},
+            {3, "obstacle", 100, 220, {.param_int16=&roadelement_record.obstacle}, param_int16_readonly, NULL},
+            {3, "blackprotect",100, 240, {.param_int16=&roadelement_record.blackprotect}, param_int16_readonly, NULL},
+            {3, "stall", 100, 260, {.param_int16=&roadelement_record.stall}, param_int16_readonly, NULL},
+            {3, "zebra", 100, 280, {.param_int16=&roadelement_record.zebra}, param_int16_readonly, NULL},
+        {2, "element_gothrough",0, 60, {.param_float=&default_float}, roadgothrough, NULL},
+        {2, "record_clear", 0, 80, {.param_float=&default_float}, function, NULL},
     
-    {1, "setting",            0,                 140, {.param_float=&default_float}, catlog, NULL},
-    {1, "end",                0,                   0, {.param_float=&default_float}, catlog, NULL}
+    // Flashå­˜å‚¨èœå•
+    {1, "flash", 0, 120, {.param_float=&default_float}, catlog, NULL},
+        {2, "code_load", 100, 20, {.param_float=&default_float}, catlog, NULL},
+            {3, "load1", 100, 20, {.param_float=&default_float}, confirm, NULL},
+            {3, "load2", 100, 40, {.param_float=&default_float}, confirm, NULL},
+            {3, "load3", 100, 60, {.param_float=&default_float}, confirm, NULL},
+            {3, "load4", 100, 80, {.param_float=&default_float}, confirm, NULL},
+        {2, "flash_load", 100, 40, {.param_float=&default_float}, catlog, NULL},
+            {3, "load1", 100, 20, {.param_float=&default_float}, confirm, flash_load_config_1},
+            {3, "load2", 100, 40, {.param_float=&default_float}, confirm, flash_load_config_2},
+            {3, "load3", 100, 60, {.param_float=&default_float}, confirm, flash_load_config_3},
+            {3, "load4", 100, 80, {.param_float=&default_float}, confirm, flash_load_config_4},
+            {3, "loaddefault",100, 100, {.param_float=&default_float}, confirm, flash_load_config_default},
+        {2, "flash_save", 100, 60, {.param_float=&default_float}, catlog, NULL},
+            {3, "save1", 100, 20, {.param_float=&default_float}, confirm, flash_save_config_1},
+            {3, "save2", 100, 40, {.param_float=&default_float}, confirm, flash_save_config_2},
+            {3, "save3", 100, 60, {.param_float=&default_float}, confirm, flash_save_config_3},
+            {3, "save4", 100, 80, {.param_float=&default_float}, confirm, flash_save_config_4},
+        {2, "resetflash", 100, 80, {.param_float=&default_float}, confirm, flash_reset},
+    
+    // è®¾ç½®èœå•
+    {1, "setting", 0, 140, {.param_float=&default_float}, catlog, NULL},
+    {1, "end", 0, 0, {.param_float=&default_float}, catlog, NULL}
 };
 
+enum_Condition condition = NOACTION; // èœå•è¡Œä¸ºåˆå§‹åŒ–ä¸ºæ— åŠ¨ä½œ
 
-
-enum_Condition condition = NOACTION;//²Ëµ¥ĞĞÎª³õÊ¼»¯
-/*
-------------------------------------------------------------------------------------------------------------------
-º¯Êı¼ò½é    ³õÊ¼»¯ÆÁÄ» 
-²ÎÊıËµÃ÷     ÎŞ
-·µ»Ø²ÎÊı     ÎŞ
-Ê¹ÓÃÊ¾Àı     Ö±½Óµ÷ÓÃ
-±¸×¢ĞÅÏ¢     ÎŞ
--------------------------------------------------------------------------------------------------------------------
-*/
+// åˆå§‹åŒ–èœå•å±å¹•
 void Menu_Screen_Init(void)
 {
-    ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //ÉèÖÃÎª°×µ×ºÚ×Ö
-    ips200_init(IPS200_TYPE_SPI);    //ÉèÖÃÍ¨ĞÅÄ£Ê½ÎªSPIÍ¨ĞÅ
+    ips200_set_color(RGB565_WHITE, RGB565_BLACK);    // è®¾ç½®ä¸ºç™½åº•é»‘å­—
+    ips200_init(IPS200_TYPE_SPI);    // åˆå§‹åŒ–é€šä¿¡æ¨¡å¼ä¸ºSPIé€šä¿¡
 }
-/*
-------------------------------------------------------------------------------------------------------------------
-º¯Êı¼ò½é     ¿ìËÙÏÔÊ¾
-²ÎÊıËµÃ÷     X1Îª×Ö·û´®ÏÔÊ¾ÆğÊ¼Î»
-                X2ÎªÊıÖµÏÔÊ¾ÆğÊ¼Î»
-                YÎªÏÔÊ¾ĞĞ
-                typeÎªÏÔÊ¾ÀàĞÍ
-                *aÎªÕûĞÍ²ÎÊıµØÖ·
-                *pÎª¸¡µãĞÍ²ÎÊıµØÖ·
-                strÎª²ÎÊıÃû×Ö
-·µ»Ø²ÎÊı     ÎŞ
-Ê¹ÓÃÊ¾Àı     display_fast(0, 100, 0, param_int16, &default_int,  "default");
-±¸×¢ĞÅÏ¢     ÔÚ0£¬0Î»ÖÃÏÔÊ¾default²ÎÊıÃû£¬ÔÚ0ĞĞ100ÁĞÏÔÊ¾default_intÕûĞÍ²ÎÊıÖµ
--------------------------------------------------------------------------------------------------------------------
-*/
 
-union_param fast_show[7]={
+union_param fast_show[7]=   //å¿«é€Ÿæ˜¾ç¤ºæ•°æ®å­˜å‚¨
+{
 {.param_float=&filtering_angle},
-{.param_float=&PID_steer.out},
+{.param_float=&default_float},
 {.param_float=&default_float},
 {.param_float=&default_float},
 {.param_float=&default_float},
@@ -463,6 +465,7 @@ union_param fast_show[7]={
 {.param_float=&default_float}
 };
 
+// å¿«é€Ÿæ˜¾ç¤ºå‡½æ•°
 void display_fast(int16 X1,int16 X2,int16 Y,enum_function type,union_param Union_param,char str[20])
 {
     ips200_set_color(RGB565_WHITE, RGB565_BLACK);
@@ -496,75 +499,161 @@ void display_fast(int16 X1,int16 X2,int16 Y,enum_function type,union_param Union
     default:
         break;
     }
-
 }
+
+// å¿«é€Ÿè¾“å‡ºå±å¹•ä¿¡æ¯
 void outputscreen_fast()
 {
-    if(show_flag==false&&current_state==1&&menu_Mode==normal)//Èç¹ûÍ¼ÏñÏÔÊ¾Ã»¿ªÇÒÔÚ¶¥¼¶²Ëµ¥
+    if(show_flag==false&&current_state==1&&menu_Mode==normal)// å¦‚æœå›¾åƒæ˜¾ç¤ºæ²¡æœ‰å¼€å¯ä¸”åœ¨é¡¶å±‚èœå•
     {    
         ips200_set_color(RGB565_YELLOW, RGB565_BLACK);
         ips200_show_string(0,160,"fast_show");
         ips200_set_color(RGB565_WHITE, RGB565_BLACK);
-        //ÒªÌí¼Ó¿ìËÙÏÔÊ¾ÇëÔÚÕâÀïÔö¼Ó
+        // è¦æ·»åŠ æ›´å¤šæ˜¾ç¤ºå†…å®¹å¯ä»¥åœ¨è¿™é‡Œæ·»åŠ 
 
         display_fast(0, 60, 180, param_float,fast_show[0] , "ROLL_angle");
         display_fast(0, 160, 200, param_float,fast_show[1] , "STEER_out");
     }
-
-
 }
-/*
-------------------------------------------------------------------------------------------------------------------
-º¯Êı¼ò½é     ÆÁÄ»ÏÔÊ¾
-²ÎÊıËµÃ÷     ÎŞ
-·µ»Ø²ÎÊı     ÎŞ
-Ê¹ÓÃÊ¾Àı     Ö±½Óµ÷ÓÃ
-±¸×¢ĞÅÏ¢     ÎŞ
--------------------------------------------------------------------------------------------------------------------
-*/
+
+// è¾…åŠ©å‡½æ•°ï¼šå°†å‚æ•°è½¬æ¢ä¸ºint32ç±»å‹ç”¨äºæ˜¾ç¤º
+int32 convert_param_to_int32(MENU* menu_item)
+{
+    switch (menu_item->type)
+    {
+    case param_int8:
+    case param_int8_readonly:
+        return (int32)(*menu_item->param_union.param_int8);
+    case param_uint8:
+    case param_uint8_readonly:
+        return (int32)(*menu_item->param_union.param_uint8);
+    case param_int16:
+    case param_int16_readonly:
+        return (int32)(*menu_item->param_union.param_int16);
+    case param_uint16:
+    case param_uint16_readonly:
+        return (int32)(*menu_item->param_union.param_uint16);
+    case param_int32:
+    case param_int32_readonly:
+        return *menu_item->param_union.param_int32;
+    case param_uint32:
+    case param_uint32_readonly:
+        return (int32)(*menu_item->param_union.param_uint32);
+    default:
+        return 0;
+    }
+}
+
+// è¾…åŠ©å‡½æ•°ï¼šæ ¹æ®å‚æ•°ç±»å‹è°ƒæ•´å‚æ•°å€¼
+void adjust_param_value(MENU* menu_item, int16 step_int, float step_float, bool increase)
+{
+    int16 multiplier = increase ? 1 : -1;
+
+    switch (menu_item->type)
+    {
+    case param_int8:
+        *menu_item->param_union.param_int8 += multiplier * step_int;
+        break;
+    case param_uint8:
+        *menu_item->param_union.param_uint8 += multiplier * step_int;
+        break;
+    case param_int16:
+        *menu_item->param_union.param_int16 += multiplier * step_int;
+        break;
+    case param_uint16:
+        *menu_item->param_union.param_uint16 += multiplier * step_int;
+        break;
+    case param_int32:
+        *menu_item->param_union.param_int32 += multiplier * step_int;
+        break;
+    case param_uint32:
+        *menu_item->param_union.param_uint32 += multiplier * step_int;
+        break;
+    case param_float:
+        *menu_item->param_union.param_float += multiplier * step_float;
+        break;
+    case param_double:
+        *menu_item->param_union.param_double += multiplier * step_float;
+        break;
+    default:
+        break;
+    }
+}
+
+// è¾…åŠ©å‡½æ•°ï¼šæ˜¾ç¤ºå‚æ•°å€¼
+void display_param_value(MENU* menu_item)
+{
+    if(menu_item->type == param_float || menu_item->type == param_float_readonly)
+    {
+        ips200_show_float(menu_item->x, menu_item->y, *menu_item->param_union.param_float, 4, 3);
+    }
+    else if(menu_item->type >= param_int8 && menu_item->type <= param_uint32_readonly)
+    {
+        int32 temp = convert_param_to_int32(menu_item);
+        ips200_show_int(menu_item->x, menu_item->y, temp, 5);
+    }
+    else if(menu_item->type == on_off || menu_item->type == chose1)
+    {
+        if (*menu_item->param_union.param_uint8)
+        {
+            ips200_show_string(menu_item->x, menu_item->y, "ON ");
+        }
+        else
+        {
+            ips200_show_string(menu_item->x, menu_item->y, "OFF");
+        }
+    }
+}
+
+// å±å¹•è¾“å‡ºå‡½æ•°
 void output(void) 
 {
     int16 target_priority=current_state-1;
-    outputscreen_fast(); //¿ìËÙÏÔÊ¾
-    if(menu_Mode==edit_int)     //ÕûĞÍ±à¼­Ä£Ê½ÏÂ
+    outputscreen_fast(); // å¿«é€Ÿæ˜¾ç¤º
+    
+    // æ ¹æ®èœå•æ¨¡å¼æ˜¾ç¤ºä¸åŒå†…å®¹
+    if(menu_Mode==edit_int)     // æ•´å‹ç¼–è¾‘æ¨¡å¼
     {
-        ips200_set_color(RGB565_BROWN, RGB565_BLACK);    //ÉèÖÃÎª×ØÉ«µ×ºÚ×Ö
+        ips200_set_color(RGB565_BROWN, RGB565_BLACK);    // è®¾ç½®ä¸ºæ£•è‰²èƒŒæ™¯
         ips200_show_string(100,0,"len_i");
         ips200_show_int(160,0,stepper_int[stepper_p_int],3);
-        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //ÉèÖÃÎª×ØÉ«µ×ºÚ×Ö
-
+        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    // æ¢å¤ä¸ºç™½è‰²èƒŒæ™¯
     }
-    if(menu_Mode==edit_float)       //¸¡µã±à¼­Ä£Ê½ÏÂ
+    if(menu_Mode==edit_float)       // æµ®ç‚¹ç¼–è¾‘æ¨¡å¼
     {
-        ips200_set_color(RGB565_BROWN, RGB565_BLACK);    //ÉèÖÃÎª×ØÉ«µ×ºÚ×Ö
+        ips200_set_color(RGB565_BROWN, RGB565_BLACK);    // è®¾ç½®ä¸ºæ£•è‰²èƒŒæ™¯
         ips200_show_string(100,0,"len_f");
         ips200_show_float(160,0,stepper_float[stepper_p_float],3,3);
-        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //ÉèÖÃÎª×ØÉ«µ×ºÚ×Ö
-
+        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    // æ¢å¤ä¸ºç™½è‰²èƒŒæ™¯
     }
-    if(menu_Mode==edit_confirm)     //È·ÈÏÄ£Ê½ÏÂ
+    if(menu_Mode==edit_confirm)     // ç¡®è®¤æ¨¡å¼
     {
         ips200_set_color(RGB565_ORANGE,RGB565_BLACK);
         ips200_show_string(20,0,"WARNING!WARNING!WARNING!");
         ips200_show_string(20,160,"PRESS BOTTON3 TO CONFIRM");
         ips200_show_string(20,300,"WARNING!WARNING!WARNING!");
-        return;                     //ÌáÇ°ÍË³ö
+        return;                     // ç›´æ¥è¿”å›
     }
-    if(menu_Mode==special_show_element1)//ÏÔÊ¾¾­¹ıÔªËØÄ£Ê½ÏÂ
+    if(menu_Mode==special_show_element1)// æ˜¾ç¤ºé“è·¯å…ƒç´ æ¨¡å¼
     {
+        ips200_clear(); // æ¸…å±
         show_element();
         return;
     }
-    if(menu_Mode==stop_debug_display)//Í£Ö¹µ÷ÊÔÏÔÊ¾Ä£Ê½ÏÂ
+    if(menu_Mode==stop_debug_display)// åœæ­¢è°ƒè¯•æ˜¾ç¤ºæ¨¡å¼
     {
         show_stopreason();
-        return;                     //ÌáÇ°ÍË³ö
+        return;                     // ç›´æ¥è¿”å›
     }
-    if(target_priority==0)         //¶¥¼¶²Ëµ¥
+    
+    // æ ¹æ®å½“å‰èœå•å±‚çº§æ˜¾ç¤ºä¸åŒå†…å®¹
+    if(target_priority==0)         // é¡¶å±‚èœå•
     {
-        ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //ÉèÖÃÎªÀ¶É«ºÚµ×
-        ips200_show_string(0,0,"menu");//Êä³ö±êÌâ×Ö·û
-        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //ÉèÖÃÎª°×É«ºÚµ×
+        ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    // è®¾ç½®ä¸ºè“è‰²èƒŒæ™¯
+        ips200_show_string(0,0,"menu");// æ˜¾ç¤ºèœå•æ ‡é¢˜
+        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    // æ¢å¤ä¸ºç™½è‰²èƒŒæ™¯
+        
+        // éå†èœå•é¡¹
         for(int i=0;strcmp(menu[i].str, "end") != 0;i++)
         {
             if(menu[i].priority==1)
@@ -573,15 +662,15 @@ void output(void)
                 {
                     if(menu_Mode==normal)
                     {
-                        ips200_show_string(0,menu[i].y,"->");//Êä³öÖ¸Ïò×Ö·û
+                        ips200_show_string(0,menu[i].y,"->");// æ˜¾ç¤ºæŒ‡é’ˆ
                         ips200_show_string(20,menu[i].y,menu[i].str);
                     }
                     else if(menu_Mode==edit_int||menu_Mode==edit_float)
                     {
-                        ips200_set_color(RGB565_MAGENTA, RGB565_BLACK);    //ÉèÖÃÎªºìÉ«ºÚµ×
-                        ips200_show_string(0,menu[i].y,"->");//Êä³öÖ¸Ïò×Ö·û
+                        ips200_set_color(RGB565_MAGENTA, RGB565_BLACK);    // è®¾ç½®ä¸ºç´«è‰²ç”»ç¬”
+                        ips200_show_string(0,menu[i].y,"->");// æ˜¾ç¤ºæŒ‡é’ˆ
                         ips200_show_string(20,menu[i].y,menu[i].str);
-                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //ÉèÖÃÎª×ØÉ«µ×ºÚ×Ö
+                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    // æ¢å¤ä¸ºç™½è‰²ç”»ç¬”
                     }
                 }
                 else
@@ -591,415 +680,221 @@ void output(void)
              }
         }
     }
-    else if(target_priority!=0)//·Ç¶¥¼¶²Ëµ¥
+    else if(target_priority!=0)// éé¡¶å±‚èœå•
     {
-        ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    //ÉèÖÃÎªÂÌÉ«ºÚµ×
-        ips200_show_string(0,0,menu[p_nearby].str);//Êä³öÉÏ¼¶×Ö·û
-        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //ÉèÖÃÎªÂÌÉ«ºÚµ×
+        ips200_set_color(RGB565_DustyBlue, RGB565_BLACK);    // è®¾ç½®ä¸ºè“è‰²èƒŒæ™¯
+        ips200_show_string(0,0,menu[p_nearby].str);// æ˜¾ç¤ºä¸Šçº§èœå•æ ‡é¢˜
+        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    // æ¢å¤ä¸ºç™½è‰²èƒŒæ™¯
 
+        // éå†èœå•é¡¹
         for(int i=p_nearby+1;menu[i].priority!=target_priority;i++)
         {
             if(menu[i].priority==current_state)
             {
                 if(i==p)
                 {
-                    if(menu_Mode==normal)       //ÆÕÍ¨ÏÔÊ¾£¬½ö½öÏÔÊ¾¼ıÍ·
+                    if(menu_Mode==normal)       // æ™®é€šæ˜¾ç¤ºæ¨¡å¼ï¼Œæ˜¾ç¤ºç®­å¤´
                     {
-                        ips200_show_string(0,menu[i].y,"->");//Êä³öÖ¸Ïò×Ö·û
+                        ips200_show_string(0,menu[i].y,"->");// æ˜¾ç¤ºæŒ‡é’ˆ
                         ips200_show_string(20,menu[i].y,menu[i].str);
                     }
-                    else if(menu_Mode==edit_int||menu_Mode==edit_float) //±à¼­Ä£Ê½ÏÂ£¬¸Ä±äÑÕÉ«    
+                    else if(menu_Mode==edit_int||menu_Mode==edit_float) // ç¼–è¾‘æ¨¡å¼ä¸‹ï¼Œæ”¹å˜é¢œè‰²
                     {
-                        ips200_set_color(RGB565_MAGENTA, RGB565_BLACK);//ÉèÖÃÎªºìÉ«ºÚµ×
-                        ips200_show_string(0,menu[i].y,"->");//Êä³öÖ¸Ïò×Ö·û
+                        ips200_set_color(RGB565_MAGENTA, RGB565_BLACK);// è®¾ç½®ä¸ºç´«è‰²èƒŒæ™¯
+                        ips200_show_string(0,menu[i].y,"->");// æ˜¾ç¤ºæŒ‡é’ˆ
                         ips200_show_string(20,menu[i].y,menu[i].str);
-                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);//ÉèÖÃÎªºÚµ×°××Ö
+                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);// æ¢å¤ä¸ºç™½åº•é»‘å­—
                     }
-                    if(menu[i].type==param_float||menu[i].type==param_float_readonly)
-                    {
-                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].param_union.param_float,4,3);
-                    }
-                    else if(menu[i].type>=param_int8&&menu[i].type<=param_uint32_readonly)
-                    {
-                        int32 temp;
-                        switch (menu[i].type)
-                        {
-                        case param_int8:
-                            temp = (int32)(*menu[i].param_union.param_int8);
-                            break;
-                        case param_uint8:
-                            temp = (int32)(*menu[i].param_union.param_uint8);
-                            break;
-                        case param_int16:
-                            temp = (int32)(*menu[i].param_union.param_int16);   
-                            break;
-                        case param_uint16:
-                            temp = (int32)(*menu[i].param_union.param_uint16);
-                            break;
-                        case param_int32:
-                            temp = *menu[i].param_union.param_int32;
-                            break;
-                        case param_uint32:
-                            temp = (int32)(*menu[i].param_union.param_uint32);
-                            break;
-                        case param_uint8_readonly:
-                            temp = (int32)(*menu[i].param_union.param_uint8);
-                            break;
-                        case param_int8_readonly:
-                            temp = (int32)(*menu[i].param_union.param_int8);
-                            break;
-                        case param_uint16_readonly:
-                            temp = (int32)(*menu[i].param_union.param_uint16);
-                            break;
-                        case param_int16_readonly:
-                            temp = (int32)(*menu[i].param_union.param_int16);   
-                            break;
-                        case param_int32_readonly:
-                            temp = *menu[i].param_union.param_int32;    
-                            break;
-                        case param_uint32_readonly: 
-                            temp = (int32)(*menu[i].param_union.param_uint32);
-                            break;
-
-                                
-                        default:
-                            break;
-                        }
-                       ips200_show_int(menu[i].x,menu[i].y,temp,5);
-                    }
-                    else if(menu[i].type==on_off||menu[i].type==chose1)
-                    {
-                        ips200_set_color(RGB565_ORANGE, RGB565_BLACK);    //ÉèÖÃÎªºìÉ«ºÚµ×
-                        if (*menu[i].param_union.param_uint8)
-                        {
-                            ips200_show_string(menu[i].x,menu[i].y,"ON");
-
-                        }
-                        else
-                        {
-                            ips200_show_string(menu[i].x,menu[i].y,"OFF");
-                        }
-                        ips200_set_color(RGB565_WHITE, RGB565_BLACK);    //ÉèÖÃÎªºÚµ×°××Ö
-
-                    }
-
+                    // æ˜¾ç¤ºå‚æ•°å€¼
+                    display_param_value(&menu[i]);
                 }
                 else
                 {
                     ips200_show_string(20,menu[i].y,menu[i].str);
-                    if(menu[i].type==param_float||menu[i].type==param_float_readonly)
-                    {
-                       ips200_show_float(menu[i].x,menu[i].y,*menu[i].param_union.param_float,4,3);
-                    }
-                    else if(menu[i].type>=param_int8&&menu[i].type<=param_uint32_readonly)
-                    {
-                        int32 temp;
-                        switch (menu[i].type)
-                        {
-                        case param_int8:
-                            temp = (int32)(*menu[i].param_union.param_int8);
-                            break;
-                        case param_uint8:
-                            temp = (int32)(*menu[i].param_union.param_uint8);
-                            break;
-                        case param_int16:
-                            temp = (int32)(*menu[i].param_union.param_int16);   
-                            break;
-                        case param_uint16:
-                            temp = (int32)(*menu[i].param_union.param_uint16);
-                            break;
-                        case param_int32:
-                            temp = *menu[i].param_union.param_int32;
-                            break;
-                        case param_uint32:
-                            temp = (int32)(*menu[i].param_union.param_uint32);
-                            break;
-                        case param_uint8_readonly:
-                            temp = (int32)(*menu[i].param_union.param_uint8);
-                            break;
-                        case param_int8_readonly:
-                            temp = (int32)(*menu[i].param_union.param_int8);
-                            break;
-                        case param_uint16_readonly:
-                            temp = (int32)(*menu[i].param_union.param_uint16);
-                            break;
-                        case param_int16_readonly:
-                            temp = (int32)(*menu[i].param_union.param_int16);
-                            break;
-                        case param_int32_readonly:
-                            temp = *menu[i].param_union.param_int32;    
-                            break;
-                        default:
-                            break;
-                        }
-                       ips200_show_int(menu[i].x,menu[i].y,temp,5);
-                    }
-                    else if(menu[i].type==on_off||menu[i].type==chose1)
-                    {
-                        if (*menu[i].param_union.param_uint8)
-                        {
-                            ips200_show_string(menu[i].x,menu[i].y,"ON");
-
-                        }
-                        else
-                        {
-                            ips200_show_string(menu[i].x,menu[i].y,"OFF");
-                        }
-                        
-                    }
+                    // æ˜¾ç¤ºå‚æ•°å€¼
+                    display_param_value(&menu[i]);
                 }
-            } 
+            }
         }
     }
-
 }
 
-/*
-------------------------------------------------------------------------------------------------------------------
-º¯Êı¼ò½é     ²Ëµ¥¿ØÖÆ
-²ÎÊıËµÃ÷     ÎŞ
-·µ»Ø²ÎÊı     ÎŞ
-Ê¹ÓÃÊ¾Àı     Ö±½Óµ÷ÓÃ
-±¸×¢ĞÅÏ¢     
--------------------------------------------------------------------------------------------------------------------
-*/
+// èœå•æ§åˆ¶å‡½æ•°
 void Menu_control(void)
 {
-        output();
-        status=0;
-        condition = (enum_Condition)input; 
-        if(input)
+    output(); // è¾“å‡ºå±å¹•å†…å®¹
+    status=0;
+    condition = (enum_Condition)input; 
+    // if(input)
+    // {
+    //     ips200_clear(); // æ¸…å±
+    // }
+    
+    // æ ¹æ®è¾“å…¥æ¡ä»¶æ‰§è¡Œä¸åŒæ“ä½œ
+    switch (condition)
+    {
+    case NOACTION:
+        break;
+        
+    case DOWN:
+        if(menu_Mode==edit_int)  // æ•´å‹ç¼–è¾‘æ¨¡å¼
         {
-            ips200_clear();
+            adjust_param_value(&menu[p], stepper_int[stepper_p_int], stepper_float[stepper_p_float], false);
+            return;
         }
-        switch (condition)
+        if(menu_Mode==edit_float) // æµ®ç‚¹ç¼–è¾‘æ¨¡å¼
         {
-        case NOACTION:
-                break;
-            
-        case DOWN:
-            if(menu_Mode==edit_int)  //ÕûĞÍ±à¼­Ä£Ê½ÏÂ
+            adjust_param_value(&menu[p], stepper_int[stepper_p_int], stepper_float[stepper_p_float], false);
+            return;
+        }
+        // å‘ä¸‹ç§»åŠ¨èœå•æŒ‡é’ˆ
+        if (strcmp(menu[p].str, "end") != 0&&menu[p+1].priority>=menu[p].priority)
+        {
+            ips200_show_string(0,menu[p].y,"  ");// æ¸…é™¤åŸæŒ‡é’ˆä½ç½®
+            int temp=menu[p].priority;
+            uint8 old_p=p;
+            p++;
+            while(menu[p].priority!=temp && strcmp(menu[p+1].str, "end") != 0)
             {
-                switch (menu[p].type)
-                {
-                case param_int8:
-                    *menu[p].param_union.param_int8-=stepper_int[stepper_p_int];
-                    break;
-                case param_uint8:
-                    *menu[p].param_union.param_uint8-=stepper_int[stepper_p_int];
-                    break;
-                case param_int16:
-                    *menu[p].param_union.param_int16-=stepper_int[stepper_p_int];
-                    break;
-                case param_uint16:
-                    *menu[p].param_union.param_uint16-=stepper_int[stepper_p_int];
-                    break;
-                case param_int32:
-                    *menu[p].param_union.param_int32-=stepper_int[stepper_p_int];
-                    break;
-                case param_uint32:
-                    *menu[p].param_union.param_uint32-=stepper_int[stepper_p_int];
-                    break;
-                default:
-                    break;
-                }
-                // *menu[p].param_union.param_int16-=stepper_int[stepper_p_int];
-                return;
-            }
-            if(menu_Mode==edit_float)
-            { 
-                switch (menu[p].type)
-                {
-                case param_float:
-                    *menu[p].param_union.param_float-=stepper_float[stepper_p_float];
-                    break;
-                case param_double:
-                    *menu[p].param_union.param_double-=stepper_float[stepper_p_float];
-                    break;
-                
-                default:
-                    break;
-                }
-                return;
-            }
-            if (strcmp(menu[p].str, "end") != 0&&menu[p+1].priority>=menu[p].priority)        //»»²Ëµ¥µÈ¼¶(¶ÁÕß²»Òª¶¯)
-
-            {
-                int temp=menu[p].priority;
-                uint8 old_p=p;
                 p++;
-                while(menu[p].priority!=temp && strcmp(menu[p+1].str, "end") != 0)
+                if(menu[p].priority<temp)
                 {
-                    p++;
-                    if(menu[p].priority<temp)
-                    {
-                        p=old_p;    //»Øµ½Ô­Î»ÖÃ
-                        ips200_show_string(0,180,"endorstart");
-
-                        break;
-                    }
-                } 
-                if(strcmp(menu[p].str,"end")==0)
-                {
-                    p=old_p;    //»Øµ½Ô­Î»ÖÃ
+                    p=old_p;    // å›åˆ°åŸä½
                     ips200_show_string(0,180,"endorstart");
-
                     break;
                 }
-            }
-            else
+            } 
+            if(strcmp(menu[p].str,"end")==0)
             {
+                p=old_p;    // å›åˆ°åŸä½
                 ips200_show_string(0,180,"endorstart");
-            }
-            break;
-        case UP:
-        //Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  
-            if(menu_Mode==edit_int)         //ÕûĞÍ±à¼­Ä£Ê½ÏÂ,°üº¬ËùÓĞÕûĞÍÊı¾İÀàĞÍ
-            {
-                switch (menu[p].type)
-                {
-                case param_int8:
-                    *menu[p].param_union.param_int8+=stepper_int[stepper_p_int];
-                    break;
-                case param_uint8:
-                    *menu[p].param_union.param_uint8+=stepper_int[stepper_p_int];
-                    break;
-                case param_int16:
-                    *menu[p].param_union.param_int16+=stepper_int[stepper_p_int];
-                    break;
-                case param_uint16:
-                    *menu[p].param_union.param_uint16+=stepper_int[stepper_p_int];
-                    break;
-                case param_int32:
-                    *menu[p].param_union.param_int32+=stepper_int[stepper_p_int];
-                    break;
-                case param_uint32:
-                    *menu[p].param_union.param_uint32+=stepper_int[stepper_p_int];
-                    break;
-                default:
-                    break;
-                }
-                return;
-            }
-            if(menu_Mode==edit_float)       //¸¡µã±à¼­Ä£Ê½ÏÂ,°üº¬ËùÓĞ¸¡µãÊı¾İÀàĞÍ
-            { 
-                switch (menu[p].type)
-                {
-                case param_float:
-                    *menu[p].param_union.param_float+=stepper_float[stepper_p_float];
-                    break;
-                case param_double:
-                    *menu[p].param_union.param_double+=stepper_float[stepper_p_float];
-                    break;
-                
-                default:
-                    break;
-                }
-                return;
-            }
-        //Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  Ôö¼õ¹¦ÄÜÊµÏÖ  
-            if(p!=0&&menu[p-1].priority>=menu[p].priority)      //»»²Ëµ¥µÈ¼¶(¶ÁÕß²»Òª¶¯)
-            {
-                int temp=menu[p].priority;
-                p--;
-                while (menu[p].priority!=temp){p--;}
-            }
-            else
-            {
-                ips200_show_string(0,180,"endorstart");
-            }
-             
-
-            break;
-        case CONFIRM:
-        //»»²Ëµ¥µÈ¼¶(¶ÁÕß²»Òª¶¯)
-            if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0&&menu[p].type==catlog)       //×ÓÄ¿Â¼Çé¿ö
-            {
-                current_state++;
-                p_nearby=p;
-                p++;
                 break;
             }
-        //²Ëµ¥Ä£Ê½Çé¿ö
-            if(menu_Mode==edit_int)                         //ÕûĞÍ±à¼­Ä£Ê½ÏÂ
-            {
-                stepper_p_int=(stepper_p_int+1)%5;
-                break;
-            }
-            if(menu_Mode==edit_float)                       //¸¡µã±à¼­Ä£Ê½ÏÂ
-            {
-                stepper_p_float=(stepper_p_float+1)%6;
-                break;
-            }
-            if(menu_Mode==edit_confirm)                     //È·ÈÏÄ£Ê½ÏÂ
-            {
-                ips200_clear();                             //ÇåÆÁ
-                menu[p].Operate_default();
-                menu_Mode=normal;
-                break;
-            }
-        //²Ëµ¥ÖÖÀàÇé¿ö
-            if(menu[p].type==param_float||menu[p].type==param_double)                   //²Ëµ¥²ÎÊıÇé¿ö                      
-            {
-                menu_Mode=edit_float;
-                break;
-                //½øÈë¸¡µãÊı±à¼­Ä£Ê½
-            }
-            if(menu[p].type==param_int16||menu[p].type==param_int32
-                ||menu[p].type==param_int8||menu[p].type==param_uint16
-                ||menu[p].type==param_uint32||menu[p].type==param_uint8)                 //²Ëµ¥²ÎÊıÇé¿ö
-            {
-                menu_Mode=edit_int;
-                break;
-                //½øÈëÕûĞÍ±à¼­Ä£Ê½
-            }
-            if (menu[p].type==confirm)                  //È·ÈÏÇé¿ö
-            {
-                menu_Mode=edit_confirm;
-                break;
-            }
-            if(menu[p].type==on_off)                    //¿ª¹ØÇé¿ö
-            {
-                *menu[p].param_union.param_int16=1-*menu[p].param_union.param_int16;
-                break;
-            }
-            if(menu[p].type==function)                  //º¯ÊıÇé¿ö
-            {
-                menu[p].Operate_default();
-                break;
-            }
-            if(menu[p].type==roadgothrough)             //ÈüµÀÔªËØÍ¨¹ıÇé¿ö
-            {
-                menu_Mode=special_show_element1;        //½øÈëÏÔÊ¾¾­¹ıÔªËØÄ£Ê½
-                break;
-            }
-            if(menu[p].type==param_float_readonly||menu[p].type==param_int16_readonly
-                ||menu[p].type==param_int32_readonly||menu[p].type==param_uint16_readonly
-                ||menu[p].type==param_uint32_readonly||menu[p].type==param_double_readonly
-                ||menu[p].type==param_int8_readonly||menu[p].type==param_uint8_readonly)        //Ö»¶Á²ÎÊıÇé¿ö
-            {
-                ips200_show_string(0,180,"error_readonly");
-            }
-            if(menu[p].type==chose1)        //Í¬Ò»¸¸¼¶ÏÂÍ¬µÈ¼¶Í¬ÖÖÀàÖ»Ñ¡Ò»¸ö
-            {
-                for(int i=p_nearby+1;menu[i].priority!=current_state-1;i++)
-                {
-                    if(menu[i].priority==current_state&&menu[i].type==chose1&&i!=p)
-                    {
-                        *menu[i].param_union.param_uint8=0;
-                    }
-                    if(i==p)
-                    {
-                        *menu[p].param_union.param_uint8=1;
-                    }
-                }
-                break;
-            }
-            break;
-        case BACK:
-        if(menu_Mode==edit_float||menu_Mode==edit_confirm||menu_Mode==edit_int
-        ||menu_Mode==special_show_element1||menu_Mode==stop_debug_display) //±à¼­Ä£Ê½ÏÂ°´·µ»Ø¼üÍË³ö±à¼­Ä£Ê½
+        }
+        else
         {
+            ips200_show_string(0,180,"endorstart");
+        }
+        break;
+        
+    case UP:
+        if(menu_Mode==edit_int)         // æ•´å‹ç¼–è¾‘æ¨¡å¼ï¼Œå¢åŠ å‚æ•°å€¼
+        {
+            adjust_param_value(&menu[p], stepper_int[stepper_p_int], stepper_float[stepper_p_float], true);
+            return;
+        }
+        if(menu_Mode==edit_float)       // æµ®ç‚¹ç¼–è¾‘æ¨¡å¼ï¼Œå¢åŠ å‚æ•°å€¼
+        {
+            adjust_param_value(&menu[p], stepper_int[stepper_p_int], stepper_float[stepper_p_float], true);
+            return;
+        }
+        
+        // å‘ä¸Šç§»åŠ¨èœå•æŒ‡é’ˆ
+        if(p!=0&&menu[p-1].priority>=menu[p].priority)
+        {
+            ips200_show_string(0,menu[p].y,"  ");// æ¸…é™¤åŸæŒ‡é’ˆä½ç½®
+            int temp=menu[p].priority;
+            p--;
+            while (menu[p].priority!=temp){p--;}
+        }
+        else
+        {
+            ips200_show_string(0,180,"endorstart");
+        }
+        break;
+        
+    case CONFIRM:
+        // è¿›å…¥å­èœå•
+        if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0&&menu[p].type==catlog)
+        {
+            ips200_clear();                             // æ¸…å±
+            current_state++;
+            p_nearby=p;
+            p++;
+            break;
+        }
+        
+        // èœå•æ¨¡å¼åˆ‡æ¢
+        if(menu_Mode==edit_int)                         // æ•´å‹ç¼–è¾‘æ¨¡å¼
+        {
+            stepper_p_int=(stepper_p_int+1)%5;
+            break;
+        }
+        if(menu_Mode==edit_float)                       // æµ®ç‚¹ç¼–è¾‘æ¨¡å¼
+        {
+            stepper_p_float=(stepper_p_float+1)%6;
+            break;
+        }
+        if(menu_Mode==edit_confirm)                     // ç¡®è®¤æ¨¡å¼
+        {
+            ips200_clear();                             // æ¸…å±
+            menu[p].Operate_default();
+            menu_Mode=normal;
+            break;
+        }
+        
+        // èœå•é¡¹ç±»å‹å¤„ç†
+        if(menu[p].type==param_float||menu[p].type==param_double)                   // æµ®ç‚¹å‚æ•°                      
+        {
+            menu_Mode=edit_float;
+            break;
+        }
+        if(menu[p].type==param_int16||menu[p].type==param_int32
+            ||menu[p].type==param_int8||menu[p].type==param_uint16
+            ||menu[p].type==param_uint32||menu[p].type==param_uint8)                 // æ•´å‹å‚æ•°
+        {
+            menu_Mode=edit_int;
+            break;
+        }
+        if (menu[p].type==confirm)                  // ç¡®è®¤é¡¹
+        {
+            menu_Mode=edit_confirm;
+            break;
+        }
+        if(menu[p].type==on_off)                    // å¼€å…³é¡¹
+        {
+            *menu[p].param_union.param_int16=1-*menu[p].param_union.param_int16;
+            break;
+        }
+        if(menu[p].type==function)                  // åŠŸèƒ½é¡¹
+        {
+            menu[p].Operate_default();
+            break;
+        }
+        if(menu[p].type==roadgothrough)             // é“è·¯å…ƒç´ é€šè¿‡é¡¹
+        {
+            menu_Mode=special_show_element1;        // è¿›å…¥æ˜¾ç¤ºé“è·¯å…ƒç´ æ¨¡å¼
+            break;
+        }
+        if(menu[p].type==param_float_readonly||menu[p].type==param_int16_readonly
+            ||menu[p].type==param_int32_readonly||menu[p].type==param_uint16_readonly
+            ||menu[p].type==param_uint32_readonly||menu[p].type==param_double_readonly
+            ||menu[p].type==param_int8_readonly||menu[p].type==param_uint8_readonly)        // åªè¯»å‚æ•°
+        {
+            ips200_show_string(0,180,"error_readonly");
+        }
+        if(menu[p].type==chose1)        // å•é€‰é¡¹ç›®
+        {
+            for(int i=p_nearby+1;menu[i].priority!=current_state-1;i++)
+            {
+                if(menu[i].priority==current_state&&menu[i].type==chose1&&i!=p)
+                {
+                    *menu[i].param_union.param_uint8=0;
+                }
+                if(i==p)
+                {
+                    *menu[p].param_union.param_uint8=1;
+                }
+            }
+            break;
+        }
+        break;
+        
+    case BACK:
+        if(menu_Mode==edit_float||menu_Mode==edit_confirm||menu_Mode==edit_int
+        ||menu_Mode==special_show_element1||menu_Mode==stop_debug_display) // ç¼–è¾‘æ¨¡å¼ä¸‹æŒ‰è¿”å›é”®é€€å‡ºç¼–è¾‘æ¨¡å¼
+        {
+            ips200_clear();                             // æ¸…å±
             menu_Mode=normal;
             break;
         }
@@ -1010,11 +905,11 @@ void Menu_control(void)
             ips200_set_color(RGB565_PURPLE,RGB565_BLACK);
             ips200_show_string(0,300,"save default already");
             ips200_set_color(RGB565_WHITE,RGB565_BLACK);
-
             break;
         }
-        if(menu[p].priority!=1)                 //»»²Ëµ¥µÈ¼¶(¶ÁÕß²»Òª¶¯)
+        if(menu[p].priority!=1)                 // è¿”å›ä¸Šä¸€çº§èœå•
         {
+            ips200_clear();                     // æ¸…å±
             current_state--;
             p=p_nearby;
             while (menu[p_nearby].priority!=current_state-1)
@@ -1027,9 +922,8 @@ void Menu_control(void)
             ips200_show_string(0,180,"error");
         }
 
-        default:
-            break;
-        }
-        input=0;
-        
+    default:
+        break;
+    }
+    input=0; // æ¸…ç©ºè¾“å…¥
 }
