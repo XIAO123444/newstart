@@ -1,7 +1,7 @@
 #include "key.h"
 
 #define KEY1                    (E3 )
-#define KEY2                    (E2 )
+#define KEY2                    (E2	)
 #define KEY3                    (E4 )
 #define KEY4                    (E5 )
 int8 offset=0;

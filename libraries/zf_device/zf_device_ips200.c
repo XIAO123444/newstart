@@ -300,6 +300,37 @@ void ips200_clear (void)
         IPS200_CS(1);
     }
 }
+void ips200_clear_region(const uint16 x1, const uint16 y1, const uint16 x2, const uint16 y2)
+{
+    // 边界检查
+    zf_assert(x1 < ips200_x_max && x2 < ips200_x_max);
+    zf_assert(y1 < ips200_y_max && y2 < ips200_y_max);
+    zf_assert(x1 <= x2 && y1 <= y2);  // 确保坐标顺序正确
+
+    // 计算总像素数
+    uint32 pixel_count = (uint32)(x2 - x1 + 1) * (y2 - y1 + 1);
+    uint32 i;
+
+    if(IPS200_TYPE_SPI == ips200_display_type)
+    {
+        IPS200_CS(0);
+    }
+
+    // 设置显示区域为目标矩形
+    ips200_set_region(x1, y1, x2, y2);
+
+    // 性能优化：连续写入背景色填充整个区域
+    // 使用像素计数而非坐标循环，逻辑更清晰，性能更高
+    for(i = 0; i < pixel_count; i++)
+    {
+        ips200_write_16bit_data(ips200_bgcolor);
+    }
+
+    if(IPS200_TYPE_SPI == ips200_display_type)
+    {
+        IPS200_CS(1);
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 // 函数简介     IPS200 屏幕填充函数

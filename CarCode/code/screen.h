@@ -13,5 +13,6 @@
 #include "track.h"
 
 void show_line(void);
+void display_delta_line(int16 startX1,int16 startY1,int16 startX2,int16 startY2);
 
 #endif /* CODE_SCREEN_H_ */

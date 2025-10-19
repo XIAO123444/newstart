@@ -3,6 +3,7 @@
 
 
 #include "zf_common_headfile.h"
+#include "menu_config.h"
 //道路元素枚举
 typedef enum
 { straigh,         //直道
@@ -144,7 +145,7 @@ typedef enum
 
 
 
-
+void show_element();
 void output(void);
 void Menu_control(void);
 void Menu_Screen_Init(void);

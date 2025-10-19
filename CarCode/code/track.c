@@ -10,8 +10,8 @@ uint8 cross_flag=0;
 
 extern int32 forwardsight3;
 extern int16 centerline[MT9V03X_H];      // 中心线数组（图像高度维度）
-extern int16 leftline[MT9V03X_H];       // 左边界线数组 
-extern int16 rightline[MT9V03X_H];      // 右边界线数组
+extern int16 raw_leftline[MT9V03X_H];       // 左边界线数组 
+extern int16 raw_rightline[MT9V03X_H];      // 右边界线数组
 extern int16 rightfollowline[MT9V03X_H]; // 右边界跟踪线
 extern int16 leftfollowline[MT9V03X_H];  // 左边界跟踪线
 extern uint8 pix_per_meter;             // 像素/米比例系数
@@ -73,7 +73,7 @@ const uint8 Weight[MT9V03X_H]=
 float right_dxbudandiao;            // 右不单调点斜率
 
 extern uint8 leftline_num;         //左线点数量
-extern uint8 rightline_num;        //右线点数量
+extern uint8 raw_rightline_num;        //右线点数量
 
 extern int32 forwardsight2;
 extern int32 forwardsight_stragety;
@@ -177,16 +177,16 @@ void centerline2_change(void) {
 
 void element_check(void) {     
     // 更新左右跟踪线 
-    memcpy(leftfollowline, leftline, sizeof(leftline));
-    memcpy(rightfollowline, rightline, sizeof(rightline));
+    memcpy(leftfollowline, raw_leftline, sizeof(raw_leftline));
+    memcpy(rightfollowline, raw_rightline, sizeof(raw_rightline));
 
 
     centerline2_change();
     v_point=find_vpoint(5,MT9V03X_W-5); // 查找v点
     continuity_pointLeft[0]=continuity_left(MT9V03X_H-1,search_stop+2); // 左连续性判断
     continuity_pointRight[0]=continuity_right(MT9V03X_H-1,search_stop+2); // 右连续性判断
-    continuity_pointLeft[1]=leftline[continuity_pointLeft[0]]; // 左连续性点列
-    continuity_pointRight[1]=rightline[continuity_pointRight[0]]; // 右连续性点列
+    continuity_pointLeft[1]=raw_leftline[continuity_pointLeft[0]]; // 左连续性点列
+    continuity_pointRight[1]=raw_rightline[continuity_pointRight[0]]; // 右连续性点列
     Find_Up_Point(MT9V03X_H-1, search_stop); // 查找上半段边界点
     Find_Down_Point(MT9V03X_H-1, search_stop); //查找下半段边界点
     if(Left_Down_Find <= Left_Up_Find) {Left_Down_Find = 0;}
@@ -242,25 +242,25 @@ void element_check(void) {
       /* 边界线拟合策略 */
       if(Left_Down_Find != 0 && Right_Down_Find != 0) {
           // 情况1：左右下点均有效 → 双边界直线拟合
-          add_Rline_k(rightline[Right_Down_Find], Right_Down_Find, 
-                     Right_Up_Find-2, rightline[Right_Up_Find-2]);        // 右边界拟合
-          add_Lline_k(leftline[Left_Down_Find], Left_Down_Find,   
-                     Left_Up_Find-2, leftline[Left_Up_Find-2]);           // 左边界拟合
+          add_Rline_k(raw_rightline[Right_Down_Find], Right_Down_Find, 
+                     Right_Up_Find-2, raw_rightline[Right_Up_Find-2]);        // 右边界拟合
+          add_Lline_k(raw_leftline[Left_Down_Find], Left_Down_Find,   
+                     Left_Up_Find-2, raw_leftline[Left_Up_Find-2]);           // 左边界拟合
         //   //ips200_show_string(0,300,"cross1");
         //    printf("cross1");
       }
       else if(Left_Down_Find == 0 && Right_Down_Find != 0) {
           // 情况2：仅右下点有效 → 右边界拟合+左边界延长
-          add_Rline_k(rightline[Right_Down_Find], Right_Down_Find,        // 右边界拟合
-                     Right_Up_Find, rightline[Right_Up_Find]);
+          add_Rline_k(raw_rightline[Right_Down_Find], Right_Down_Find,        // 右边界拟合
+                     Right_Up_Find, raw_rightline[Right_Up_Find]);
           lenthen_Left_bondarise(Left_Up_Find);                       //
         //   //ips200_show_string(0,300,"cross2");
       }
       else if(Left_Down_Find != 0 && Right_Down_Find == 0) {
           // 情况3：仅左下点有效 → 左边界拟合+右边界延长
           lenthen_Right_bondarise(Right_Up_Find);
-          add_Lline_k(leftline[Left_Down_Find], Left_Down_Find, 
-                     Left_Up_Find, leftline[Left_Up_Find]);
+          add_Lline_k(raw_leftline[Left_Down_Find], Left_Down_Find, 
+                     Left_Up_Find, raw_leftline[Left_Up_Find]);
         //    printf("cross3");
             //ips200_show_string(0,300,"cross3");
       }
@@ -273,8 +273,8 @@ void element_check(void) {
       }
 
       // 异常处理：突变点失效时恢复原始边界
-      if(Right_Up_Find == 0) memcpy(rightfollowline, rightline, sizeof(rightline));
-      if(Left_Up_Find == 0) memcpy(leftfollowline, leftline, sizeof(leftline));
+      if(Right_Up_Find == 0) memcpy(rightfollowline, raw_rightline, sizeof(raw_rightline));
+      if(Left_Up_Find == 0) memcpy(leftfollowline, raw_leftline, sizeof(raw_leftline));
       centerline2_change();
       if(Right_Up_Find==0||Left_Up_Find==0)
           {
@@ -295,8 +295,8 @@ void element_check(void) {
     }
     if(Left_Up_Find!=0&&Left_Down_Find!=0)                              //如果找到了左上点和左下点
     {
-        add_Lline_k(leftline[Left_Down_Find], Left_Down_Find,   
-        Left_Up_Find, leftline[Left_Up_Find]);           
+        add_Lline_k(raw_leftline[Left_Down_Find], Left_Down_Find,   
+        Left_Up_Find, raw_leftline[Left_Up_Find]);           
         centerline2_change();
     }
     if(Left_Up_Find!=0&&Left_Down_Find==0)                              //如果只找到了左上点
@@ -322,8 +322,8 @@ void element_check(void) {
     }
     if(Right_Up_Find!=0&&Right_Down_Find!=0)                            //如果找到了右上点和右下点
     {
-        add_Rline_k(rightline[Right_Down_Find], Right_Down_Find, 
-        Right_Up_Find, rightline[Right_Up_Find]);
+        add_Rline_k(raw_rightline[Right_Down_Find], Right_Down_Find, 
+        Right_Up_Find, raw_rightline[Right_Up_Find]);
         centerline2_change();
     }
     if(Right_Up_Find!=0&&Right_Down_Find==0)                            //如果只找到了右上点
@@ -375,10 +375,10 @@ void element_check(void) {
         if(Right_Up_Find)//找到上点
         {  
             search_stop1=Right_Up_Find;
-            add_Lline_k(rightline[Right_Up_Find]+10,Right_Up_Find,Right_Up_Find+30,leftline[Right_Up_Find+30]+10); //右上点补直线
+            add_Lline_k(raw_rightline[Right_Up_Find]+10,Right_Up_Find,Right_Up_Find+30,raw_leftline[Right_Up_Find+30]+10); //右上点补直线
             centerline2_change();
         }
-        if(rightline[Right_Up_Find]<MT9V03X_W/2)
+        if(raw_rightline[Right_Up_Find]<MT9V03X_W/2)
         {
             left_start_point=MT9V03X_W/2;
             BUZZ_START();
@@ -391,7 +391,7 @@ void element_check(void) {
         Left_Up_Find=Find_Left_Up_Point(MT9V03X_H-2, search_stop); // 查找左上拐点,使用更新的函数,
         if (Left_Up_Find)
         {
-            add_Lline_k(leftline[Left_Up_Find],Left_Up_Find,MT9V03X_H-1,leftline[MT9V03X_H-1]);
+            add_Lline_k(raw_leftline[Left_Up_Find],Left_Up_Find,MT9V03X_H-1,raw_leftline[MT9V03X_H-1]);
         } 
         centerline2_change();
  
@@ -423,7 +423,7 @@ void element_check(void) {
         left_budandiao=montonicity_left(MT9V03X_H-1,search_stop+6); // 左不单调点最少加6
         // Right_Up_Find=Find_Right_Up_Point(MT9V03X_H-1, search_stop); // 查找右上拐点,使用更新的函数
         // lenthen_Left_bondarise_bottom(left_budandiao); // 延长左边界到底部
-        draw_Lline_k(leftline[left_budandiao],left_budandiao,search_stop,-1); // 左不单调点补直线
+        draw_Lline_k(raw_leftline[left_budandiao],left_budandiao,search_stop,-1); // 左不单调点补直线
         draw_Rline_k(MT9V03X_W-1,search_stop,rightlostpoint[1],0); // 右不单调点补直线
         if(left_budandiao==0) // 如果左不单调点为0
         {

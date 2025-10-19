@@ -355,6 +355,7 @@ MENU menu[] =
             {3, "forwardsight1",150, 20, {.param_int16=&forwardsight}, param_int16, NULL},
             {3, "forwardsight2",150, 40, {.param_int16=&forwardsight2}, param_int16, NULL},
             {3, "forwardsight3",150, 60, {.param_int16=&forwardsight3}, param_int16, NULL},
+        {2, "show_delta_line", 0, 140, {.param_float=&default_float}, function, show_delta_line},
     
     // 调试菜单
     {1, "debug", 0, 80, {.param_float=&default_float}, catlog, NULL},
@@ -417,7 +418,7 @@ MENU menu[] =
             {3, "blackprotect",100, 240, {.param_int16=&roadelement_record.blackprotect}, param_int16_readonly, NULL},
             {3, "stall", 100, 260, {.param_int16=&roadelement_record.stall}, param_int16_readonly, NULL},
             {3, "zebra", 100, 280, {.param_int16=&roadelement_record.zebra}, param_int16_readonly, NULL},
-        {2, "element_gothrough",0, 60, {.param_float=&default_float}, roadgothrough, NULL},
+        {2, "element_gothrough",0, 60, {.param_float=&default_float}, function, show_element_new},
         {2, "record_clear", 0, 80, {.param_float=&default_float}, function, NULL},
     
     // Flash存储菜单
@@ -725,10 +726,7 @@ void Menu_control(void)
     output(); // 输出屏幕内容
     status=0;
     condition = (enum_Condition)input; 
-    // if(input)
-    // {
-    //     ips200_clear(); // 清屏
-    // }
+
     
     // 根据输入条件执行不同操作
     switch (condition)
@@ -861,11 +859,7 @@ void Menu_control(void)
             menu[p].Operate_default();
             break;
         }
-        if(menu[p].type==roadgothrough)             // 道路元素通过项
-        {
-            menu_Mode=special_show_element1;        // 进入显示道路元素模式
-            break;
-        }
+
         if(menu[p].type==param_float_readonly||menu[p].type==param_int16_readonly
             ||menu[p].type==param_int32_readonly||menu[p].type==param_uint16_readonly
             ||menu[p].type==param_uint32_readonly||menu[p].type==param_double_readonly

@@ -10,11 +10,13 @@
 #include "Balance.h"
 #include "menu.h"
 int16 centerline[MT9V03X_H];
-int16 leftline[MT9V03X_H];
-int16 rightline[MT9V03X_H];
+int16 raw_leftline[MT9V03X_H];
+int16 raw_rightline[MT9V03X_H];
 int16 rightfollowline[MT9V03X_H];
 int16 leftfollowline[MT9V03X_H];
 
+int16 delta_leftline[MT9V03X_H];
+int16 delta_rightline[MT9V03X_H];
 
 int16 leftlostpoint[2]={0,0};   //×ó¶ªÏßÊıºÍ×ó¶ªÏßµã0Îª¶ªÏßÊı£¬1Îª¶ªÏßË÷Òı
 int16 rightlostpoint[2]={0,0};  //ÓÒ¶ªÏßÊıºÍ×ó¶ªÏßµã0Îª¶ªÏßÊı£¬1Îª¶ªÏßË÷Òı
@@ -39,7 +41,7 @@ int16 boundry_start_left=0; //×ó±ß½çÆğÊ¼µã
 int16 boundry_start_right=0; //ÓÒ±ß½çÆğÊ¼µã
 
 int16 search_stop=0; //ÖÕÖ¹µã
-int16 search_stop1=0; //ÖÕÖ¹µã1
+int16 search_stop1=0; //ÖÕÖ¹µã,ÓÃÓÚÔ²»·ÔªËØ´¦Àí
 
 uint16 left_lost_flag[MT9V03X_H];//×ó¶ªÏßÊı×é   0-Î´¶ªÏß£¬1-¶ªÏß
 uint16 right_lost_flag[MT9V03X_H];//ÓÒ¶ªÏßÊı×é  0-Î´¶ªÏß£¬1-¶ªÏß
@@ -67,8 +69,8 @@ extern enum  mark carstatus_now;
 extern int16 bailie_lock_crossroad;
 extern int16 bailieright_lock_round;
 //ÏßµãÓë¶ªÏß¡ı¡ı¡ı¡ı
-uint8 leftline_num;         //×óÏßµãÊıÁ¿
-uint8 rightline_num;        //ÓÒÏßµãÊıÁ¿
+uint8 raw_leftline_num;         //×óÏßµãÊıÁ¿
+uint8 raw_rightline_num;        //ÓÒÏßµãÊıÁ¿
 
 
 //Ô²»·¡ı¡ı¡ı¡ı
@@ -114,8 +116,8 @@ int16 right_down_line =0;
 //     //uint8 col = MT9V03X_W/2;//ÁĞ
 //     uint8 start_col = MT9V03X_W / 2;//¸÷ĞĞÆğµãµÄÁĞ×ø±ê,Ä¬ÈÏÎªMT9V03X_W / 2
 //     //ÇåÁãÖ®Ç°µÄ¼ÆÊı
-//     leftline_num = 0;
-//     rightline_num = 0;
+//     raw_leftline_num = 0;
+//     raw_rightline_num = 0;
 
 //     for(row = MT9V03X_H - 1; row >= 1; row--){
 //         //Ñ¡ÓÃÉÏÒ»ĞĞµÄÖĞµã×÷ÎªÏÂÒ»ĞĞ¼ÆËãÆğÊ¼µã£¬½ÚÊ¡ËÙ¶È£¬Í¬Ê±·ÀÖ¹ÍäµÀµÄ×óÓÒÁ½±ß¾ù³öÏÖÓë»­ÃæÒ»²à
@@ -132,7 +134,7 @@ int16 right_down_line =0;
 //         //ÖğĞĞ×÷²î±ÈºÍ 
 //         difsum_left(row,start_col);
 //         difsum_right(row,start_col); 
-//         centerline[row] = 0.5 * (rightline[row] + leftline[row]);
+//         centerline[row] = 0.5 * (raw_rightline[row] + raw_leftline[row]);
 //     }
 // }
 //
@@ -149,14 +151,14 @@ int16 right_down_line =0;
 //     uint8 col;//ÁĞ
 //     uint8 mov = 3;//Ã¿´Î×÷²îºóµÄÒÆ¶¯Á¿,Ä¬ÈÏÎª2£¬¿ÉÒÔ¸ù¾İ»­Ãæ·Ö±æÂÊµ÷Õû
 //     //¼ÆËãµÚxĞĞµÄ×ó±ß½ç
-//     leftline[y] = 0;//Î´ÕÒµ½×ó±ß½çÊ±Êä³öÎª0
+//     raw_leftline[y] = 0;//Î´ÕÒµ½×ó±ß½çÊ±Êä³öÎª0
 //     for(col = x; col >= mov + 1; col -= mov){
 //         dif = (float)((mt9v03x_image[y][col] - mt9v03x_image[y][col - mov - 1])<<8);//×óÒÆ8Î»¼´³Ë256£¬¿É±ÜÃâ¸¡µãÊı³Ë£¬¼Ó¿ìËÙ¶È
 //         sum = (float)((mt9v03x_image[y][col] + mt9v03x_image[y][col - mov - 1]));
 //         sar = fabs(dif / sum);//ÇóÈ¡²î±ÈºÍ
 //         if(sar > sar_thre){//²î±ÈºÍ´óÓÚãĞÖµ´ú±íÉîÇ³É«Í»±ä
-//             leftline[y] = (int16)(col - mov);
-//             leftline_num ++;//×óÏßµã¼ÆÊı+
+//             raw_leftline[y] = (int16)(col - mov);
+//             raw_leftline_num ++;//×óÏßµã¼ÆÊı+
 //             break;//ÕÒµ½±ß½çºóÍË³ö
 //         }
 //     }
@@ -175,14 +177,14 @@ int16 right_down_line =0;
 //     uint8 col;//ÁĞ
 //     uint8 mov = 3;//Ã¿´Î×÷²îºóµÄÒÆ¶¯Á¿,Ä¬ÈÏÎª2£¬¿ÉÒÔ¸ù¾İ»­Ãæ·Ö±æÂÊµ÷Õû
 //     //¼ÆËãµÚxĞĞµÄ×ó±ß½ç
-//     rightline[y] = MT9V03X_W - 1;//Î´ÕÒµ½ÓÒ±ß½çÊ±Êä³öÎª187
+//     raw_rightline[y] = MT9V03X_W - 1;//Î´ÕÒµ½ÓÒ±ß½çÊ±Êä³öÎª187
 //     for(col = x; col <= MT9V03X_W - mov - 1; col += mov){
 //         dif = (float)((mt9v03x_image[y][col] - mt9v03x_image[y][col + mov + 1])<<8);//×óÒÆ8Î»¼´³Ë256£¬¿É±ÜÃâ¸¡µãÊı³Ë£¬¼Ó¿ìËÙ¶È
 //         sum = (float)((mt9v03x_image[y][col] + mt9v03x_image[y][col + mov + 1]));
 //         sar = fabs(dif / sum);//ÇóÈ¡²î±ÈºÍ
 //         if(sar > sar_thre){//²î±ÈºÍ´óÓÚãĞÖµ´ú±íÉîÇ³É«Í»±ä
-//             rightline[y] = (int16)(col + mov);
-//             rightline_num ++;//ÓÒÏßµã¼ÆÊı+
+//             raw_rightline[y] = (int16)(col + mov);
+//             raw_rightline_num ++;//ÓÒÏßµã¼ÆÊı+
 //             break;//ÕÒµ½±ß½çºóÍË³ö
 //         }
 //     }
@@ -513,13 +515,13 @@ void difsum_left1(uint8 y,uint8 x)
     uint8 col;//ÁĞ
     uint8 mov = 1; //Ã¿´Î×÷²îºóµÄÒÆ¶¯Á¿,Ä¬ÈÏÎª2£¬¿ÉÒÔ¸ù¾İ»­Ãæ·Ö±æÂÊµ÷Õû
     //¼ÆËãµÚxĞĞµÄ×ó±ß½ç
-    leftline[y] = 0;//Î´ÕÒµ½×ó±ß½çÊ±Êä³öÎª0
+    raw_leftline[y] = 0;//Î´ÕÒµ½×ó±ß½çÊ±Êä³öÎª0
     for(col = x; col >= mov + 1; col -= mov)
 	{
 		if(dis_image[y][col] - dis_image[y][col - mov]>0)
 		{
-			leftline[y] = col;
-			leftline_num ++;//×óÏßµã¼ÆÊı+
+			raw_leftline[y] = col;
+			raw_leftline_num ++;//×óÏßµã¼ÆÊı+
             return;
 		}
 
@@ -537,13 +539,13 @@ void difsum_right1(uint8 y,uint8 x)
 	uint8 col;//ÁĞ
     uint8 mov = 1;//Ã¿´Î×÷²îºóµÄÒÆ¶¯Á¿,Ä¬ÈÏÎª2£¬¿ÉÒÔ¸ù¾İ»­Ãæ·Ö±æÂÊµ÷Õû
     //¼ÆËãµÚxĞĞµÄ×ó±ß½ç
-    rightline[y] = MT9V03X_W-1;//Î´ÕÒµ½×ó±ß½çÊ±Êä³öÎª0
+    raw_rightline[y] = MT9V03X_W-1;//Î´ÕÒµ½×ó±ß½çÊ±Êä³öÎª0
     for(col = x; col <= MT9V03X_W - mov - 1; col += mov)
 	{
 		if(dis_image[y][col] - dis_image[y][col + mov]>5)
 		{
-			rightline[y] = col ;
-			rightline_num ++;//ÓÒ±ßÏßµã¼ÆÊı+
+			raw_rightline[y] = col ;
+			raw_rightline_num ++;//ÓÒ±ßÏßµã¼ÆÊı+
 			return;//ÕÒµ½±ß½çºóÍË³ö
 		}
 
@@ -567,8 +569,8 @@ void difsum_right1(uint8 y,uint8 x)
 */
 void param_init(void)
 {
-    leftline_num = 0;
-    rightline_num = 0;
+    raw_leftline_num = 0;
+    raw_rightline_num = 0;
 
 
     leftorright=0;                        //´Ó×ó»¹ÊÇÓÒÕÒyµã
@@ -590,8 +592,8 @@ void param_init(void)
     //°×Ïß¼ÆÊıÇåÁãºÍ×óÓÒÏßÇåÁã
     for(int16 i=0;i<MT9V03X_H;i++)
     {
-        leftline[i]=0;              //×óÏßÇå0
-        rightline[i]=MT9V03X_W-1;   //ÓÒÏßÇå0
+        raw_leftline[i]=0;              //×óÏßÇå0
+        raw_rightline[i]=MT9V03X_W-1;   //ÓÒÏßÇå0
         right_lost_flag[i]=0;     //ÓÒ¶ªÏßÇå0   
         left_lost_flag[i]=0;      //×ó¶ªÏßÇå0   
         both_lost_flag[i]=0;      //Í¬Ê±¶ªÏßÇå0
@@ -804,17 +806,17 @@ void image_boundary_process2(void)
     }
       //²âÈü¿í
     // printf("\n");
-    // printf("rightline");
+    // printf("raw_rightline");
 
     // for(int16 i=0;i<MT9V03X_H;i++)
     // {
-    //     printf("%d,",rightline[i]);
+    //     printf("%d,",raw_rightline[i]);
     // }
     // printf("\n");
-    // printf("leftline");
+    // printf("raw_leftline");
     // for(int16 i=0;i<MT9V03X_H;i++)
     // {
-    //     printf("%d,",leftline[i]);
+    //     printf("%d,",raw_leftline[i]);
     // }      
     for(row = MT9V03X_H - 1; row > search_stop; row--)
     {
@@ -824,8 +826,8 @@ void image_boundary_process2(void)
             bothlostpoint[1]=row;
             both_lost_flag[row]=1;
         }
-        if(boundry_start_left==0&&leftline[row]!=0) {boundry_start_left=row;}   //×ó±ß½çÆğÊ¼µã
-        if(boundry_start_right==0&&rightline[row]!=MT9V03X_W-1) {boundry_start_right=row;} //ÓÒ±ß½çÆğÊ¼µã
+        if(boundry_start_left==0&&raw_leftline[row]!=0) {boundry_start_left=row;}   //×ó±ß½çÆğÊ¼µã
+        if(boundry_start_right==0&&raw_rightline[row]!=MT9V03X_W-1) {boundry_start_right=row;} //ÓÒ±ß½çÆğÊ¼µã
     }
 }
 
@@ -901,7 +903,33 @@ int16 output_middle(void)
 //Ê®×ÖÅĞ¶Ï
 //Ê®×ÖÅĞ¶Ï
 //Ê®×ÖÅĞ¶Ï
+/*-------------------------------------------------------------------------------------------------------------------
+  @brief     ¼ÆËã×óÓÒ±ß½çµÄ²î·Ö£¬¹©¹ÕµãÊ¹ÓÃ
+  @param     ÎŞ
+  @return    ĞŞ¸ÄÁ½¸öÈ«¾ÖÊı×é
+             delta_leftline[];
+             delta_rightline[];
+  Sample     find_tubian_point();
+  @note      ÎŞ
+-------------------------------------------------------------------------------------------------------------------
+*/
+void find_tubian_point(void)
+{
+    int16 i;
 
+    if (search_stop<1)
+    {i=1;}
+    else
+    {i=search_stop;}
+    
+    //Ö±µÀ×óÁĞ>0£¬ÓÒÁĞĞ¡ÓÚ0£¬°¼±ä×ó¼«´óÓÒ¼«Ğ¡£¬Í¹±ä×ó¼«´óÓÒ¼«Ğ¡
+    for(;i<=MT9V03X_H-2;i++)
+    {
+        delta_leftline[i+1]=raw_leftline[i]-raw_leftline[i+1];
+        delta_rightline[i+1]=raw_rightline[i]-raw_rightline[i+1];          
+    } 
+       
+}
 /*-------------------------------------------------------------------------------------------------------------------
   @brief     ÕÒÏÂÃæµÄÁ½¸ö¹Õµã£¬¹©Ê®×ÖÊ¹ÓÃ
   @param     ËÑË÷µÄ·¶Î§Æğµã£¬ÖÕµã
@@ -931,13 +959,13 @@ void Find_Down_Point(int16 start,int16 end)
     for(i=start;i>=end;i--)
     {
         if(Left_Down_Find==0&&//Ö»ÕÒµÚÒ»¸ö·ûºÏÌõ¼şµÄµã
-            (leftline[i]>0)&&//×ó±ß½çµã²»ÄÜÎª0
-           abs(leftline[i]-leftline[i+1])<=3&&//½ÇµãµÄãĞÖµ¿ÉÒÔ¸ü¸Ä
-           abs(leftline[i+1]-leftline[i+2])<=3&&
-           abs(leftline[i+2]-leftline[i+3])<=3&&
-            ((leftline[i]-leftline[i-2])>=3)&&
-            ((leftline[i]-leftline[i-3])>=5)&&
-            ((leftline[i]-leftline[i-4])>=5))
+            (raw_leftline[i]>0)&&//×ó±ß½çµã²»ÄÜÎª0
+           abs(raw_leftline[i]-raw_leftline[i+1])<=3&&//½ÇµãµÄãĞÖµ¿ÉÒÔ¸ü¸Ä
+           abs(raw_leftline[i+1]-raw_leftline[i+2])<=3&&
+           abs(raw_leftline[i+2]-raw_leftline[i+3])<=3&&
+            ((raw_leftline[i]-raw_leftline[i-2])>=3)&&
+            ((raw_leftline[i]-raw_leftline[i-3])>=5)&&
+            ((raw_leftline[i]-raw_leftline[i-4])>=5))
         {
             Left_Down_Find=i+2;//»ñÈ¡ĞĞÊı¼´¿É
             if(Left_Down_Find==start+2)
@@ -946,13 +974,13 @@ void Find_Down_Point(int16 start,int16 end)
             }
         }
         if(Right_Down_Find==0&&//Ö»ÕÒµÚÒ»¸ö·ûºÏÌõ¼şµÄµã
-           abs(rightline[i]-rightline[i+1])<=3&&//½ÇµãµÄãĞÖµ¿ÉÒÔ¸ü¸Ä
-           abs(rightline[i+1]-rightline[i+2])<=3&&
-           abs(rightline[i+2]-rightline[i+3])<=3&&
-            rightline[i]<MT9V03X_W-1&&//ÓÒ±ß½çµã²»ÄÜÎªMT9V03X_W-1
-              ((rightline[i]-rightline[i-2])<=-3)&&
-              ((rightline[i]-rightline[i-3])<=-5)&&
-              ((rightline[i]-rightline[i-4])<=-5))
+           abs(raw_rightline[i]-raw_rightline[i+1])<=3&&//½ÇµãµÄãĞÖµ¿ÉÒÔ¸ü¸Ä
+           abs(raw_rightline[i+1]-raw_rightline[i+2])<=3&&
+           abs(raw_rightline[i+2]-raw_rightline[i+3])<=3&&
+            raw_rightline[i]<MT9V03X_W-1&&//ÓÒ±ß½çµã²»ÄÜÎªMT9V03X_W-1
+              ((raw_rightline[i]-raw_rightline[i-2])<=-3)&&
+              ((raw_rightline[i]-raw_rightline[i-3])<=-5)&&
+              ((raw_rightline[i]-raw_rightline[i-4])<=-5))
         {
             Right_Down_Find=i+2;
             if(Right_Down_Find==start+2)
@@ -1003,14 +1031,14 @@ void Find_Up_Point(int16 start,int16 end)
     for(i=start;i<=end;i++)
     { 
         if(Left_Up_Find==0&&//Ö»ÕÒµÚÒ»¸ö·ûºÏÌõ¼şµÄµã
-           abs(leftline[i]-leftline[i-1])<=3&&
-           abs(leftline[i-1]-leftline[i-2])<=3&&
-           abs(leftline[i-2]-leftline[i-3])<=3&&
-           leftline[i-2]-leftline[i]>-2&&
-            leftline[i-3]-leftline[i]>-3&&
-              ((leftline[i]-leftline[i+2])>=3)&&
-              ((leftline[i]-leftline[i+3])>=5)&&
-              ((leftline[i]-leftline[i+4])>=10))
+           abs(raw_leftline[i]-raw_leftline[i-1])<=3&&
+           abs(raw_leftline[i-1]-raw_leftline[i-2])<=3&&
+           abs(raw_leftline[i-2]-raw_leftline[i-3])<=3&&
+           raw_leftline[i-2]-raw_leftline[i]>-2&&
+            raw_leftline[i-3]-raw_leftline[i]>-3&&
+              ((raw_leftline[i]-raw_leftline[i+2])>=3)&&
+              ((raw_leftline[i]-raw_leftline[i+3])>=5)&&
+              ((raw_leftline[i]-raw_leftline[i+4])>=10))
         {
 
             Left_Up_Find=i-2;//»ñÈ¡ĞĞÊı¼´¿É
@@ -1020,14 +1048,14 @@ void Find_Up_Point(int16 start,int16 end)
             }
         }
         if(Right_Up_Find==0&&//Ö»ÕÒµÚÒ»¸ö·ûºÏÌõ¼şµÄµã
-           abs(rightline[i]-rightline[i-1])<=3&&//ÏÂÃæÁ½ĞĞÎ»ÖÃ²î²»¶à
-           abs(rightline[i-1]-rightline[i-2])<=3&&
-           abs(rightline[i-2]-rightline[i-3])<=3&&
-           rightline[i-2]-rightline[i]<2&&
-           rightline[i-3]-rightline[i]<3&&
-              ((rightline[i]-rightline[i+2]<=-3))&&
-              ((rightline[i]-rightline[i+3])<=-5)&&
-              ((rightline[i]-rightline[i+4])<=-10))
+           abs(raw_rightline[i]-raw_rightline[i-1])<=3&&//ÏÂÃæÁ½ĞĞÎ»ÖÃ²î²»¶à
+           abs(raw_rightline[i-1]-raw_rightline[i-2])<=3&&
+           abs(raw_rightline[i-2]-raw_rightline[i-3])<=3&&
+           raw_rightline[i-2]-raw_rightline[i]<2&&
+           raw_rightline[i-3]-raw_rightline[i]<3&&
+              ((raw_rightline[i]-raw_rightline[i+2]<=-3))&&
+              ((raw_rightline[i]-raw_rightline[i+3])<=-5)&&
+              ((raw_rightline[i]-raw_rightline[i+4])<=-10))
         {
             Right_Up_Find=i-2;//»ñÈ¡ĞĞÊı¼´¿É 
             if(Right_Up_Find==start-2)
@@ -1107,15 +1135,15 @@ int16 Find_Left_Down_Point(int16 start,int16 end)//ÕÒ×óÏÂ½Çµã£¬·µ»ØÖµÊÇ½ÇµãËùÔÚµ
     {
         end=4;//¼°Ê±×î³¤°×ÁĞ·Ç³£³¤£¬Ò²ÒªÉáÆú²¿·Öµã£¬·ÀÖ¹Êı×éÔ½½ç    
     }
-    if(leftline[start]<=0&&leftline[start-1]<=0&&leftline[start-2]<=0&&leftline[start-3]<=0)//Èç¹ûÆğÊ¼µã¾Í¶¼¶ªÏß£¬Ã»ÓĞ¹ÕµãÅĞ¶ÏµÄÒâÒå
+    if(raw_leftline[start]<=0&&raw_leftline[start-1]<=0&&raw_leftline[start-2]<=0&&raw_leftline[start-3]<=0)//Èç¹ûÆğÊ¼µã¾Í¶¼¶ªÏß£¬Ã»ÓĞ¹ÕµãÅĞ¶ÏµÄÒâÒå
     {
         return 0;
     }
     for(int i=start;i>=end;i--)//ÓÉÏÂÖÁÉÏÕÒ½Çµã 
     {
-        if(((leftline[i]-leftline[i-2])>=8||leftline[i-2]==0)&&
-           ((leftline[i]-leftline[i-3])>=15||leftline[i-3]==0)&&
-           ((leftline[i]-leftline[i-4])>=15||leftline[i-4]==0))
+        if(((raw_leftline[i]-raw_leftline[i-2])>=8||raw_leftline[i-2]==0)&&
+           ((raw_leftline[i]-raw_leftline[i-3])>=15||raw_leftline[i-3]==0)&&
+           ((raw_leftline[i]-raw_leftline[i-4])>=15||raw_leftline[i-4]==0))
         {
             left_down_line=i+1;//»ñÈ¡ĞĞÊı¼´¿É
             break;
@@ -1148,17 +1176,17 @@ int16 Find_Right_Down_Point(int16 start,int16 end)
     {
         end=5;//¼°Ê±×î³¤°×ÁĞ·Ç³£³¤£¬Ò²ÒªÉáÆú²¿·Öµã£¬·ÀÖ¹Êı×éÔ½½ç    
     }
-    if(rightline[start]>=MT9V03X_W-1&&rightline[start-1]>=MT9V03X_W-1&&rightline[start-2]>=MT9V03X_W-1&&rightline[start-3]>=MT9V03X_W-1)//Èç¹ûÆğÊ¼µã¾Í¶¼¶ªÏß£¬Ã»ÓĞ¹ÕµãÅĞ¶ÏµÄÒâÒå
+    if(raw_rightline[start]>=MT9V03X_W-1&&raw_rightline[start-1]>=MT9V03X_W-1&&raw_rightline[start-2]>=MT9V03X_W-1&&raw_rightline[start-3]>=MT9V03X_W-1)//Èç¹ûÆğÊ¼µã¾Í¶¼¶ªÏß£¬Ã»ÓĞ¹ÕµãÅĞ¶ÏµÄÒâÒå
     {
         return 0;
     }
     for(int i=start;i>=end;i--)
     {
-        if(rightline[i]<=rightline[i+1]&&
-            rightline[i+1]<=rightline[i+2]&&
-            ((rightline[i]-rightline[i-2])<=-8)&&
-           ((rightline[i]-rightline[i-3])<=-15||rightline[i-3]==MT9V03X_W-1)&&
-           ((rightline[i]-rightline[i-4])<=-15||rightline[i-4]==MT9V03X_W-1))
+        if(raw_rightline[i]<=raw_rightline[i+1]&&
+            raw_rightline[i+1]<=raw_rightline[i+2]&&
+            ((raw_rightline[i]-raw_rightline[i-2])<=-8)&&
+           ((raw_rightline[i]-raw_rightline[i-3])<=-15||raw_rightline[i-3]==MT9V03X_W-1)&&
+           ((raw_rightline[i]-raw_rightline[i-4])<=-15||raw_rightline[i-4]==MT9V03X_W-1))
         {
             right_down_line=i+1;//»ñÈ¡ĞĞÊı¼´¿É
             break;
@@ -1181,21 +1209,21 @@ int16 Find_Right_Up_Point(int16 start,int16 end)//ÕÒËÄ¸ö½Çµã£¬·µ»ØÖµÊÇ½ÇµãËùÔÚµÄ
     {start=3;}
     if(end>=MT9V03X_H-1-4)
     {end=MT9V03X_H-1-4;}
-    if(rightline[start]==MT9V03X_W-1&&rightline[start+1]==MT9V03X_W-1&&rightline[start+2]==MT9V03X_W-1)
+    if(raw_rightline[start]==MT9V03X_W-1&&raw_rightline[start+1]==MT9V03X_W-1&&raw_rightline[start+2]==MT9V03X_W-1)
     {
         return 0;//Èç¹ûÆğÊ¼µã¾Í¶¼¶ªÏß£¬Ã»ÓĞ¹ÕµãÅĞ¶ÏµÄÒâÒå
     }
     for(i=start;i<=end;i++)
     {
-        if(rightline[i]==MT9V03X_W-1)//Èç¹ûÓÒ±ß½çµãÊÇMT9V03X_W-1£¬ËµÃ÷Ã»ÓĞÕÒµ½
+        if(raw_rightline[i]==MT9V03X_W-1)//Èç¹ûÓÒ±ß½çµãÊÇMT9V03X_W-1£¬ËµÃ÷Ã»ÓĞÕÒµ½
         {
             break;  //Ö±½Ó×÷·Ï
         }
-        if(rightline[i]>=rightline[i-1]&&
-            rightline[i-1]>=rightline[i-2]&&
-           ((rightline[i]-rightline[i+2])<=-8)&&
-           ((rightline[i]-rightline[i+3])<=-15||rightline[i+3]==MT9V03X_W-1)&&
-           ((rightline[i]-rightline[i+4])<=-15||rightline[i+4]==MT9V03X_W-1))
+        if(raw_rightline[i]>=raw_rightline[i-1]&&
+            raw_rightline[i-1]>=raw_rightline[i-2]&&
+           ((raw_rightline[i]-raw_rightline[i+2])<=-8)&&
+           ((raw_rightline[i]-raw_rightline[i+3])<=-15||raw_rightline[i+3]==MT9V03X_W-1)&&
+           ((raw_rightline[i]-raw_rightline[i+4])<=-15||raw_rightline[i+4]==MT9V03X_W-1))
         {
             right_up_line=i;//»ñÈ¡ĞĞÊı¼´¿É
             break;
@@ -1218,15 +1246,15 @@ int16 Find_Left_Up_Point(int16 start,int16 end)//ÕÒËÄ¸ö½Çµã£¬·µ»ØÖµÊÇ½ÇµãËùÔÚµÄĞ
     {start=1;}
     if(end>=MT9V03X_H-1-4)
     {end=MT9V03X_H-1-4;}
-    if(leftline[start]==0&&leftline[start+1]==0&&leftline[start+2]==0)
+    if(raw_leftline[start]==0&&raw_leftline[start+1]==0&&raw_leftline[start+2]==0)
     {
         return 0;//Èç¹ûÆğÊ¼µã¾Í¶¼¶ªÏß£¬Ã»ÓĞ¹ÕµãÅĞ¶ÏµÄÒâÒå
     }
     for(i=start;i<=end;i++)//ÓÉÉÏÖÁÏÂÕÒ½Çµã
     {
-        if(((leftline[i]-leftline[i+2])>=8)&&
-           ((leftline[i]-leftline[i+3])>=15||leftline[i+3]==0)&&
-           ((leftline[i]-leftline[i+4])>=15||leftline[i+4]==0))
+        if(((raw_leftline[i]-raw_leftline[i+2])>=8)&&
+           ((raw_leftline[i]-raw_leftline[i+3])>=15||raw_leftline[i+3]==0)&&
+           ((raw_leftline[i]-raw_leftline[i+4])>=15||raw_leftline[i+4]==0))
         {
             left_up_line=i;//»ñÈ¡ĞĞÊı¼´¿É
             break;
@@ -1302,7 +1330,7 @@ int16 continuity_right(uint8 start,uint8 end)
     }
     for(i=start;i>=end;i--)
     {
-        if(abs(rightline[i]-rightline[i-1])>=5)//Á¬ĞøĞÔãĞÖµÊÇ5£¬¿É¸ü¸Ä
+        if(abs(raw_rightline[i]-raw_rightline[i-1])>=5)//Á¬ĞøĞÔãĞÖµÊÇ5£¬¿É¸ü¸Ä
        {
             continuity_change_flag=i;                                         //ÔÚi´¦²»Á¬ĞøÁË
 
@@ -1342,7 +1370,7 @@ int16 continuity_left(uint8 start,uint8 end)
 
     for(i=start;i>=end;i--)
     {
-        if(abs(leftline[i]-leftline[i-1])>=5)//Á¬ĞøĞÔãĞÖµÊÇ5£¬¿É¸ü¸Ä
+        if(abs(raw_leftline[i]-raw_leftline[i-1])>=5)//Á¬ĞøĞÔãĞÖµÊÇ5£¬¿É¸ü¸Ä
        {
 
             continuity_change_flag=i;                                         //ÔÚi´¦²»Á¬ĞøÁË
@@ -1375,7 +1403,7 @@ int16 montonicity_right (uint8 start,uint8 end)
     for(i=end;i<=start;i++)
     {
 
-        if(rightline[i] <rightline[i+5]&&rightline[i] <rightline[i-5]&&rightline[i+1]!=MT9V03X_W-1&&rightline[i-1]!=MT9V03X_W-1)
+        if(raw_rightline[i] <raw_rightline[i+5]&&raw_rightline[i] <raw_rightline[i-5]&&raw_rightline[i+1]!=MT9V03X_W-1&&raw_rightline[i-1]!=MT9V03X_W-1)
         {
             result=i;
             return result;
@@ -1407,7 +1435,7 @@ int16 montonicity_left(uint8 start, uint8 end)
     // ·´Ïò±éÀú£¨´Ó¸ßµ½µÍ£©
     for (i = end; i <= start; i++) {
 
-        if (leftline[i] > leftline[i + 5] && leftline[i] > leftline[i - 5]) {
+        if (raw_leftline[i] > raw_leftline[i + 5] && raw_leftline[i] > raw_leftline[i - 5]) {
             result = i;
             return result;
         }
@@ -1540,22 +1568,22 @@ void lenthen_Left_bondarise(int16 start)
 {
     if(start<7){start=7;}
     if(start>MT9V03X_H-1){start=MT9V03X_H-1;}
-    float dx=(float)(leftline[start]-leftline[start-5])/5;
+    float dx=(float)(raw_leftline[start]-raw_leftline[start-5])/5;
     dx1_left_average(dx);
     float dx_average=(dx1[0]+dx1[1]+dx1[2]+dx1[3]+dx1[4])/5;
     for(int16 i=start;i<MT9V03X_H-1;i++)
     {
-        if((float)leftline[start]+(float)(dx_average*(i-start))<0)
+        if((float)raw_leftline[start]+(float)(dx_average*(i-start))<0)
         {
             leftfollowline[i]=0;
         }
-        else if((float)leftline[start]+dx_average*(float)(i-start)>(float)MT9V03X_W-2)
+        else if((float)raw_leftline[start]+dx_average*(float)(i-start)>(float)MT9V03X_W-2)
         {
             leftfollowline[i]=MT9V03X_W-1;
         }
         else
         {
-            leftfollowline[i]=(int16)((float)leftline[start]+dx_average*(float)(i-start));
+            leftfollowline[i]=(int16)((float)raw_leftline[start]+dx_average*(float)(i-start));
         }
     }
 }
@@ -1572,22 +1600,22 @@ void lenthen_Right_bondarise(int16 start)
 {
     if(start<7){start=7;}
     if(start>MT9V03X_H-1){start=MT9V03X_H-1;}
-    float dx=(float)(rightline[start]-rightline[start-5])/5;
+    float dx=(float)(raw_rightline[start]-raw_rightline[start-5])/5;
     dx2_right_average(dx);
     float dx_average=(dx2[0]+dx2[1 ]+dx2[2]+dx2[3]+dx2[4])/5;
     for(int16 i=start;i<MT9V03X_H-1;i++)
     {
-        if((float)rightline[start]+dx_average*(i-start)>MT9V03X_W-2)
+        if((float)raw_rightline[start]+dx_average*(i-start)>MT9V03X_W-2)
         {
             rightfollowline[i]=MT9V03X_W-1;
         }
-        else if((float)rightline[start]+dx_average*(float)(i-start)<0)
+        else if((float)raw_rightline[start]+dx_average*(float)(i-start)<0)
         {
             rightfollowline[i]=0;
         }
         else 
         {
-            rightfollowline[i]=(int16)((float)rightline[start]+dx_average*(float)(i-start));
+            rightfollowline[i]=(int16)((float)raw_rightline[start]+dx_average*(float)(i-start));
         }
     }
 }
@@ -1604,20 +1632,20 @@ void lenthen_Left_bondarise_bottom(int16 start)
 {
     if(start<0){start=0;}
     if(start>MT9V03X_H-8){start=MT9V03X_H-8;}
-    float dx=-(float)(leftline[start]-leftline[start+5])/5;
+    float dx=-(float)(raw_leftline[start]-raw_leftline[start+5])/5;
     for(int16 i=start;i>=0;i--)
     {
-        if((float)leftline[start]+(float)(dx*(i-start))<0)
+        if((float)raw_leftline[start]+(float)(dx*(i-start))<0)
         {
             leftfollowline[i]=0;
         }
-        else if((float)leftline[start]+dx*(float)(i-start)>(float)MT9V03X_W-2)
+        else if((float)raw_leftline[start]+dx*(float)(i-start)>(float)MT9V03X_W-2)
         {
             leftfollowline[i]=MT9V03X_W-1;
         }
         else
         {
-            leftfollowline[i]=(int16)((float)leftline[start]+dx*(float)(i-start));
+            leftfollowline[i]=(int16)((float)raw_leftline[start]+dx*(float)(i-start));
         }
     }
 }
@@ -1635,21 +1663,21 @@ void lenthen_Right_bondarise_bottom(int16 start)
 {
     if(start<0){start=0;}
     if(start>MT9V03X_H-8){start=MT9V03X_H-8;}
-    float dx=(float)(rightline[start]-rightline[start+5])/5;
+    float dx=(float)(raw_rightline[start]-raw_rightline[start+5])/5;
 
     for(int16 i=start;i>=0;i--)
     {
-        if((float)rightline[start]+dx*(i-start)>MT9V03X_W-2)
+        if((float)raw_rightline[start]+dx*(i-start)>MT9V03X_W-2)
         {
             rightfollowline[i]=MT9V03X_W-1;
         }
-        else if((float)rightline[start]+dx*(float)(i-start)<0)
+        else if((float)raw_rightline[start]+dx*(float)(i-start)<0)
         {
             rightfollowline[i]=0;
         }
         else 
         {
-            rightfollowline[i]=(int16)((float)rightline[start]+dx*(float)(i-start));
+            rightfollowline[i]=(int16)((float)raw_rightline[start]+dx*(float)(i-start));
         }
     }
 }
@@ -1684,7 +1712,7 @@ void trace_right_bu(int16 start,int16 end)
     
     for(int16 i=start;i<end;i++)
     {
-        int16 temp=leftline[i]+trace_middle[i];
+        int16 temp=raw_leftline[i]+trace_middle[i];
         if(temp>MT9V03X_W-1)
         {
             temp=MT9V03X_W-1;
@@ -1716,7 +1744,7 @@ void trace_left_bu(int16 start,int16 end)
     }
     for(int16 i=start;i<end;i++)
     {
-        int16 temp=rightline[i]-trace_middle[i];
+        int16 temp=raw_rightline[i]-trace_middle[i];
         if(temp<0)
         {
             temp=0;
@@ -1762,7 +1790,8 @@ void image_process(void)
 	//   image_filter(dis_image);
     image_threshold = my_adapt_threshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H); // Í¼Ïñ»ñÈ¡
     set_b_imagine(image_threshold);        // ¶şÖµ»¯
-    image_boundary_process2();              // Í¼Ïñ±ß½ç´¦Àí
+    image_boundary_process2();             // Í¼Ïñ±ß½ç´¦Àí
+    find_tubian_point();                   // °×ÁĞ±ß½çµãÌáÈ¡
     element_check();// ÔªËØ¼ì²é
 }
 

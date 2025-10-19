@@ -144,6 +144,7 @@ typedef enum
 }ips200_font_size_enum;
 
 void    ips200_clear                    (void);
+void    ips200_clear_region             (const uint16 x1, const uint16 y1, const uint16 x2, const uint16 y2);
 void    ips200_full                     (const uint16 color);
 void    ips200_set_dir                  (ips200_dir_enum dir);
 void    ips200_set_font                 (ips200_font_size_enum font);

@@ -45,52 +45,58 @@ void all_init(void)
     lora3a22_init();           // lora3a22 初始化 遥控器
     remote_param_init();
     // flash_load_config_default();
-    // while(1) // 摄像头初始化
-    // {
-    //     if(mt9v03x_init())
-    //     {
-    //         ips200_show_string(0, 16, "mt9v03x reinit.");
-    //     }
-    //     else
-    //     {
-    //         break;
-    //     }
-    //     system_delay_ms(50);
-    // }
+    while(1) // 摄像头初始化
+    {
+        if(mt9v03x_init())
+        {
+            ips200_show_string(0, 16, "mt9v03x reinit.");
+        }
+        else
+        {
+            break;
+        }
+        system_delay_ms(50);
+    }
 }
 
 
  
  int main()
  {
-     all_init();
-     while(1)
-     {  
-         if(carmode!=car_run_mode1&&carmode!=car_run_mode2)
-         {
-             Key_Scan();             // 按键扫描
-             Menu_control();         // 菜单控制
-         }
-         if(mt9v03x_finish_flag)
-         { 
-             photo_image_process_all();
-            //  protect(); // 保护    
-             // Velocity_Control();       // 速度控制    
-             if(current_state == 1)
-             {
-                 if(carmode!=car_run_mode1&&carmode!=car_run_mode2&&show_flag) 
-                 {
-                     photo_displayimage();
-                     show_line(); 
-                 }          
-             }                                                                   
-
-             mt9v03x_finish_flag = 0;
-         } 
-     }
+    all_init();
+    while(1)
+    {  
+        Menu_control();         // 菜单控制
+    }
  }
 
+//  int main()
+//  {
+//      all_init();
+//      while(1)
+//      {  
+//          if(carmode!=car_run_mode1&&carmode!=car_run_mode2)
+//          {
+//              Menu_control();         // 菜单控制
+//          }
+//          if(mt9v03x_finish_flag)
+//          { 
+//              photo_image_process_all();
+//             //  protect(); // 保护    
+//              // Velocity_Control();       // 速度控制    
+//              if(current_state == 1)
+//              {
+//                  if(carmode!=car_run_mode1&&carmode!=car_run_mode2&&show_flag) 
+//                  {
+//                      photo_displayimage();
+//                      show_line(); 
+//                  }          
+//              }                                                                   
 
+//              mt9v03x_finish_flag = 0;
+//          } 
+//      }
+//  }
 
 // int main(void)
 // { 

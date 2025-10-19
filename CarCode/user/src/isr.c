@@ -9,6 +9,7 @@
 #include "BLDC.h"
 #include "menu.h"
 #include "lora3a22.h"
+#include "key.h"
 extern uint32 key1_count;
 extern uint32 key2_count;
 extern uint32 key3_count;
@@ -301,8 +302,8 @@ void TIM6_IRQHandler(void)
 //-------------------------------------------------------------------------------------------------------------------
 void TIM7_IRQHandler (void)
 {
-    // 此�?�编写用户代�?
-if(key1_flag)
+    Key_Scan();
+    if(key1_flag)
 	{
         status=1;
 		key1_count++;
