@@ -24,8 +24,8 @@ void BLDC_init(void)
 //电机校准高电平
 void BLDC_unlock_UP(void)
 {
-    pwm_set_duty(PWM_CH1, 2000);                     // 计算占空比
-    pwm_set_duty(PWM_CH2, 2000);                     // 计算占空比
+    pwm_set_duty(PWM_CH1, 1500);                     // 计算占空比
+    pwm_set_duty(PWM_CH2, 1500);                     // 计算占空比 到时候改回来
 }
 void BLDC_unlock_DOWN(void)
 {

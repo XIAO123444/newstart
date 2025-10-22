@@ -4,159 +4,341 @@
 #include "pid.h"
 #include "BLDC.h"
 
-
-
 extern int speed;
+extern int16 threshold_up;
+extern int16 threshold_down;
+extern int16 forwardsight;
+extern int16 forwardsight2;
+extern int16 forwardsight3;
 
-extern int16 threshold_up;       //´ó½ò·¨ãĞÖµÉÏÏŞ
-extern int16 threshold_down;     //´ó½ò·¨ãĞÖµÏÂÏŞ
-
-extern int16 forwardsight; //Ä¬ÈÏÇ°Õ°
-extern int16 forwardsight2;//  Ö±µ½ÅĞ¶ÏÇ°Õ°£¡£¡£¡£¡×¢ÒâÕâ¸öºÍÇ°Õ°²»Í¬£¬ÓÃÓÚÈıÂÖ»òÕßËÄÂÖ³µ¼ÓËÙµÄ£¡£¡£¡
-extern int16 forwardsight3;//ÍäµÀÇ°Õ°
-
-extern PID_t PID_gyro;          //½ÇËÙ¶È»·
-extern PID_t PID_angle;         //½Ç¶È»·
-extern PID_t PID_speed;         //ËÙ¶È»·  
-extern PID_t PID_steer;         //×ªÏò»·
-extern PID_t PID_BLDC;          //¸ºÑ¹·çÉÈ»·
+extern PID_t PID_gyro;
+extern PID_t PID_angle;
+extern PID_t PID_speed;
+extern PID_t PID_steer;
+extern PID_t PID_BLDC;
 
 extern BLDC_Param bldc_param;
+
+Enum_flash_param flash_param_type[]=
+{
+    FLASH_TYPE_FLOAT,      // 0  PID_gyro.kp
+    FLASH_TYPE_FLOAT,      // 1  PID_gyro.ki
+    FLASH_TYPE_FLOAT,      // 2  PID_gyro.kd
+    FLASH_TYPE_FLOAT,      // 3  PID_gyro.maxout
+    FLASH_TYPE_FLOAT,      // 4  PID_gyro.minout
+
+    FLASH_TYPE_FLOAT,      // 5  PID_angle.kp
+    FLASH_TYPE_FLOAT,      // 6  PID_angle.ki
+    FLASH_TYPE_FLOAT,      // 7  PID_angle.kd
+    FLASH_TYPE_FLOAT,      // 8  PID_angle.maxout
+    FLASH_TYPE_FLOAT,      // 9  PID_angle.minout
+
+    FLASH_TYPE_FLOAT,      // 10 PID_speed.kp
+    FLASH_TYPE_FLOAT,      // 11 PID_speed.ki
+    FLASH_TYPE_FLOAT,      // 12 PID_speed.kd
+    FLASH_TYPE_FLOAT,      // 13 PID_speed.maxout
+    FLASH_TYPE_FLOAT,      // 14 PID_speed.minout
+    FLASH_TYPE_FLOAT,      // 15 PID_speed.targ
+
+    FLASH_TYPE_FLOAT,      // 16 PID_steer.kp
+    FLASH_TYPE_FLOAT,      // 17 PID_steer.ki
+    FLASH_TYPE_FLOAT,      // 18 PID_steer.kd
+    FLASH_TYPE_FLOAT,      // 19 PID_steer.kd2
+    FLASH_TYPE_FLOAT,      // 20 PID_steer.maxout
+    FLASH_TYPE_FLOAT,      // 21 PID_steer.minout
+
+    FLASH_TYPE_FLOAT,      // 22 PID_BLDC.kp
+    FLASH_TYPE_FLOAT,      // 23 PID_BLDC.ki
+    FLASH_TYPE_FLOAT,      // 24 PID_BLDC.kd
+    FLASH_TYPE_FLOAT,      // 25 PID_BLDC.maxout
+    FLASH_TYPE_FLOAT,      // 26 PID_BLDC.minout
+    FLASH_TYPE_INT16,     // 27 bldc_param.basic_duty
+
+    FLASH_TYPE_INT16,     // 28 bldc_param.encoder_p
+    FLASH_TYPE_INT16,     // 29 bldc_param.max_output
+    FLASH_TYPE_INT16,     // 30 bldc_param.min_output
+
+    FLASH_TYPE_INT16,     // 32 threshold_up
+    FLASH_TYPE_INT16,     // 33 threshold_down
+    FLASH_TYPE_INT16,     // 34 forwardsight
+    FLASH_TYPE_INT16,     // 35 forwardsight2
+    FLASH_TYPE_INT16,     // 36 forwardsight3
+};
+
+UNION_Flash_Param flash_union_pointer[]=
+{
+    { .param_float = &PID_gyro.kp },         // 0
+    { .param_float = &PID_gyro.ki },         // 1
+    { .param_float = &PID_gyro.kd },         // 2
+    { .param_float = &PID_gyro.maxout },     // 3
+    { .param_float = &PID_gyro.minout },     // 4
+
+    { .param_float = &PID_angle.kp },        // 5
+    { .param_float = &PID_angle.ki },        // 6
+    { .param_float = &PID_angle.kd },        // 7
+    { .param_float = &PID_angle.maxout },    // 8
+    { .param_float = &PID_angle.minout },    // 9
+
+    { .param_float = &PID_speed.kp },        // 10
+    { .param_float = &PID_speed.ki },        // 11
+    { .param_float = &PID_speed.kd },        // 12
+    { .param_float = &PID_speed.maxout },    // 13
+    { .param_float = &PID_speed.minout },    // 14
+    { .param_float = &PID_speed.targ },      // 15
+
+    { .param_float = &PID_steer.kp },        // 16
+    { .param_float = &PID_steer.ki },        // 17
+    { .param_float = &PID_steer.kd },        // 18
+    { .param_float = &PID_steer.kd2 },       // 19
+    { .param_float = &PID_steer.maxout },    // 20
+    { .param_float = &PID_steer.minout },    // 21
+
+    { .param_float = &PID_BLDC.kp },         // 22
+    { .param_float = &PID_BLDC.ki },         // 23
+    { .param_float = &PID_BLDC.kd },         // 24
+    { .param_float = &PID_BLDC.maxout },     // 25
+    { .param_float = &PID_BLDC.minout },     // 26
+    { .param_int16 = &bldc_param.basic_duty},//
+
+    { .param_int16 = &bldc_param.encoder_p },// 28
+    { .param_int16 = &bldc_param.max_output },// 29
+    { .param_int16 = &bldc_param.min_output },// 30
+
+    { .param_int16 = &threshold_up },        // 31
+    { .param_int16 = &threshold_down },      // 32
+    { .param_int16 = &forwardsight },        // 33
+    { .param_int16 = &forwardsight2 },       // 34
+    { .param_int16 = &forwardsight3 },       // 35
+};
+uint16 flash_param_count=0; //å­˜å‚¨å‚æ•°ä¸ªæ•°
+uint16 Beacon_param_count=20;//æœ€å¤šæ‰“20ä¸ªä¿¡æ ‡ç‚¹
+//-------------------------------------------------------------------------------------------------------------------
+// å‡½æ•°åç§°     ï¼šflash_reset
+// åŠŸèƒ½è¯´æ˜     ï¼šæ“¦é™¤æ‰€æœ‰é…ç½®é¡µ
+// å‚æ•°è¯´æ˜     ï¼švoid
+// è¿”å›å‚æ•°     ï¼švoid
+// ä½¿ç”¨ç¤ºä¾‹     ï¼šflash_reset();
+// å¤‡æ³¨ä¿¡æ¯     ï¼šæ“¦é™¤æ‰€æœ‰é…ç½®æ§½ä½çš„Flashæ•°æ®
+//-------------------------------------------------------------------------------------------------------------------
 void flash_reset(void)
 {
-    flash_erase_page(100, 0);                                 // ²Á³ıÕâÒ»Ò³
-    flash_erase_page(100, 1);                                 // ²Á³ıÕâÒ»Ò³
-    flash_erase_page(100, 2);                                 // ²Á³ıÕâÒ»Ò³
-    flash_erase_page(99, 0);                                  // ²Á³ıÕâÒ»Ò³
-    
+    flash_erase_page(99, 0);  // å‚æ•°ä¸ªæ•°
+    flash_erase_page(100, 0);  // é»˜è®¤é…ç½®
+    flash_erase_page(100, 1);  // é…ç½®1
+    flash_erase_page(100, 2);  // é…ç½®2
+    flash_erase_page(100, 3);  // é…ç½®3
+    flash_erase_page(101, 0);  // é…ç½®4
 }
 //-------------------------------------------------------------------------------------------------------------------
-// º¯Êı¼ò½é     ±£´æ²ÎÊıµ½ FLASHÅäÖÃ1
-// ²ÎÊıËµÃ÷     void
-// ·µ»Ø²ÎÊı     void
-// Ê¹ÓÃÊ¾Àı     flash_save_config1();
-// ±¸×¢ĞÅÏ¢     0ÊÇdefault 1,2,3,4·Ö±ğ¶ÔÓ¦£¨100,1£©£¨100,2£©£¨100,3£©£¨101,0£©
+// å‡½æ•°åç§°     save_flash_param_count
+// åŠŸèƒ½è¯´æ˜     ï¼šä¿å­˜å‚æ•°ä¸ªæ•°åˆ°Flash
+// å‚æ•°è¯´æ˜     ï¼šæ— 
+// è¿”å›å‚æ•°     ï¼švoid
+// ä½¿ç”¨ç¤ºä¾‹     ï¼šsave_flash_param_count()
+// å¤‡æ³¨ä¿¡æ¯     ï¼š
+//   - é…ç½®æ§½ä½æ˜ å°„ï¼š0â†’(100,0), 1â†’(100,1), 2â†’(100,2), 3â†’(100,3), 4â†’(101,0)
+//   - å‚æ•°æŒ‰æ¨¡å—åˆ†ç»„ï¼Œç´¢å¼•å®šä¹‰åœ¨flash.hä¸­
+//   - è‡ªåŠ¨ä¿å­˜ç‰ˆæœ¬å·å’Œå‚æ•°è®¡æ•°ï¼Œç”¨äºåç»­åŠ è½½æ—¶çš„å…¼å®¹æ€§æ£€æŸ¥
 //-------------------------------------------------------------------------------------------------------------------
+
+void save_flash_param_count()
+{
+    if(flash_check(99,0))
+    {
+        flash_erase_page(99,0);
+    }
+    flash_buffer_clear();
+    flash_union_buffer[FLASH_IDX_PARAM_COUNT].uint16_type = flash_param_count;
+    // å†™å…¥Flash
+    flash_write_page_from_buffer(99, 0);
+}
+
+void load_flash_param_count()
+{
+    flash_buffer_clear();
+    flash_read_page_to_buffer(99,0);
+    if(!flash_check(99,0))
+    {
+        flash_union_buffer[FLASH_IDX_PARAM_COUNT].uint16_type = 0;
+    }
+    else
+    {
+        flash_check(99,0);
+    }
+    flash_param_count = flash_union_buffer[FLASH_IDX_PARAM_COUNT].uint16_type;
+}
+//-------------------------------------------------------------------------------------------------------------------
+// å‡½æ•°åç§°     ï¼šflash_save_config
+// åŠŸèƒ½è¯´æ˜     ï¼šä¿å­˜å‚æ•°åˆ°Flash
+// å‚æ•°è¯´æ˜     ï¼ši - é…ç½®æ§½ä½ (0=é»˜è®¤, 1-4=ç”¨æˆ·é…ç½®)
+// è¿”å›å‚æ•°     ï¼švoid
+// ä½¿ç”¨ç¤ºä¾‹     ï¼šflash_save_config(0);
+// å¤‡æ³¨ä¿¡æ¯     ï¼š
+//   - é…ç½®æ§½ä½æ˜ å°„ï¼š0â†’(100,0), 1â†’(100,1), 2â†’(100,2), 3â†’(100,3), 4â†’(101,0)
+//   - å‚æ•°æŒ‰æ¨¡å—åˆ†ç»„ï¼Œç´¢å¼•å®šä¹‰åœ¨flash.hä¸­
+//   - è‡ªåŠ¨ä¿å­˜ç‰ˆæœ¬å·å’Œå‚æ•°è®¡æ•°ï¼Œç”¨äºåç»­åŠ è½½æ—¶çš„å…¼å®¹æ€§æ£€æŸ¥
+//-------------------------------------------------------------------------------------------------------------------
+
 void flash_save_config(int16 i)
 {
+    // æ£€æŸ¥å¹¶æ“¦é™¤Flashé¡µ
+    if(flash_check(100 + i/4, i%4))
+    {
+        flash_erase_page(100 + i/4, i%4);
+    }
 
-        if(flash_check(100+i/4, i%4)){flash_erase_page(100+i/4, i%4);}
-        flash_buffer_clear();
-        //Ö»ÓĞ×ªÏò»·d2
+    flash_buffer_clear();
+
+    // ====== PID_gyro é™€èºä»ªç¯ (ç´¢å¼• 0-4) ======
+    for(int i =0;i<flash_param_count;i++)
+    {
+        switch(flash_param_type[i])
+        {
+            case FLASH_TYPE_FLOAT:
+                flash_union_buffer[i].float_type = *(flash_union_pointer[i].param_float);
+                break;
+            case FLASH_TYPE_INT16:
+                flash_union_buffer[i].int16_type = *(flash_union_pointer[i].param_int16);
+                break;
+            case FLASH_TYPE_UINT16:
+                flash_union_buffer[i].uint16_type = *(flash_union_pointer[i].param_uint16);
+                break;
+            case FLASH_TYPE_INT32:
+                flash_union_buffer[i].int32_type = *(flash_union_pointer[i].param_int32);
+                break;
+            case FLASH_TYPE_UINT32:
+                flash_union_buffer[i].uint32_type = *(flash_union_pointer[i].param_uint32);
+                break;
+            default:
+                break;
+        }
+    }
+    if(flash_param_count == FLASH_PARAM_COUNT)
+    {
+        return ;
+    }
+    for (int16 i = flash_param_count; i < FLASH_PARAM_COUNT; i++)
+    {
+        switch(flash_param_type[i])
+        {
+            case FLASH_TYPE_FLOAT:
+                flash_union_buffer[i].float_type = 0.0f;
+                break;
+            case FLASH_TYPE_INT16:
+                flash_union_buffer[i].int16_type = 0;
+                break;
+            case FLASH_TYPE_UINT16:
+                flash_union_buffer[i].uint16_type = 0;
+                break;
+            case FLASH_TYPE_INT32:
+                flash_union_buffer[i].int32_type = 0;
+                break;
+            case FLASH_TYPE_UINT32:
+                flash_union_buffer[i].uint32_type = 0;
+                break;
+            default:
+                break;
+        }
+    }
     
-        // 100,0   
-        //½ÇËÙ¶È»·
-        flash_union_buffer[0].float_type = PID_gyro.kp;
-        flash_union_buffer[1].float_type = PID_gyro.ki;    
-        flash_union_buffer[2].float_type = PID_gyro.kd;
-        flash_union_buffer[3].float_type = PID_gyro.maxout;    
-        flash_union_buffer[4].float_type = PID_gyro.minout;
-        //½Ç¶È»·
-        flash_union_buffer[5].float_type = PID_angle.kp;
-        flash_union_buffer[6].float_type = PID_angle.ki;
-        flash_union_buffer[7].float_type = PID_angle.kd;
-        flash_union_buffer[8].float_type = PID_angle.maxout;
-        flash_union_buffer[9].float_type = PID_angle.minout;
-        //ËÙ¶È»·
-        flash_union_buffer[10].float_type = PID_speed.kp;
-        flash_union_buffer[11].float_type = PID_speed.ki;
-        flash_union_buffer[12].float_type = PID_speed.kd;
-        flash_union_buffer[13].float_type = PID_speed.maxout;
-        flash_union_buffer[14].float_type = PID_speed.minout;
-        flash_union_buffer[24].float_type=  PID_speed.targ;
-        //×ªÏò»·
-        flash_union_buffer[15].float_type = PID_steer.kp;
-        flash_union_buffer[16].float_type = PID_steer.ki;
-        flash_union_buffer[17].float_type = PID_steer.kd;
-        flash_union_buffer[18].float_type = PID_steer.kd2;
-        flash_union_buffer[19].float_type = PID_steer.maxout;
-        flash_union_buffer[20].float_type = PID_steer.minout;
-        flash_union_buffer[25].float_type = PID_steer.kd2;
-        //×ªÏò»·6¸ö²ÎÊı
-        flash_union_buffer[26].float_type = PID_BLDC.kp;
-        flash_union_buffer[27].float_type = PID_BLDC.ki;    
-        flash_union_buffer[28].float_type = PID_BLDC.kd;
-        flash_union_buffer[29].float_type = PID_BLDC.maxout;
-        flash_union_buffer[30].float_type = PID_BLDC.minout;
-        flash_union_buffer[31].float_type = PID_BLDC.kd2;
-
-        //¸ºÑ¹·çÉÈ»·5¸ö²ÎÊı
-        //PID21¸ö²ÎÊı
-        flash_union_buffer[21].int16_type = forwardsight;
-        flash_union_buffer[22].int16_type = forwardsight2;
-        flash_union_buffer[23].int16_type = forwardsight3;
-        //Ç°Õ°3¸ö²ÎÊı
-        flash_union_buffer[24].int16_type = bldc_param.basic_duty;
-        flash_union_buffer[25].int16_type = bldc_param.encoder_p;
-        flash_union_buffer[26].int16_type = bldc_param.max_output;
-        flash_union_buffer[27].int16_type = bldc_param.min_output;
-
-
-
-        flash_write_page_from_buffer(100+i/4, i%4);        //flashĞ´
-
+    // å†™å…¥Flash
+    flash_write_page_from_buffer(100 + i/4, i%4);
 }
-void flash_save_config_default(void) { flash_save_config(0); }          //Ä¬ÈÏ·ÖÇø±£´æ
+
+//-------------------------------------------------------------------------------------------------------------------
+// å‡½æ•°åç§°     ï¼šflash_load_config
+// åŠŸèƒ½è¯´æ˜     ï¼šä»FlashåŠ è½½å‚æ•°
+// å‚æ•°è¯´æ˜     ï¼ši - é…ç½®æ§½ä½ (0=é»˜è®¤, 1-4=ç”¨æˆ·é…ç½®)
+// è¿”å›å‚æ•°     ï¼švoid
+// ä½¿ç”¨ç¤ºä¾‹     ï¼šflash_load_config(0);
+// å¤‡æ³¨ä¿¡æ¯     ï¼š
+//   - è‡ªåŠ¨æ£€æµ‹ç‰ˆæœ¬å·å’Œå‚æ•°è®¡æ•°
+//   - å¦‚æœFlashä¸­ä¿å­˜çš„å‚æ•°æ•°é‡å°‘äºå½“å‰å®šä¹‰çš„å‚æ•°æ•°é‡ï¼Œæœªä¿å­˜çš„å‚æ•°ä¼šè¢«åˆå§‹åŒ–ä¸º0
+//   - è¿™æ ·å¯ä»¥åœ¨æ·»åŠ æ–°å‚æ•°æ—¶ä¸ä¼šå¯¼è‡´ç¨‹åºå¡æ­»
+//-------------------------------------------------------------------------------------------------------------------
+void flash_load_config(int16 i)
+{
+    flash_buffer_clear();
+    flash_read_page_to_buffer(100 + i/4, i%4);
+    for(int16 i=0;i<flash_param_count;i++)
+    {
+        switch(flash_param_type[i])
+        {
+            case FLASH_TYPE_FLOAT:
+                *(flash_union_pointer[i].param_float) = flash_union_buffer[i].float_type;
+                break;
+            case FLASH_TYPE_INT16:
+                *(flash_union_pointer[i].param_int16) = flash_union_buffer[i].int16_type;
+                break;
+            case FLASH_TYPE_UINT16:
+                *(flash_union_pointer[i].param_uint16) = flash_union_buffer[i].uint16_type;
+                break;
+            case FLASH_TYPE_INT32:
+                *(flash_union_pointer[i].param_int32) = flash_union_buffer[i].int32_type;
+                break;
+            case FLASH_TYPE_UINT32:
+                *(flash_union_pointer[i].param_uint32) = flash_union_buffer[i].uint32_type;
+                break;
+            default:
+                break;
+        }
+    }
+    if(flash_param_count < FLASH_PARAM_COUNT)
+    {
+        for(int16 i=flash_param_count;i<FLASH_PARAM_COUNT;i++)
+        {
+            switch(flash_param_type[i])
+            {
+                case FLASH_TYPE_FLOAT:
+                    *(flash_union_pointer[i].param_float) = 0.0f;
+                    break;
+                case FLASH_TYPE_INT16:
+                    *(flash_union_pointer[i].param_int16) = 0;
+                    break;
+                case FLASH_TYPE_UINT16:
+                    *(flash_union_pointer[i].param_uint16) = 0;
+                    break;
+                case FLASH_TYPE_INT32:
+                    *(flash_union_pointer[i].param_int32) = 0;
+                    break;
+                case FLASH_TYPE_UINT32:
+                    *(flash_union_pointer[i].param_uint32) = 0;
+                    break;
+                default:
+                    break;
+            }
+        }
+        flash_save_config(i);
+    }
+   
+}
+
+// ä¾¿æ·å‡½æ•°ï¼šä¿å­˜åˆ°ä¸åŒé…ç½®æ§½ä½
+void flash_save_config_default(void) 
+{
+
+    if(flash_param_count < FLASH_PARAM_COUNT)
+    {   
+        flash_save_config(0);
+        flash_save_config(1);
+        flash_save_config(2);
+        flash_save_config(3);
+        flash_save_config(4);
+        flash_param_count = FLASH_PARAM_COUNT;
+        save_flash_param_count();
+
+    }
+    flash_save_config(0);
+}
+
+
 void flash_save_config_1(void) { flash_save_config(1); }
 void flash_save_config_2(void) { flash_save_config(2); }
 void flash_save_config_3(void) { flash_save_config(3); }
 void flash_save_config_4(void) { flash_save_config(4); }
-void flash_load_config(int16 i)
-{
-    flash_buffer_clear();                                               //»º³åÇøÇåÀí
-    flash_read_page_to_buffer(100+i/4, i%4);                            // ½«Êı¾İ´Ó flash ¶ÁÈ¡µ½»º³åÇø
-    PID_gyro.kp = flash_union_buffer[0].float_type;
-    PID_gyro.ki = flash_union_buffer[1].float_type;
-    PID_gyro.kd = flash_union_buffer[2].float_type;
-    PID_gyro.maxout = flash_union_buffer[3].float_type;
-    PID_gyro.minout = flash_union_buffer[4].float_type;
-    
-    // ½Ç¶È»·²ÎÊı¶ÁÈ¡
-    PID_angle.kp = flash_union_buffer[5].float_type;
-    PID_angle.ki = flash_union_buffer[6].float_type;
-    PID_angle.kd = flash_union_buffer[7].float_type;
-    PID_angle.maxout = flash_union_buffer[8].float_type;
-    PID_angle.minout = flash_union_buffer[9].float_type;
-    
-    // ËÙ¶È»·²ÎÊı¶ÁÈ¡
-    PID_speed.kp = flash_union_buffer[10].float_type;
-    PID_speed.ki = flash_union_buffer[11].float_type;
-    PID_speed.kd = flash_union_buffer[12].float_type;
-    PID_speed.maxout = flash_union_buffer[13].float_type;
-    PID_speed.minout = flash_union_buffer[14].float_type;
-    PID_speed.targ=flash_union_buffer[24].float_type;//24
-    
-    // ×ªÏò»·²ÎÊı¶ÁÈ¡
-    PID_steer.kp = flash_union_buffer[15].float_type;
-    PID_steer.ki = flash_union_buffer[16].float_type;
-    PID_steer.kd = flash_union_buffer[17].float_type;
-    PID_steer.kd2 = flash_union_buffer[18].float_type; // ×¢Òâ£º±£´æÊ±ÓĞkd2£¬¶ÁÈ¡Ò²Ó¦ÓĞ
-    PID_steer.maxout = flash_union_buffer[19].float_type;
-    PID_steer.minout = flash_union_buffer[20].float_type;
-    PID_steer.kd2=flash_union_buffer[25].float_type;
-    // ×ªÏò»·6¸ö²ÎÊı¶ÁÈ¡
-    PID_BLDC.kp = flash_union_buffer[26].float_type;
-    PID_BLDC.ki = flash_union_buffer[27].float_type;
-    PID_BLDC.kd = flash_union_buffer[28].float_type;
-    PID_BLDC.maxout = flash_union_buffer[29].float_type;
-    PID_BLDC.minout = flash_union_buffer[30].float_type;
-    PID_BLDC.kd2 = flash_union_buffer[31].float_type;
 
-    //PID21¸ö²ÎÊı¶ÁÈ¡
-
-    forwardsight=flash_union_buffer[21].int16_type;
-    forwardsight2=flash_union_buffer[22].int16_type;
-    forwardsight3=flash_union_buffer[23].int16_type;
-    //Ç°Õ°3¸ö²ÎÊı¶ÁÈ¡
-    bldc_param.basic_duty=flash_union_buffer[24].int16_type;
-    bldc_param.encoder_p=flash_union_buffer[25].int16_type;
-    bldc_param.max_output=flash_union_buffer[26].int16_type;
-    bldc_param.min_output=flash_union_buffer[27].int16_type;        
-    //bldc4¸ö²ÎÊı¶ÁÈ¡
-
-
-} 
-void flash_load_config_default(void) { flash_load_config(0); }      //Ä¬ÈÏ·ÖÇø¼ÓÔØ
+// ä¾¿æ·å‡½æ•°ï¼šä»ä¸åŒé…ç½®æ§½ä½åŠ è½½
+void flash_load_config_default(void) { flash_load_config(0); }
 void flash_load_config_1(void) { flash_load_config(1); }
 void flash_load_config_2(void) { flash_load_config(2); }
 void flash_load_config_3(void) { flash_load_config(3); }

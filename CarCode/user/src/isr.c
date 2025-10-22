@@ -154,11 +154,11 @@ void TIM6_IRQHandler(void)
         {
             BLDC_unlock_UP(); //电机校准高电平
         }   
-        if(timer_counter>2000&&timer_counter<=3000)
+        if(timer_counter>2000&&timer_counter<=1000000)
         {
-            BLDC_unlock_DOWN(); //电机校准低电平
+            BLDC_unlock_UP(); //电机校准高电平
         }
-        if(timer_counter>3000)
+        if(timer_counter>1000000)
         {
             carmode=stop;
         }

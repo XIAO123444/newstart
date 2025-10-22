@@ -65,7 +65,6 @@ enum_roadelementtypedef roadelementType[50]={zebra,straigh,curve
     ,obstacle,islandl,straigh,zebra}; // 记录道路元素类型
 int16 element_num=12;       // 记录道路元素数量
 
-int32 speed; // 速度变量
 
 // 前瞻距离设置
 int16 forwardsight;         // 默认前瞻

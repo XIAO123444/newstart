@@ -15,8 +15,8 @@ int16 raw_rightline[MT9V03X_H];
 int16 rightfollowline[MT9V03X_H];
 int16 leftfollowline[MT9V03X_H];
 
-int16 delta_leftline[MT9V03X_H];
-int16 delta_rightline[MT9V03X_H];
+int16 delta_leftline[MT9V03X_H];            //左线差值数组
+int16 delta_rightline[MT9V03X_H];           //右线差值数组
 
 int16 leftlostpoint[2]={0,0};   //左丢线数和左丢线点0为丢线数，1为丢线索引
 int16 rightlostpoint[2]={0,0};  //右丢线数和左丢线点0为丢线数，1为丢线索引

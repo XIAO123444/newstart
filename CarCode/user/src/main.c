@@ -44,7 +44,8 @@ void all_init(void)
     BLDC_init();                // BLDC 初始化 TIM2在这里被用作pwm输出
     lora3a22_init();           // lora3a22 初始化 遥控器
     remote_param_init();
-    // flash_load_config_default();
+    load_flash_param_count(); // 加载参数个数
+    flash_load_config_default();
     while(1) // 摄像头初始化
     {
         if(mt9v03x_init())

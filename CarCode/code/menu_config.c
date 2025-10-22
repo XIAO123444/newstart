@@ -6,6 +6,7 @@
 extern uint8 input;            // 输入状态
 extern uint8 status;            // 状态变量
 
+extern bool first_frame;
 
 void show_element_new()
 {
@@ -23,6 +24,7 @@ void show_element_new()
 void show_delta_line()
 {
     ips200_clear();
+
     while((enum_Condition)input!=BACK)
     {   
         if(mt9v03x_finish_flag)
