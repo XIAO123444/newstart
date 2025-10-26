@@ -58,11 +58,11 @@ Enum_flash_param flash_param_type[]=
     FLASH_TYPE_INT16,     // 29 bldc_param.max_output
     FLASH_TYPE_INT16,     // 30 bldc_param.min_output
 
-    FLASH_TYPE_INT16,     // 32 threshold_up
-    FLASH_TYPE_INT16,     // 33 threshold_down
-    FLASH_TYPE_INT16,     // 34 forwardsight
-    FLASH_TYPE_INT16,     // 35 forwardsight2
-    FLASH_TYPE_INT16,     // 36 forwardsight3
+    FLASH_TYPE_INT16,     // 31 threshold_up
+    FLASH_TYPE_INT16,     // 32 threshold_down
+    FLASH_TYPE_INT16,     // 33 forwardsight
+    FLASH_TYPE_INT16,     // 34 forwardsight2
+    FLASH_TYPE_INT16,     // 35 forwardsight3
 };
 
 UNION_Flash_Param flash_union_pointer[]=
@@ -157,14 +157,6 @@ void load_flash_param_count()
 {
     flash_buffer_clear();
     flash_read_page_to_buffer(99,0);
-    if(!flash_check(99,0))
-    {
-        flash_union_buffer[FLASH_IDX_PARAM_COUNT].uint16_type = 0;
-    }
-    else
-    {
-        flash_check(99,0);
-    }
     flash_param_count = flash_union_buffer[FLASH_IDX_PARAM_COUNT].uint16_type;
 }
 //-------------------------------------------------------------------------------------------------------------------
@@ -189,7 +181,6 @@ void flash_save_config(int16 i)
 
     flash_buffer_clear();
 
-    // ====== PID_gyro 陀螺仪环 (索引 0-4) ======
     for(int i =0;i<flash_param_count;i++)
     {
         switch(flash_param_type[i])
@@ -213,28 +204,30 @@ void flash_save_config(int16 i)
                 break;
         }
     }
-    if(flash_param_count == FLASH_PARAM_COUNT)
-    {
-        return ;
-    }
+
     for (int16 i = flash_param_count; i < FLASH_PARAM_COUNT; i++)
     {
         switch(flash_param_type[i])
         {
             case FLASH_TYPE_FLOAT:
                 flash_union_buffer[i].float_type = 0.0f;
+                *(flash_union_pointer[i].param_float) = 0.0f;
                 break;
             case FLASH_TYPE_INT16:
                 flash_union_buffer[i].int16_type = 0;
+                *(flash_union_pointer[i].param_int16) = 0;
                 break;
             case FLASH_TYPE_UINT16:
                 flash_union_buffer[i].uint16_type = 0;
+                *(flash_union_pointer[i].param_uint16) = 0;
                 break;
             case FLASH_TYPE_INT32:
                 flash_union_buffer[i].int32_type = 0;
+                *(flash_union_pointer[i].param_int32) = 0;
                 break;
             case FLASH_TYPE_UINT32:
                 flash_union_buffer[i].uint32_type = 0;
+                *(flash_union_pointer[i].param_uint32) = 0;
                 break;
             default:
                 break;
@@ -314,9 +307,8 @@ void flash_load_config(int16 i)
 }
 
 // 便捷函数：保存到不同配置槽位
-void flash_save_config_default(void) 
+void flash_save_init(void)
 {
-
     if(flash_param_count < FLASH_PARAM_COUNT)
     {   
         flash_save_config(0);
@@ -326,19 +318,20 @@ void flash_save_config_default(void)
         flash_save_config(4);
         flash_param_count = FLASH_PARAM_COUNT;
         save_flash_param_count();
-
+        return; 
     }
-    flash_save_config(0);
 }
 
 
+void flash_save_config_default(void) {flash_save_config(0);}
 void flash_save_config_1(void) { flash_save_config(1); }
 void flash_save_config_2(void) { flash_save_config(2); }
 void flash_save_config_3(void) { flash_save_config(3); }
 void flash_save_config_4(void) { flash_save_config(4); }
 
 // 便捷函数：从不同配置槽位加载
-void flash_load_config_default(void) { flash_load_config(0); }
+// void flash_load_config_default(void) { flash_save_config_default();flash_load_config(0); }
+void flash_load_config_default(void) {flash_load_config(0); }
 void flash_load_config_1(void) { flash_load_config(1); }
 void flash_load_config_2(void) { flash_load_config(2); }
 void flash_load_config_3(void) { flash_load_config(3); }

@@ -117,6 +117,8 @@ extern int32 encoder_R_d;  // 右编码器差值
 extern int32 encoder_L_d;  // 左编码器差值
 extern int32 encoder_R_last; // 右编码器上次值
 extern int32 encoder_L_last; // 左编码器上次值
+//flash 参数
+extern uint16 flash_param_count; //存储参数个数
 
 // 显示道路元素
 void show_element(void)
@@ -355,6 +357,7 @@ MENU menu[] =
             {3, "forwardsight2",150, 40, {.param_int16=&forwardsight2}, param_int16, NULL},
             {3, "forwardsight3",150, 60, {.param_int16=&forwardsight3}, param_int16, NULL},
         {2, "show_delta_line", 0, 140, {.param_float=&default_float}, function, show_delta_line},
+        {2, "show_jiao_point", 0, 160, {.param_float=&default_float}, function, show_jiao_point},
     
     // 调试菜单
     {1, "debug", 0, 80, {.param_float=&default_float}, catlog, NULL},
@@ -439,7 +442,7 @@ MENU menu[] =
             {3, "save3", 100, 60, {.param_float=&default_float}, confirm, flash_save_config_3},
             {3, "save4", 100, 80, {.param_float=&default_float}, confirm, flash_save_config_4},
         {2, "resetflash", 100, 80, {.param_float=&default_float}, confirm, flash_reset},
-    
+        {2, "param_count", 180, 100, {.param_uint16=&flash_param_count}, param_uint16_readonly, NULL},
     // 设置菜单
     {1, "setting", 0, 140, {.param_float=&default_float}, catlog, NULL},
     {1, "end", 0, 0, {.param_float=&default_float}, catlog, NULL}
@@ -447,7 +450,7 @@ MENU menu[] =
 
 enum_Condition condition = NOACTION; // 菜单行为初始化为无动作
 
-// 初始化菜单屏幕
+// 初始化菜单屏幕d
 void Menu_Screen_Init(void)
 {
     ips200_set_color(RGB565_WHITE, RGB565_BLACK);    // 设置为白底黑字

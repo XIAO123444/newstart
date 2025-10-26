@@ -6,4 +6,6 @@
 
 void show_element_new();
 void show_delta_line();
+void show_jiao_point();
+
 #endif

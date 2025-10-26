@@ -913,6 +913,43 @@ int16 output_middle(void)
   @note      ÎŞ
 -------------------------------------------------------------------------------------------------------------------
 */
+
+#define THRESHOLD (3)
+#define MAX_POINTS (5)
+Point point_L_down[MAX_POINTS];//×ó±ß½çÏÂ½Çµã
+Point point_R_down[MAX_POINTS];//ÓÒ±ß½çÏÂ½Çµã
+Point point_L_up[MAX_POINTS];//×ó±ß½çÉÏ½Çµã
+Point point_R_up[MAX_POINTS];//ÓÒ±ß½çÉÏ½Çµã
+
+uint8 num_left_up=0;         //×ó±ß½çÓĞĞ§½ÇµãÊıÁ¿
+uint8 num_right_up=0;        //ÓÒ±ß½çÓĞĞ§½ÇµãÊıÁ¿
+uint8 num_left_down=0;       //×ó±ß½çÓĞĞ§½ÇµãÊıÁ¿
+uint8 num_right_down=0;      //ÓÒ±ß½çÓĞĞ§½ÇµãÊıÁ¿
+
+// union_param fast_show_tubian_point[40]=
+// {
+
+// };
+void tubian_point_init(void)
+{
+
+    for(int i=0;i<10;i++)
+    {   
+        point_L_down[i].x=0;
+        point_L_down[i].y=0;    
+        point_R_down[i].x=0;
+        point_R_down[i].y=0;
+        point_L_up[i].x=0;
+        point_L_up[i].y=0;
+        point_R_up[i].x=0;
+        point_R_up[i].y=0;
+    }
+    num_left_up=0;         //×ó±ß½çÓĞĞ§½ÇµãÊıÁ¿
+    num_right_up=0;        //ÓÒ±ß½çÓĞĞ§½ÇµãÊıÁ¿
+    num_left_down=0;       //×ó±ß½çÓĞĞ§½ÇµãÊıÁ¿
+    num_right_down=0;      //ÓÒ±ß½çÓĞĞ§½ÇµãÊıÁ¿
+}
+
 void find_tubian_point(void)
 {
     int16 i;
@@ -928,7 +965,156 @@ void find_tubian_point(void)
         delta_leftline[i+1]=raw_leftline[i]-raw_leftline[i+1];
         delta_rightline[i+1]=raw_rightline[i]-raw_rightline[i+1];          
     } 
-       
+
+}
+void check_point(void)
+{
+    int16 i;
+    uint8 countldown=0;//×óÏÂ½ÇµãÊı
+    uint8 countlup=0;//×óÉÏ½ÇµãÊı
+    uint8 countrdown=0;//ÓÒÏÂ½ÇµãÊı
+    uint8 countrup=0;//ÓÒÉÏ½ÇµãÊı
+
+    int8 templ=0;//¼ÇÂ¼ÉÏÏÂ½Çµã·ÀÖ¹ÖØ¸´¼ÇÂ¼£¬1ÎªÉÏ½Çµã-1ÎªÏÂ½Çµã
+    int8 tempr=0;
+    for(i=MT9V03X_H-1;i>=search_stop+2;i--)//ÕÒÏÂ½Çµã
+    {   
+        if(delta_leftline[i]<-THRESHOLD&&templ!=-1&&countldown<MAX_POINTS-1)
+        {   
+
+            point_L_down[countldown].x=raw_leftline[i];
+            point_L_down[countldown].y=i;
+            countldown++;
+            templ=-1;
+        }
+        else if(templ==-1&&delta_leftline[i]>THRESHOLD)
+        {
+            templ=0;
+        }
+        if(delta_rightline[i]>THRESHOLD&&tempr!=-1&&countrdown<MAX_POINTS-1)
+        {
+            point_R_down[countrdown].x=raw_rightline[i];
+            point_R_down[countrdown].y=i;
+            countrdown++;
+            tempr=-1;
+        }
+        else if(tempr==-1&&delta_rightline[i]<-THRESHOLD)
+        {
+            tempr=0;
+        }
+        
+    }
+    for (i=MT9V03X_H-1;i>=search_stop+2;i--)
+    {
+        if(delta_leftline[i]>THRESHOLD&&templ!=1)
+        {
+            templ=1;    //ÊÇÉÏ½Çµã
+        }
+        else if(delta_leftline[i]<-THRESHOLD&&templ==1&&countlup<MAX_POINTS-1)
+        {
+            point_L_up[countlup].x=raw_leftline[i];
+            point_L_up[countlup].y=i;
+            countlup++;
+            templ=0;
+        }
+        if(delta_rightline[i]<-THRESHOLD&&tempr!=1)
+        {
+            tempr=1;    //ÊÇÉÏ½Çµã
+        }
+        else if(delta_rightline[i]>THRESHOLD&&tempr==1&&countrup<MAX_POINTS-1)
+        {
+            point_R_up[countrup].x=raw_rightline[i];
+            point_R_up[countrup].y=i;
+            countrup++;
+            tempr=0;
+        }
+
+    }
+    num_left_down=countldown;
+    num_right_down=countrdown;
+    num_left_up=countlup;
+    num_right_up=countrup;
+    
+
+}
+void debugger_jiaopoint_locate(void)
+{
+    for(int16 i=0;i<5;i++)
+    {
+        ips200_show_string(0,20*i,"LD");
+        ips200_show_int(16,20*i,i,2);
+        ips200_show_string(24,20*i,":");
+        ips200_show_int(32,20*i,100,3);
+    
+        ips200_show_string(56,20*i,"LU");
+        ips200_show_int(72,20*i,i,2);
+        ips200_show_string(80,20*i,":");
+        ips200_show_int(88,20*i,200,3);
+
+        ips200_show_string(112,20*i,"RD");
+        ips200_show_int(128,20*i,i,2);
+        ips200_show_string(136,20*i,":");
+        ips200_show_int(144,20*i,300,3);
+
+        ips200_show_string(168,20*i,"RU");
+        ips200_show_int(184,20*i,i,2);
+        ips200_show_string(192,20*i,":");
+        ips200_show_int(200,20*i,400,3);    
+    }
+}
+void debugger_jiaopoint_value(void)
+{
+    for(int16 i=0;i<num_left_down;i++)
+    {
+        ips200_set_color(RGB565_GREEN,RGB565_BLACK);
+        ips200_show_int(32,20*i,point_L_down[i].x,3);
+        ips200_set_color(RGB565_WHITE,RGB565_BLACK);
+    }
+    for(int16 i=num_left_down;i<MAX_POINTS;i++)
+    {
+        ips200_set_color(RGB565_RED,RGB565_BLACK);
+        ips200_show_string(32,20*i,"ivd");//invalidÊı¾İ
+        ips200_set_color(RGB565_WHITE,RGB565_BLACK);
+    }
+    for(int16 i=0;i<num_left_up;i++)
+    {
+        ips200_set_color(RGB565_GREEN,RGB565_BLACK);
+        ips200_show_int(88,20*i,point_L_up[i].x,3);
+        ips200_set_color(RGB565_WHITE,RGB565_BLACK);
+    }
+    for(int16 i=num_left_up;i<MAX_POINTS;i++)
+    {
+        ips200_set_color(RGB565_RED,RGB565_BLACK);
+        ips200_show_string(88,20*i,"ivd");//invalidÊı¾İ
+        ips200_set_color(RGB565_WHITE,RGB565_BLACK);
+    }
+
+    for(int16 i=0;i<num_right_down;i++)
+    {
+        ips200_set_color(RGB565_DustyBlue,RGB565_BLACK);
+        ips200_show_int(144,20*i,point_R_down[i].x,3);
+        ips200_set_color(RGB565_WHITE,RGB565_BLACK);
+    }
+    for(int16 i=num_right_down;i<MAX_POINTS;i++)
+    {
+        ips200_set_color(RGB565_RED,RGB565_BLACK);
+        ips200_show_string(144,20*i,"ivd");//invalidÊı¾İ
+        ips200_set_color(RGB565_WHITE,RGB565_BLACK);
+    }
+
+    for(int16 i=0;i<num_right_up;i++)
+    {
+        ips200_set_color(RGB565_DustyBlue,RGB565_BLACK);
+        ips200_show_int(200,20*i,point_R_up[i].x,3);
+        ips200_set_color(RGB565_WHITE,RGB565_BLACK);
+    }
+    for(int16 i=num_right_up;i<MAX_POINTS;i++)
+    {
+        ips200_set_color(RGB565_RED,RGB565_BLACK);
+        ips200_show_string(200,20*i,"ivd");//invalidÊı¾İ
+        ips200_set_color(RGB565_WHITE,RGB565_BLACK);
+    }
+
 }
 /*-------------------------------------------------------------------------------------------------------------------
   @brief     ÕÒÏÂÃæµÄÁ½¸ö¹Õµã£¬¹©Ê®×ÖÊ¹ÓÃ
@@ -1785,6 +1971,8 @@ void image_filter(uint8(*bin_image)[MT9V03X_W])//ĞÎÌ¬Ñ§ÂË²¨£¬¼òµ¥À´Ëµ¾ÍÊÇÅòÕÍºÍ¸
     }
 
 }
+
+//²úÉú¶şÖµ»¯Í¼Ïñ£¬ÌáÈ¡±ß½çµã£¬½øĞĞÔªËØ¼ì²é
 void image_process(void)
 {   
 	//   image_filter(dis_image);
@@ -1792,6 +1980,8 @@ void image_process(void)
     set_b_imagine(image_threshold);        // ¶şÖµ»¯
     image_boundary_process2();             // Í¼Ïñ±ß½ç´¦Àí
     find_tubian_point();                   // °×ÁĞ±ß½çµãÌáÈ¡
+
+
     element_check();// ÔªËØ¼ì²é
 }
 

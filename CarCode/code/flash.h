@@ -26,7 +26,7 @@ typedef union
 }UNION_Flash_Param;
 
 // Flash参数版本管理
-#define FLASH_PARAM_COUNT       36      // 当前保存的参数总数（修改时更新此值）
+#define FLASH_PARAM_COUNT       (36)      // 当前保存的参数总数（修改时更新此值）
 
 // Flash参数索引定义（按模块分组）
 // ====== 元数据 (99，0页) ======
@@ -38,11 +38,14 @@ typedef union
 void flash_reset(void);
 void flash_save_config(int16_t i);
 void flash_save_config_default(void);
+
 void flash_save_config_1(void);
 void flash_save_config_2(void);
 void flash_save_config_3(void);
 void flash_save_config_4(void);
 void flash_load_config(int16_t i);
+
+void flash_save_init(void);
 void flash_load_config_default(void);
 void flash_load_config_1(void);
 void flash_load_config_2(void);

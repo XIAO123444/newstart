@@ -2,6 +2,8 @@
 #define PHOTO_CHULI_H__
 
 #include "zf_common_headfile.h"
+
+#include "menu.h"
 void difsum_left(uint8 y,uint8 x);
 void difsum_right(uint8 y,uint8 x);
 void image_boundary_process(void);
@@ -56,4 +58,19 @@ void photo_image_process_all(void);//????????
 void photo_displayimage(void);      //????
 
 void protect();
+
+//????????
+void tubian_point_init(void);
+void find_tubian_point(void);
+void check_point(void);
+void debugger_jiaopoint_locate(void);
+void debugger_jiaopoint_value(void);
+
+
+
+typedef struct
+{
+    int16 x;
+    int16 y;
+}Point;
 #endif
