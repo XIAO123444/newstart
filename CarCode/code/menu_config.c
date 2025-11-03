@@ -2,14 +2,14 @@
 #include "key.h"
 #include "photo_chuli.h"
 #include "track.h"
-
+#include "Beacon.h"
 extern uint8 input;            // 输入状态
 extern uint8 status;            // 状态变量
+extern enum_menu_mode menu_Mode;         // 全局变量 菜单模式，默认为普通模式
 
-
+extern MENU menu[];
 
 // 快速显示函数
-float R=0;      //翼展半径
 extern bool first_frame;
 
 void show_element_new()
@@ -67,6 +67,29 @@ void show_jiao_point()
             show_line();
             mt9v03x_finish_flag = 0;
          } 
+    }
+
+    ips200_clear();
+    input=0;
+    status=0;
+}
+
+
+/*--------------------------------------------------------------------------------------------------------------------
+  @brief     Beacon功能函数
+  @param     
+  @return
+
+--------------------------------------------------------------------------------------------------------------------*/
+void Beacon_Function()
+{
+    ips200_clear();
+
+    while((enum_Condition)input!=BACK&&menu_Mode==normal)
+    {   
+        output();
+        Menu_control();
+        show_beacon_info();
     }
 
     ips200_clear();

@@ -8,7 +8,7 @@
 #include "photo_chuli.h"
 #include "zf_device_lora3a22.h"
 #include "BLDC.h"
-
+#include "Beacon.h"
 bool showline; // 显示线条标志
 
 #define ips200_x_max 240 // IPS屏幕最大X坐标
@@ -70,6 +70,9 @@ int16 element_num=12;       // 记录道路元素数量
 int16 forwardsight;         // 默认前瞻
 int16 forwardsight2;        // 直道判断前瞻
 int16 forwardsight3;        // 弯道前瞻
+// 信标灯相关变量
+extern Struct_Beacon_t_typedef Beacon_raw_info[MAX_BEACON_NUM]; //信标灯信息原始结构体数组
+extern uint8 Beacon_num[4];
 
 // 平衡相关变量
 extern float filtering_angle;       // 滤波后的角度
@@ -79,7 +82,6 @@ extern int16 yaw_angle_integr_read;   // 偏航角积分值
 extern int16 raw_gyro_x;             // 原始陀螺仪X值
 extern int16 raw_gyro_y;             // 原始陀螺仪Y值
 extern int16 raw_gyro_z;             // 原始陀螺仪Z值        
-
 // LoRa通信相关
 extern lora3a22_uart_transfer_dat_struct lora3a22_uart_transfer;
 
@@ -291,6 +293,8 @@ MENU menu[] =
             {3, "kd", ips200_x_max-10 * 8, 60, {.param_float=&PID_gyro.kd}, param_float, NULL},
             {3, "maxout", ips200_x_max-10 * 8, 80, {.param_float=&PID_gyro.maxout}, param_float, NULL},
             {3, "minout", ips200_x_max-10 * 8, 100, {.param_float=&PID_gyro.minout}, param_float, NULL},
+            {3, "PID_gyro_set0", 0, 120, {.param_float=&default_float}, confirm, pid_gyro_set0},
+
         // 角度PID
         {2, "PID_angle", 0, 40, {.param_float=&default_float}, catlog, NULL},
             {3, "kp", ips200_x_max-10 * 8, 20, {.param_float=&PID_angle.kp}, param_float, NULL},
@@ -298,6 +302,8 @@ MENU menu[] =
             {3, "kd", ips200_x_max-10 * 8, 60, {.param_float=&PID_angle.kd}, param_float, NULL},
             {3, "maxout", ips200_x_max-10 * 8, 80, {.param_float=&PID_angle.maxout}, param_float,NULL},
             {3, "minout", ips200_x_max-10 * 8, 100, {.param_float=&PID_angle.minout}, param_float, NULL},
+            {3, "PID_angle_set0",0, 120, {.param_float=&default_float}, confirm, pid_angle_set0},
+
         // 速度PID
         {2, "PID_Speed", 0, 60, {.param_float=&default_float}, catlog, NULL},
             {3, "kp", ips200_x_max-10 * 8, 20, {.param_float=&PID_speed.kp}, param_float, NULL},
@@ -306,6 +312,8 @@ MENU menu[] =
             {3, "maxout", ips200_x_max-10 * 8, 80, {.param_float=&PID_speed.maxout}, param_float,NULL},
             {3, "minout", ips200_x_max-10 * 8, 100, {.param_float=&PID_speed.minout}, param_float, NULL},
             {3,"target", ips200_x_max-10 * 8, 120, {.param_float=&PID_speed.targ}, param_float, NULL},
+            {2, "PID_V_set0", 0, 140, {.param_float=&default_float}, confirm, pid_V_set0},
+
         // 转向PID
         {2, "PID_steer", 0, 80, {.param_float=&default_float}, catlog, NULL},
             {3, "kp", ips200_x_max-10 * 8, 20, {.param_float=&PID_steer.kp}, param_float, NULL},
@@ -314,6 +322,8 @@ MENU menu[] =
             {3, "kd2", ips200_x_max-10 * 8, 80, {.param_float=&PID_steer.kd2}, param_float, NULL},
             {3, "maxout", ips200_x_max-10 * 8, 100, {.param_float=&PID_steer.maxout}, param_float,NULL},
             {3, "minout", ips200_x_max-10 * 8, 120, {.param_float=&PID_steer.minout}, param_float, NULL},
+            {3, "PID_steer_set0",0, 140, {.param_float=&default_float}, confirm, pid_steer_set0},
+
         // BLDC参数
         {2, "BLDC_param", 0, 100, {.param_float=&default_float}, catlog, NULL},
             {3, "basic_duty", ips200_x_max-10 * 8, 20, {.param_int16=&bldc_param.basic_duty},param_int16, NULL},
@@ -322,12 +332,8 @@ MENU menu[] =
             {3, "min_output",ips200_x_max-10 * 8, 80, {.param_int16=&bldc_param.min_output}, param_int16, NULL},
         // PID重置选项
         {2, "allset0", 0, 120, {.param_float=&default_float}, confirm, pid_all_set0},
-        {2, "PID_gyro_set0", 0, 140, {.param_float=&default_float}, confirm, pid_gyro_set0},
-        {2, "PID_angle_set0",0, 160, {.param_float=&default_float}, confirm, pid_angle_set0},
-        {2, "PID_V_set0", 0, 180, {.param_float=&default_float}, confirm, pid_V_set0},
-        {2, "PID_steer_set0",0, 200, {.param_float=&default_float}, confirm, pid_steer_set0},
-        {2,"PID_BLDC_modeset0",0, 220, {.param_float=&default_float}, confirm, pid_BLDC_mode_set},
-        {2,"PID_Bldc_paramset0",0, 240, {.param_float=&default_float}, confirm, pid_Bldc_param_set0},
+        {2,"PID_BLDC_modeset0",0, 140, {.param_float=&default_float}, confirm, pid_BLDC_mode_set},
+        {2,"PID_Bldc_paramset0",0, 160, {.param_float=&default_float}, confirm, pid_Bldc_param_set0},
 
     // 图像菜单
     {1, "image", 0, 60, {.param_float=&default_float}, catlog, NULL},
@@ -444,7 +450,54 @@ MENU menu[] =
         {2, "resetflash", 100, 80, {.param_float=&default_float}, confirm, flash_reset},
         {2, "param_count", 180, 100, {.param_uint16=&flash_param_count}, param_uint16_readonly, NULL},
     // 设置菜单
-    {1, "setting", 0, 140, {.param_float=&default_float}, catlog, NULL},
+    {1, "function", 0, 140, {.param_float=&default_float}, catlog, NULL},
+        {2,"Beacon",0,20,{.param_float=&default_float}, catlog, NULL},
+            {3,"group1",0,20,{.param_float=&default_float}, catlog, NULL},
+                {4,"Beacon_num",0,20,{.param_uint8=&Beacon_num[0]}, param_uint8, NULL},
+                {4,"Beacon_INFO_1",0,20,{.param_float=&default_float}, catlogandfunction, Beacon_Function},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[0].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[0].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[0].lighton}, on_off, NULL},
+                {4,"Beacon_INFO_2",0,40,{.param_float=&default_float}, catlog, NULL},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[1].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[1].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[1].lighton}, on_off, NULL},
+                {4,"Beacon_INFO_3",0,60,{.param_float=&default_float}, catlog, NULL},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[2].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[2].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[2].lighton}, on_off, NULL},
+                {4,"Beacon_INFO_4",0,80,{.param_float=&default_float}, catlog, NULL},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[3].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[3].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[3].lighton}, on_off, NULL},
+                {4,"Beacon_INFO_5",0,100,{.param_float=&default_float}, catlog, NULL},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[4].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[4].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[4].lighton}, on_off, NULL},
+                {4,"Beacon_INFO_6",0,120,{.param_float=&default_float}, catlog, NULL},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[5].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[5].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[5].lighton}, on_off, NULL},
+                {4,"Beacon_INFO_7",0,60,{.param_float=&default_float}, catlog, NULL},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[6].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[6].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[6].lighton}, on_off, NULL},
+                {4,"Beacon_INFO_8",0,80,{.param_float=&default_float}, catlog, NULL},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[7].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[7].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[7].lighton}, on_off, NULL},
+                {4,"Beacon_INFO_9",0,100,{.param_float=&default_float}, catlog, NULL},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[8].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[8].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[8].lighton}, on_off, NULL},
+                {4,"Beacon_INFO_10",0,120,{.param_float=&default_float}, catlog, NULL},
+                    {5,"X",0,20,{.param_float=&Beacon_raw_info[9].x}, param_float, NULL},
+                    {5,"Y",0,40,{.param_float=&Beacon_raw_info[9].y}, param_float, NULL},
+                    {5,"ONOFF",0,60,{.param_int16=&Beacon_raw_info[9].lighton}, on_off, NULL},
+
+            {3,"group2",0,40,{.param_float=&default_float}, catlog, NULL},
+
+
     {1, "end", 0, 0, {.param_float=&default_float}, catlog, NULL}
 };
 
@@ -805,7 +858,7 @@ void Menu_control(void)
         
     case CONFIRM:
         // 进入子菜单
-        if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0&&menu[p].type==catlog)
+        if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0&&(menu[p].type==catlog))
         {
             ips200_clear();                             // 清屏
             current_state++;
@@ -813,7 +866,15 @@ void Menu_control(void)
             p++;
             break;
         }
-        
+        if(menu[p+1].priority==current_state+1&&strcmp(menu[p+1].str,"end")!=0&&(menu[p].type==catlogandfunction))
+        {
+            ips200_clear();                             // 清屏
+            current_state++;
+            p_nearby=p;
+            p++;
+            menu[p_nearby].Operate_default();
+            break;
+        }
         // 菜单模式切换
         if(menu_Mode==edit_int)                         // 整型编辑模式
         {

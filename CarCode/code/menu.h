@@ -31,6 +31,8 @@ typedef enum
     special_show_element1,          //流程图显示经过元素      
     stop_debug_display              //停车debug显示
 }enum_menu_mode;
+
+//菜单参数类型枚举
 typedef enum 
     {
         param_int8,             //有符号8位可编辑
@@ -54,6 +56,7 @@ typedef enum
 
         confirm,                //确认
         catlog,                 //目录
+        catlogandfunction,      //目录和函数(进入子目录并且执行函数)
         function,               //函数
         on_off,                 //开关
         chose1,                 //只选一个 
