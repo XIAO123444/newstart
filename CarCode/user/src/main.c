@@ -13,6 +13,7 @@
 #include "speed.h"
 #include "Balance.h"
 #include "lora3a22.h"
+#include "Beacon.h"
 extern uint8 leftline_num;          // 左线点数
 extern uint8 rightline_num;         // 右线点数
 extern int current_state;
@@ -44,6 +45,7 @@ void all_init(void)
     BLDC_init();                // BLDC 初始化 TIM2在这里被用作pwm输出
     lora3a22_init();           // lora3a22 初始化 遥控器
     remote_param_init();
+    Beacon_init();              // 信标初始化
     // save_flash_param_count();
     load_flash_param_count();               //加载存储的参数个数
     flash_save_init();                      //初始化未声明区域
@@ -72,6 +74,26 @@ void all_init(void)
         Menu_control();         // 菜单控制
     }
  }
+
+// extern Struct_Beacon_t_typedef Beacon_show_info[MAX_BEACON_NUM]; //用于显示的信标灯信息结构体数组
+// extern Struct_Beacon_t_typedef Beacon_raw_info[MAX_BEACON_NUM]; //信标灯信息原始结构体数组
+// int main()
+// {
+//     clock_init(SYSTEM_CLOCK_120M);
+//     debug_init();
+//     Beacon_init();              // 信标初始化
+//     Menu_Screen_Init();         //屏幕基础显示初始化        
+
+//     while (1)
+//     {
+//         for (int i = 0; i < MAX_BEACON_NUM; i++)
+//         {
+//             show_beacon_point(Beacon_raw_info[i].x,
+//                           Beacon_raw_info[i].y,
+//                           Beacon_raw_info[i].color);
+//         }
+//     }
+// }
 
 //  int main()
 //  {

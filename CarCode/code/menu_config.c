@@ -85,7 +85,7 @@ void Beacon_Function()
 {
     ips200_clear();
 
-    while((enum_Condition)input!=BACK&&menu_Mode==normal)
+    while(!((enum_Condition)input==BACK&&menu_Mode==normal))
     {   
         output();
         Menu_control();

@@ -11,6 +11,28 @@ Struct_Beacon_t_typedef Beacon_show_info[MAX_BEACON_NUM]; //用于显示的信标灯信息
 #define ips200_y_max (320)
 float Matrix_Beacon[MAX_BEACON_NUM][MAX_BEACON_NUM]={0};        //信标灯距离矩阵
 
+
+
+
+void Beacon_init(void)
+{
+    for(int16 i =0;i<MAX_BEACON_NUM;i++)
+    {
+        if(i==0)
+        {
+            Beacon_raw_info[i].color=RGB565_RED;
+        }
+        else
+        {
+            Beacon_raw_info[i].color=RGB565_WHITE;
+        }
+        Beacon_raw_info[i].beacon_id=i;
+        Beacon_raw_info[i].next_beacon_id=-1;
+        Beacon_raw_info[i].lighton=0;
+        Beacon_raw_info[i].x=ips200_x_max/2;
+        Beacon_raw_info[i].y=ips200_y_max/2;
+    }
+}
 /*——-------------------------------------------------------------------------------------------------
 函数简介     计算信标灯距离矩阵
 参数说明     无
@@ -50,14 +72,14 @@ int8 show_circle[][2] = {{-2,0},{-2,1},{-2,-1},{-1,2},{0,2},{1,2},{2,1},{2,0},{2
 备注信息
 ---------------------------------------------------------------------------------------------------*/
 
-void show_beacon_point(int16 x,int16 y,rgb565_color_enum color)
+void show_beacon_point(float x,float y,rgb565_color_enum color)
 {
 
     for(int i=0;i<12;i++)
     {
         if(x>2&&x<ips200_x_max-2&&y>2&&y<ips200_y_max-2)
         {
-            ips200_draw_point((uint16)(x+show_circle[i][0]), (uint16)(y+show_circle[i][1]), color);
+            ips200_draw_point(((uint16)x+show_circle[i][0]), ((uint16)y+show_circle[i][1]), color);
         }
     }
 }
@@ -254,9 +276,8 @@ void calculate_beacon_trace(void)
 ---------------------------------------------------------------------------------------------------*/
 void show_beacon_info()
 {
-    remove_beacon_point(Beacon_last_info.x,Beacon_last_info.y);
     for(int i=0;i<Beacon_num[0];i++)
     {   
-        show_beacon_point(Beacon_show_info[i].x,Beacon_show_info[i].y,Beacon_show_info[i].color);
+        show_beacon_point(Beacon_raw_info[i].x,Beacon_raw_info[i].y,Beacon_raw_info[i].color);
     }
 }

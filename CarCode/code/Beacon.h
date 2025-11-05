@@ -13,5 +13,8 @@ typedef struct
 } Struct_Beacon_t_typedef;
 
 #define MAX_BEACON_NUM 20
+
+void Beacon_init(void);
 void show_beacon_info();
+void show_beacon_point(float x,float y,rgb565_color_enum color);
 #endif
