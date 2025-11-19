@@ -9,6 +9,9 @@
 #include "zf_device_lora3a22.h"
 #include "BLDC.h"
 #include "Beacon.h"
+#include "IMU.h"
+
+#include "HMC5883L.h"
 bool showline; // 显示线条标志
 
 #define ips200_x_max 240 // IPS屏幕最大X坐标
@@ -112,6 +115,16 @@ extern int16 threshold2;  // 阈值2
 extern int16 threshold3;  // 阈值3
 extern int16 threshold4;  // 阈值4
 
+// 四元数解算角度结构体
+extern IMU_Angle_typedef imu_angle;
+extern float gyro_drift_x;
+extern float gyro_drift_y;
+extern float gyro_drift_z;
+
+//磁力计数据
+extern int16_t Compass_x;         // X轴原始数据
+extern int16_t Compass_y;         // Y轴原始数据
+extern int16_t Compass_z;         // Z轴原始数据·
 // 编码器数据
 extern int32 encoder_R;    // 右编码器
 extern int32 encoder_L;    // 左编码器
@@ -121,6 +134,9 @@ extern int32 encoder_R_last; // 右编码器上次值
 extern int32 encoder_L_last; // 左编码器上次值
 //flash 参数
 extern uint16 flash_param_count; //存储参数个数
+
+
+extern int32 timer_counter; //定时器计数
 
 // 显示道路元素
 void show_element(void)
@@ -240,7 +256,8 @@ void start_the_car() { carmode = car_run_mode1;start_count=0; angle_init();PID_c
 
 // BLDC校准
 void Calibrate_BLDC()   {carmode=Start_Calibrate;}
-
+//IMU零漂校准
+void imu_calibrate()    { gyro_drift_Set0();timer_counter=0;carmode=IMU_calibrate;}
 // 远程启动
 void Remote_start()     {carmode =remote;start_count=0; angle_init();PID_clear();}
 
@@ -283,7 +300,7 @@ MENU menu[] =
         {2,"car_go", 0, 20, {.param_float=&default_float}, function, start_the_car},
         {2,"Calibrate", 0, 40, {.param_float=&default_float}, function, Calibrate_BLDC},
         {2,"remote_start", 0, 60, {.param_float=&default_float}, function, Remote_start},
-
+        {2,"IMU_calibrate", 0, 80, {.param_float=&default_float}, function, imu_calibrate},
     // PID参数菜单
     {1, "pidparam", 0, 40, {.param_float=&default_float}, catlog, NULL},
         // 陀螺仪PID
@@ -398,7 +415,26 @@ MENU menu[] =
             {3,"right_encode_d",150, 80, {.param_int32=&encoder_R_d}, param_int32_readonly, NULL},
             {3,"left_encode_last",150, 100, {.param_int32=&encoder_L_last}, param_int32_readonly, NULL},
             {3,"right_encode_last",150, 120, {.param_int32=&encoder_R_last}, param_int32_readonly, NULL},
-    
+        {2,"IMU_info", 0, 80, {.param_float=&default_float}, catlog, NULL},
+            {3,"IMU_Raw_data",0,20,{.param_float=&default_float}, catlog, NULL},
+                {4,"accel_x", 150, 20, {.param_int16=&imu660ra_acc_x}, param_int16_readonly, NULL},
+                {4,"accel_y", 150, 40, {.param_int16=&imu660ra_acc_y}, param_int16_readonly, NULL},
+                {4,"accel_z", 150, 60, {.param_int16=&imu660ra_acc_z}, param_int16_readonly, NULL},
+                {4,"gyro_x", 150, 80, {.param_int16=&imu660ra_gyro_x}, param_int16_readonly, NULL},
+                {4,"gyro_y", 150, 100, {.param_int16=&imu660ra_gyro_y}, param_int16_readonly, NULL},
+                {4,"gyro_z", 150, 120, {.param_int16=&imu660ra_gyro_z}, param_int16_readonly, NULL},
+            {3,"IMU_Cal_data",0, 60,{.param_float=&default_float}, catlog, NULL},
+                {4,"yaw_angle", 150, 20, {.param_float=&imu_angle.yaw}, param_float_readonly, NULL},
+                {4,"pitch_angle", 150, 40, {.param_float=&imu_angle.pitch}, param_float_readonly, NULL},
+                {4,"roll_angle", 150, 60, {.param_float=&imu_angle.roll}, param_float_readonly, NULL},
+                {4,"gyro_drift_x", 150, 80, {.param_float=&gyro_drift_x}, param_float_readonly, NULL},
+                {4,"gyro_drift_y", 150, 100, {.param_float=&gyro_drift_y}, param_float_readonly, NULL},
+                {4,"gyro_drift_z", 150, 120, {.param_float=&gyro_drift_z}, param_float_readonly, NULL},
+        {2,"compass", 0, 100, {.param_float=&default_float}, catlog, NULL},
+            {3,"compass_X",150, 20, {.param_int16=&Compass_x}, param_int16_readonly, NULL},
+            {3,"compass_Y",150, 40, {.param_int16=&Compass_y}, param_int16_readonly, NULL},
+            {3,"compass_Z",150, 60, {.param_int16=&Compass_z}, param_int16_readonly, NULL},
+            
     // 道路元素菜单
     {1, "element", 0, 100, {.param_float=&default_float}, catlog, NULL},
         {2, "element_onoff", 0, 20, {.param_float=&default_float}, catlog, NULL},

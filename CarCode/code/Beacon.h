@@ -17,4 +17,7 @@ typedef struct
 void Beacon_init(void);
 void show_beacon_info();
 void show_beacon_point(float x,float y,rgb565_color_enum color);
+void beacon_build_show_scaled(const Struct_Beacon_t_typedef raw_info[],
+                              int16 Width, int16 Length,
+                              float* K1, float* K2);
 #endif

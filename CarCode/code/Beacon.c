@@ -281,3 +281,169 @@ void show_beacon_info()
         show_beacon_point(Beacon_raw_info[i].x,Beacon_raw_info[i].y,Beacon_raw_info[i].color);
     }
 }
+
+// Cohen–Sutherland 编码工具（文件作用域，避免在函数内定义函数）
+enum { BEACON_CS_LEFT = 1, BEACON_CS_RIGHT = 2, BEACON_CS_BOTTOM = 4, BEACON_CS_TOP = 8 };
+
+static inline uint8 beacon_outcode(float x, float y)
+{
+    uint8 c = 0;
+    if (x < 0.0f)                           c |= BEACON_CS_LEFT;
+    else if (x > (float)(ips200_x_max - 1)) c |= BEACON_CS_RIGHT;
+    if (y < 0.0f)                           c |= BEACON_CS_BOTTOM;
+    else if (y > (float)(ips200_y_max - 1)) c |= BEACON_CS_TOP;
+    return c;
+}
+
+void ips200_draw_line_clipped(float x0, float y0, float x1, float y1, uint16 color)
+{
+    // 删除函数内的 enum 和 outcode 定义，改用上面的工具函数
+    uint8 c0 = beacon_outcode(x0, y0);
+    uint8 c1 = beacon_outcode(x1, y1);
+
+    // 反复裁剪直到完全接受或拒绝
+    while (1)
+    {
+        if ((c0 | c1) == 0) {
+            break;                  // 完全在内
+        } else if (c0 & c1) {
+            return;                 // 完全在外
+        } else {
+            float x, y;
+            uint8 c_out = c0 ? c0 : c1;
+
+            float dx = x1 - x0;
+            float dy = y1 - y0;
+
+            if (c_out & BEACON_CS_TOP) {
+                float yb = (float)(ips200_y_max - 1);
+                if (dy == 0.0f) return;                   // 保护除零
+                x = x0 + dx * (yb - y0) / dy;
+                y = yb;
+            } else if (c_out & BEACON_CS_BOTTOM) {
+                float yb = 0.0f;
+                if (dy == 0.0f) return;
+                x = x0 + dx * (yb - y0) / dy;
+                y = yb;
+            } else if (c_out & BEACON_CS_RIGHT) {
+                float xb = (float)(ips200_x_max - 1);
+                if (dx == 0.0f) return;
+                y = y0 + dy * (xb - x0) / dx;
+                x = xb;
+            } else { // BEACON_CS_LEFT
+                float xb = 0.0f;
+                if (dx == 0.0f) return;
+                y = y0 + dy * (xb - x0) / dx;
+                x = xb;
+            }
+
+            if (c_out == c0) { x0 = x; y0 = y; c0 = beacon_outcode(x0, y0); }
+            else             { x1 = x; y1 = y; c1 = beacon_outcode(x1, y1); }
+        }
+    }
+
+    // DDA 连续打点（端点已在可视区内）
+    float dx = x1 - x0;
+    float dy = y1 - y0;
+    float adx = dx > 0 ? dx : -dx;
+    float ady = dy > 0 ? dy : -dy;
+    int steps = (int)((adx > ady ? adx : ady)) + 1;
+    if (steps < 1) steps = 1;
+
+    float sx = dx / (float)steps;
+    float sy = dy / (float)steps;
+
+    float x = x0, y = y0;
+    for (int i = 0; i <= steps; i++) {
+        int xi = (int)(x + 0.5f);
+        int yi = (int)(y + 0.5f);
+        if ((unsigned)xi < (unsigned)ips200_x_max && (unsigned)yi < (unsigned)ips200_y_max) {
+            ips200_draw_point((uint16)xi, (uint16)yi, color);
+        }
+        x += sx; y += sy;
+    }
+}
+
+static inline float clampf(float v, float lo, float hi)
+{
+    if (v < lo) return lo;
+    if (v > hi) return hi;
+    return v;
+}
+
+// 在 Width×Length 的显示区域内，按各轴独立缩放将 raw_info 映射到 Beacon_show_info
+// 返回缩放系数 K1(=sx)、K2(=sy)。优先以 lighton==1 的点作为缩放依据；若没有，则使用全部点。
+void beacon_build_show_scaled(const Struct_Beacon_t_typedef raw_info[],
+                              int16 Width, int16 Length,
+                              float* K1, float* K2)
+{
+    if (!raw_info || Width <= 0 || Length <= 0) {
+        if (K1) *K1 = 1.0f;
+        if (K2) *K2 = 1.0f;
+        return;
+    }
+
+    // 参与缩放的点的包围盒
+    float min_x = 1e30f, max_x = -1e30f;
+    float min_y = 1e30f, max_y = -1e30f;
+    int   sel_cnt = 0;
+
+    // 先统计 lighton==1 的点
+    for (int16 i = 0; i < MAX_BEACON_NUM; i++) {
+        if (raw_info[i].lighton == 1) {
+            if (raw_info[i].x < min_x) min_x = raw_info[i].x;
+            if (raw_info[i].x > max_x) max_x = raw_info[i].x;
+            if (raw_info[i].y < min_y) min_y = raw_info[i].y;
+            if (raw_info[i].y > max_y) max_y = raw_info[i].y;
+            sel_cnt++;
+        }
+    }
+    // 若没有被点亮的点，则用全部点
+    if (sel_cnt == 0) {
+        min_x = 1e30f; max_x = -1e30f;
+        min_y = 1e30f; max_y = -1e30f;
+        for (int16 i = 0; i < MAX_BEACON_NUM; i++) {
+            if (raw_info[i].x < min_x) min_x = raw_info[i].x;
+            if (raw_info[i].x > max_x) max_x = raw_info[i].x;
+            if (raw_info[i].y < min_y) min_y = raw_info[i].y;
+            if (raw_info[i].y > max_y) max_y = raw_info[i].y;
+        }
+    }
+
+    // 防止退化（所有点同 x 或同 y）
+    float dx = max_x - min_x;
+    float dy = max_y - min_y;
+    if (dx <= 0.0f) dx = 1.0f;
+    if (dy <= 0.0f) dy = 1.0f;
+
+    // 预留边距，避免贴边（可按需调整）
+    const float margin = 2.0f;
+    float avail_w = (float)Width  - 2.0f * margin;
+    float avail_h = (float)Length - 2.0f * margin;
+    if (avail_w <= 1.0f) avail_w = (float)Width;
+    if (avail_h <= 1.0f) avail_h = (float)Length;
+
+    float sx = avail_w / dx;
+    float sy = avail_h / dy;
+
+    // 返回缩放系数
+    if (K1) *K1 = sx;
+    if (K2) *K2 = sy;
+
+    // 平移使 min 对齐到 margin 处
+    float off_x = margin - min_x * sx;
+    float off_y = margin - min_y * sy;
+
+    // 写入显示数组（仅缩放+平移，保持相对位置）
+    for (int16 i = 0; i < MAX_BEACON_NUM; i++) {
+        Beacon_show_info[i] = raw_info[i];
+        float x = raw_info[i].x * sx + off_x;
+        float y = raw_info[i].y * sy + off_y;
+        // 裁剪到可视范围
+        x = clampf(x, 0.0f, (float)(Width  - 1));
+        y = clampf(y, 0.0f, (float)(Length - 1));
+        Beacon_show_info[i].x = x;
+        Beacon_show_info[i].y = y;
+    }
+}
+

@@ -14,6 +14,9 @@
 #include "Balance.h"
 #include "lora3a22.h"
 #include "Beacon.h"
+#include "IMU.h"
+#include "HMC5883L.h"
+
 extern uint8 leftline_num;          // 左线点数
 extern uint8 rightline_num;         // 右线点数
 extern int current_state;
@@ -36,9 +39,20 @@ void all_init(void)
 {
     clock_init(SYSTEM_CLOCK_120M);
     debug_init();
+    Menu_Screen_Init();         //屏幕基础显示初始化       
+    
+    if(HMC5883L_Init())            // HMC5883L 初始化
+    {
+        // Initialization successful
+    }
+    else
+    {
+        ips200_show_string(0, 16, "HMC5883L error");
+    }
+    system_delay_ms(1000);
     imu660ra_init();          // IMU660RA 初始化
+
     Encoder_Init();       // 编码器初始化   TIM6在这里初始化
-    Menu_Screen_Init();         //屏幕基础显示初始化        
     Key_init();                 //按键初始化        TIm7在这里初始化
     BUZZ_init();                // 蜂鸣器初始化
     motor_init();               //电机初始化         
@@ -61,7 +75,8 @@ void all_init(void)
             break;
         }
         system_delay_ms(50);
-    }
+    }    
+
 }
 
 
@@ -71,7 +86,7 @@ void all_init(void)
     all_init();
     while(1)
     {  
-        BLDC_run(500);
+        Menu_control();    
     }
  }
 

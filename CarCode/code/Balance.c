@@ -43,7 +43,6 @@ void angle_init(void)
     yaw_angle_integr=0;
 }
 // 改进的IMU滤波函数
-
 void imu_filter(){
     // 去除静态误差（零偏校正）
     raw_gyro_x = imu660ra_gyro_x + imu_err.gx_err;      //横滚角
@@ -111,7 +110,6 @@ void lift_protection(void)
 
     az_last=az; //保存上次加速度计Z轴数据
 }
-
 void gyro_protect(void)
 {
     if( abs(pitch_angle_integr)>20000)//待填的坑
@@ -134,3 +132,4 @@ void gyro_protect(void)
     }
 
 }
+
