@@ -47,9 +47,9 @@ void all_init(void)
     remote_param_init();
     Beacon_init();              // 信标初始化
     // save_flash_param_count();
-    load_flash_param_count();               //加载存储的参数个数
-    flash_save_init();                      //初始化未声明区域
-    flash_load_config_default();            //加载闪存参数到各个变量
+    // load_flash_param_count();               //加载存储的参数个数
+    // flash_save_init();                      //初始化未声明区域
+    // flash_load_config_default();            //加载闪存参数到各个变量
     while(1) // 摄像头初始化
     {
         if(mt9v03x_init())
@@ -71,7 +71,7 @@ void all_init(void)
     all_init();
     while(1)
     {  
-        Menu_control();         // 菜单控制
+        BLDC_run(500);
     }
  }
 

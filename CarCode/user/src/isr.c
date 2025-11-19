@@ -142,122 +142,77 @@ void TIM5_IRQHandler (void)
 //-------------------------------------------------------------------------------------------------------------------
 void TIM6_IRQHandler(void)
 {
-    timer_counter++;
-    if(carmode==Start_Calibrate)
-    {
-        timer_counter=0;
-        carmode=Now_Calibrate;
-    }
-    if(carmode==Now_Calibrate) 
-    {
-        if(timer_counter<=2000)
-        {
-            BLDC_unlock_UP(); //电机校准高电平
-        }   
-        if(timer_counter>2000&&timer_counter<=1000000)
-        {
-            BLDC_unlock_UP(); //电机校准高电平
-        }
-        if(timer_counter>1000000)
-        {
-            carmode=stop;
-        }
-    }
-    S_PID_CAL();        //转向控制
-    count1++;
-    count2++;
-	count3++;
-    imu660ra_get_gyro();
-    imu660ra_get_acc();
-    imu_filter();
-
-
-    if (count2 >= 5) {
-        encoder_L_last = encoder_L;
-        encoder_R_last = encoder_R;
-        encoder_R = -encoder_get_count(TIM4_ENCODER);
-        encoder_clear_count(TIM4_ENCODER);
-        encoder_L = encoder_get_count(TIM3_ENCODER);
-        encoder_clear_count(TIM3_ENCODER);
-        encoder_L_d = encoder_L - encoder_L_last;       //差值输入
-        encoder_R_d = encoder_R - encoder_R_last;       //差值输入
- 
-        // PID_speed.actual = (encoder_L + encoder_R + gy / 60) / 2;
-
-        PID_speed.actual = (encoder_L + encoder_R  ) / 2;
-
-        increment_pid_update(&PID_speed);
-        encodercounter1=encodercounter1+encoder_R+encoder_L;//里程计数
-        count2 = 0;
-    }
-    //风扇速度环5ms
-    // 角度环
-    if (count1 >= 5){
-        first_order_filtering();
-        PID_angle.actual = filtering_angle;
-        PID_angle.targ = Med_Angle;
-        if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
-        {
-             PID_angle.error0 = 0;
-        } 
-        PID_gyro_update(&PID_angle, imu660ra_gyro_x);
-        count1 = 0;
-    }
-    // //角速度环3ms
-    if (count3 >= 3) {
-    PID_gyro.targ = -PID_angle.out;
-    PID_gyro.actual = imu660ra_gyro_y;
-    PID_update(&PID_gyro);
-		count3=0;
-    }
-    if(carmode==car_run_mode1||carmode==car_run_mode2)
-    {  
-        remote_check_stoponly();
-        start_count++;
-        if (start_count==3000)
-        {
-            ips200_show_string(0,180,"BLDC run");//debug信息显示
-        }
-        if(start_count>3000)
-        {
-        bldc_param.output=(bldc_param.encoder_p*(encoder_L_d+encoder_R_d)/2);
-           if(bldc_param.output>bldc_param.max_output) 
-           {bldc_param.output=bldc_param.max_output;}
-           if(bldc_param.output<bldc_param.min_output)
-           {bldc_param.output=bldc_param.min_output;}
-
-            BLDC_run(bldc_param.basic_duty + PID_gyro.out+bldc_param.output);//可以添加编码器补偿
-            //这边可以设置一下平衡后再启动
-        }
-        if(start_count==5000)
-        {
-            PID_speed.errorint = 0;
-            PID_steer.error0 = 0;
-            PID_steer.errorint = 0; 
-            ips200_clear();
-            ips200_show_string(0,180,"motor run"); //debug信息显示
-
-        }
-        if(start_count>=5001) 
-        {
-            motor(PID_speed.out-PID_steer.out,PID_speed.out+PID_steer.out);//这边可以分离开isr
-        }
-
-        if(start_count==50000)
-        {
-            ips200_show_string(0,180,"time stop");
-        }
-        if(start_count>=50001  )
-        {
-            carmode=stop;                           //停车
-            stopdebug=timer_count_stop;             //停车原因
-            menu_Mode=stop_debug_display;           //菜单切换到停车显示
-        }
-    
-    }
-    // if (carmode == remote)
+    // timer_counter++;
+    // if(carmode==Start_Calibrate)
     // {
-    //     remote_speed_control();
+    //     timer_counter=0;
+    //     carmode=Now_Calibrate;
+    // }
+    // if(carmode==Now_Calibrate) 
+    // {
+    //     if(timer_counter<=2000)
+    //     {
+    //         BLDC_unlock_UP(); //电机校准高电平
+    //     }   
+    //     if(timer_counter>2000&&timer_counter<=1000000)
+    //     {
+    //         BLDC_unlock_UP(); //电机校准高电平
+    //     }
+    //     if(timer_counter>1000000)
+    //     {
+    //         carmode=stop;
+    //     }
+    // }
+    // S_PID_CAL();        //转向控制
+    // count1++;
+    // count2++;
+	// count3++;
+    // imu660ra_get_gyro();
+    // imu660ra_get_acc();
+    // imu_filter();
+
+
+    // if (count2 >= 5) {
+    //     encoder_L_last = encoder_L;
+    //     encoder_R_last = encoder_R;
+    //     encoder_R = -encoder_get_count(TIM4_ENCODER);
+    //     encoder_clear_count(TIM4_ENCODER);
+    //     encoder_L = encoder_get_count(TIM3_ENCODER);
+    //     encoder_clear_count(TIM3_ENCODER);
+    //     encoder_L_d = encoder_L - encoder_L_last;       //差值输入
+    //     encoder_R_d = encoder_R - encoder_R_last;       //差值输入
+ 
+    //     // PID_speed.actual = (encoder_L + encoder_R + gy / 60) / 2;
+
+    //     PID_speed.actual = (encoder_L + encoder_R  ) / 2;
+
+    //     increment_pid_update(&PID_speed);
+    //     encodercounter1=encodercounter1+encoder_R+encoder_L;//里程计数
+    //     count2 = 0;
+    // }
+    // //风扇速度环5ms
+    // // 角度环
+    // if (count1 >= 5){
+    //     first_order_filtering();
+    //     PID_angle.actual = filtering_angle;
+    //     PID_angle.targ = Med_Angle;
+    //     if(PID_angle.error0<50&&PID_angle.error0>-50)    //死区减小震荡
+    //     {
+    //          PID_angle.error0 = 0;
+    //     } 
+    //     PID_gyro_update(&PID_angle, imu660ra_gyro_x);
+    //     count1 = 0;
+    // }
+    // // //角速度环3ms
+    // if (count3 >= 3) {
+    // PID_gyro.targ = -PID_angle.out;
+    // PID_gyro.actual = imu660ra_gyro_y;
+    // PID_update(&PID_gyro);
+	// 	count3=0;
+    // }
+    // if(carmode==car_run_mode1||carmode==car_run_mode2)
+    // {  
+    //     remote_check_stoponly();
     //     start_count++;
     //     if (start_count==3000)
     //     {
@@ -265,32 +220,77 @@ void TIM6_IRQHandler(void)
     //     }
     //     if(start_count>3000)
     //     {
-    //        // BLDC_run(30);//这边改成pidout
-    //        bldc_param.output=(bldc_param.encoder_p*(encoder_L_d+encoder_R_d)/2);
-    //        if(bldc_param.output>bldc_param.max_output)
+    //     bldc_param.output=(bldc_param.encoder_p*(encoder_L_d+encoder_R_d)/2);
+    //        if(bldc_param.output>bldc_param.max_output) 
     //        {bldc_param.output=bldc_param.max_output;}
     //        if(bldc_param.output<bldc_param.min_output)
     //        {bldc_param.output=bldc_param.min_output;}
 
-    //         BLDC_run(PID_gyro.out-bldc_param.basic_duty+bldc_param.output);//可以添加编码器补偿
-    //         //可以添加编码器补偿
+    //         BLDC_run(bldc_param.basic_duty + PID_gyro.out+bldc_param.output);//可以添加编码器补偿
+    //         //这边可以设置一下平衡后再启动
     //     }
+    //     if(start_count==5000)
+    //     {
+    //         PID_speed.errorint = 0;
+    //         PID_steer.error0 = 0;
+    //         PID_steer.errorint = 0; 
+    //         ips200_clear();
+    //         ips200_show_string(0,180,"motor run"); //debug信息显示
+
+    //     }
+    //     if(start_count>=5001) 
+    //     {
+    //         motor(PID_speed.out-PID_steer.out,PID_speed.out+PID_steer.out);//这边可以分离开isr
+    //     }
+
     //     if(start_count==50000)
     //     {
     //         ips200_show_string(0,180,"time stop");
     //     }
-    //     if(start_count>=51000)
+    //     if(start_count>=50001  )
     //     {
     //         carmode=stop;                           //停车
     //         stopdebug=timer_count_stop;             //停车原因
     //         menu_Mode=stop_debug_display;           //菜单切换到停车显示
     //     }
+    
     // }
-    if(carmode==stop)
-    {   
-        BLDC_STOP();
-        motor(0,0);
-    }
+    // // if (carmode == remote)
+    // // {
+    // //     remote_speed_control();
+    // //     start_count++;
+    // //     if (start_count==3000)
+    // //     {
+    // //         ips200_show_string(0,180,"BLDC run");//debug信息显示
+    // //     }
+    // //     if(start_count>3000)
+    // //     {
+    // //        // BLDC_run(30);//这边改成pidout
+    // //        bldc_param.output=(bldc_param.encoder_p*(encoder_L_d+encoder_R_d)/2);
+    // //        if(bldc_param.output>bldc_param.max_output)
+    // //        {bldc_param.output=bldc_param.max_output;}
+    // //        if(bldc_param.output<bldc_param.min_output)
+    // //        {bldc_param.output=bldc_param.min_output;}
+
+    // //         BLDC_run(PID_gyro.out-bldc_param.basic_duty+bldc_param.output);//可以添加编码器补偿
+    // //         //可以添加编码器补偿
+    // //     }
+    // //     if(start_count==50000)
+    // //     {
+    // //         ips200_show_string(0,180,"time stop");
+    // //     }
+    // //     if(start_count>=51000)
+    // //     {
+    // //         carmode=stop;                           //停车
+    // //         stopdebug=timer_count_stop;             //停车原因
+    // //         menu_Mode=stop_debug_display;           //菜单切换到停车显示
+    // //     }
+    // // }
+    // if(carmode==stop)
+    // {   
+    //     BLDC_STOP();
+    //     motor(0,0);
+    // }
 
     //此处编写用户代码
     TIM6->SR &= ~TIM6->SR;                                                
